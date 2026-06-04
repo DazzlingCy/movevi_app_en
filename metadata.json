@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Muwei 6 (Global)",
+  "description": "An interactive treadmill application providing immersive running experiences through real sports videos captured in cities worldwide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
