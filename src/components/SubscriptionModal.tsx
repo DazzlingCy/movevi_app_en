@@ -217,36 +217,6 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                       <p className="text-xs text-slate-400 mt-0.5">Run subsequent courses in Paris, Tokyo, London, Shanghai, and New York. No more lockouts.</p>
                     </div>
                   </div>
-
-                  <div className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                    <div className="w-5 h-5 rounded-full bg-cyan-950 flex items-center justify-center shrink-0 border border-cyan-500/30 text-cyan-400 mt-0.5">
-                      <Check size={12} className="stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-200">Double Glowtrail Energy Boost</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Earn 2x Light Values per kilometer ran. Claim rare achievements and top the international scoreboard.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                    <div className="w-5 h-5 rounded-full bg-cyan-950 flex items-center justify-center shrink-0 border border-cyan-500/30 text-cyan-400 mt-0.5">
-                      <Check size={12} className="stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-200">Priority Bluetooth Hardware Sync</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Enhanced high-frequency sensors feedback for real-time treadmill speed response.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                    <div className="w-5 h-5 rounded-full bg-cyan-950 flex items-center justify-center shrink-0 border border-cyan-500/30 text-cyan-400 mt-0.5">
-                      <Check size={12} className="stroke-[3]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-200">100% Ad-Free & Offline Play</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Experience undisturbed scenery paths with pre-cache mapping resources support.</p>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Compare tiers */}
@@ -538,9 +508,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                   <p className="font-semibold text-slate-200">Premium Benefits Activated:</p>
                   <ul className="space-y-1.5 list-disc pl-4">
                     <li>All 36+ courses lit memory coordinates unlocked globally.</li>
-                    <li>2x Glowtrail values automatically active during workouts.</li>
-                    <li>Priority multi-sensor Bluetooth device sync allowed.</li>
-                    <li>Ad-free experience with route pre-cache enabled.</li>
+                    <li>Full access granted to subsequent urban trails in every city.</li>
                   </ul>
                 </div>
 
