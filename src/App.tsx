@@ -62,11 +62,11 @@ export default function App() {
   const [showMedalPrompt, setShowMedalPrompt] = useState(false);
   const [hasGuidedToMedalDraw, setHasGuidedToMedalDraw] = useState(false);
   const [userStats, setUserStats] = useState({
-    completedCities: 1,
-    completedRoutes: 1,
-    totalDistance: 2.5,
-    totalTimeHours: 0.5,
-    lightValue: 40
+    completedCities: 0,
+    completedRoutes: 0,
+    totalDistance: 0.0,
+    totalTimeHours: 0.0,
+    lightValue: 0
   });
 
   const tabs = [
@@ -351,7 +351,7 @@ export default function App() {
                />
             )}
             {fullScreenPage.type === 'medalDraw' && (
-              <MedalDrawView 
+              <MedalDrawView isSubscribed={isSubscribed} 
                 onBack={() => setFullScreenPage(null)}
                 onGoToRunning={() => {
                   setFullScreenPage(null);

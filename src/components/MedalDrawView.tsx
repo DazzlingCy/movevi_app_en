@@ -6,6 +6,7 @@ import TimeSpaceWheelView from './TimeSpaceWheelView';
 interface MedalDrawViewProps {
   onBack: () => void;
   onGoToRunning: () => void;
+  isSubscribed: boolean;
   userStats: {
     completedCities: number;
     completedRoutes: number;
@@ -22,13 +23,13 @@ interface MedalDrawViewProps {
   }>>;
 }
 
-export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUserStats }: MedalDrawViewProps) {
+export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, userStats, setUserStats }: MedalDrawViewProps) {
   // Simulator State so user can test both completed screen and drawing state!
   const [isPoolEmpty, setIsPoolEmpty] = useState(false); // Default false for running state
   const [showWheelView, setShowWheelView] = useState(false);
   const [availableChances, setAvailableChances] = useState(0);
   const [redeemedMedals, setRedeemedMedals] = useState(0);
-  const [remainingPool, setRemainingPool] = useState(142); // Initialize with regular pool amount
+  const [remainingPool, setRemainingPool] = useState(88.50); // Initialize with regular pool amount
   const [drawnPrizes, setDrawnPrizes] = useState<{ prizeName: string; amount: string; date: string }[]>([]);
   
   // Custom states for animations / modals
@@ -71,23 +72,23 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
     }
 
     setAvailableChances(prev => prev - 1);
-    setRemainingPool(prev => Math.max(0, prev - 1));
+    setRemainingPool(prev => Math.max(0, prev - 0.88)); // subtract $0.88 or similar
     setShowDrawAnimation(true);
 
     // Mock draw probability corresponding to categories
     const r = Math.random();
-    let result = { tier: '六等奖', amount: '0.06元', icon: '🧧' };
+    let result = { tier: '六等奖', amount: '$0.88', icon: '🧧' };
     
     if (r < 0.05) {
-      result = { tier: '一等奖', amount: '16.6元', icon: '🏆' };
+      result = { tier: '一等奖', amount: '$38.80', icon: '🏆' };
     } else if (r < 0.15) {
-      result = { tier: '二等奖', amount: '12.6元', icon: '🥈' };
+      result = { tier: '二等奖', amount: '$18.80', icon: '🥈' };
     } else if (r < 0.30) {
-      result = { tier: '三等奖', amount: '6.6元', icon: '🥉' };
+      result = { tier: '三等奖', amount: '$8.88', icon: '🥉' };
     } else if (r < 0.50) {
-      result = { tier: '四等奖', amount: '2.66元', icon: '🧧' };
+      result = { tier: '四等奖', amount: '$3.88', icon: '🧧' };
     } else if (r < 0.75) {
-      result = { tier: '五等奖', amount: '1.66元', icon: '🧧' };
+      result = { tier: '五等奖', amount: '$1.88', icon: '🧧' };
     }
 
     setTimeout(() => {
@@ -115,6 +116,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
         availableChances={availableChances}
         setAvailableChances={setAvailableChances}
         drawnPrizes={drawnPrizes}
+        isSubscribed={isSubscribed}
         onDrawSuccess={(prizeName, amount) => {
           setDrawnPrizes(prev => [
             {
@@ -311,7 +313,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
               ) : (
                 <>
                   <span className="text-[10px] text-teal-600 font-bold font-sans">🎉 本期正在火热进行中！</span>
-                  <span className="text-[10px] text-orange-600 font-bold font-sans">剩余奖数：{remainingPool} 件</span>
+                  <span className="text-[10px] text-orange-600 font-bold font-sans">剩余奖池：${remainingPool.toFixed(2)}</span>
                 </>
               )}
             </div>
@@ -389,13 +391,13 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
             
             <div className="mt-4">
               <div className="flex justify-between items-center text-xs text-slate-500 font-bold mb-1.5">
-                <span>剩：{remainingPool}</span>
-                <span>总：200</span>
+                <span>剩：${remainingPool.toFixed(2)}</span>
+                <span>总：$100.00</span>
               </div>
               <div className="w-full h-3 bg-[#f2e6db] rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: isPoolEmpty ? '0%' : `${(remainingPool / 200) * 100}%` }}
+                  animate={{ width: isPoolEmpty ? '0%' : `${(remainingPool / 100) * 100}%` }}
                   transition={{ duration: 0.8 }}
                   className="h-full bg-gradient-to-r from-orange-400 to-[#f97316] rounded-full" 
                 />
@@ -413,7 +415,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
                 <span className="text-sm font-black text-slate-850">第一期奖励</span>
               </div>
               <button 
-                onClick={() => showToast('🎯 中奖概率分布：一等奖5%、二等奖10%、三等奖15%、四五六等奖共70% 🎉')}
+                onClick={() => showToast('🎯 精准中奖概率：一等奖(1%)、二等奖(2%)、三等奖(4%)、四等奖(13%)、五等奖(35%)、六等奖(45%) 🎉')}
                 className="text-xs text-orange-500 font-bold hover:text-orange-600 flex items-center gap-0.5 bg-orange-50 px-2 py-1 rounded-full"
               >
                 <span>中奖概率</span>
@@ -440,8 +442,9 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
                       一等奖
                     </span>
                     <h5 className="text-sm font-extrabold text-[#d32f2f] leading-tight">
-                      现金 16.6 元
+                      现金 $38.80
                     </h5>
+                    <p className="text-[10px] text-slate-500 font-bold mt-0.5">中奖概率：1%</p>
                   </div>
                 </div>
                 <div className="text-right font-black font-mono text-slate-800 text-xs shrink-0 bg-white/60 px-2.5 py-1.5 rounded-xl border border-black/5">
@@ -457,7 +460,8 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
                     二等奖
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-[#d32f2f]">现金 12.6 元</h6>
+                  <h6 className="text-xs font-black text-[#d32f2f]">现金 $18.80</h6>
+                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">中奖概率：2%</p>
                   <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">数量 * 2</p>
                 </div>
                 
@@ -467,36 +471,40 @@ export default function MedalDrawView({ onBack, onGoToRunning, userStats, setUse
                     三等奖
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-[#d32f2f]">现金 6.6 元</h6>
-                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">数量 * 2</p>
+                  <h6 className="text-xs font-black text-[#d32f2f]">现金 $8.88</h6>
+                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">中奖概率：4%</p>
+                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">数量 * 3</p>
                 </div>
               </div>
 
               {/* 四、五、六等奖 (3 Columns Grid) */}
               <div className="grid grid-cols-3 gap-2 pb-2">
                 {/* 四等奖 */}
-                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[110px]">
+                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金2.66元</p>
-                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2.5 select-none shrink-0 block">
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$3.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：13%</p>
+                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
                     四等奖
                   </span>
                 </div>
 
                 {/* 五等奖 */}
-                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[110px]">
+                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金1.66元</p>
-                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2.5 select-none shrink-0 block">
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$1.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：35%</p>
+                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
                     五等奖
                   </span>
                 </div>
 
                 {/* 六等奖 */}
-                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[110px]">
+                <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金6分</p>
-                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2.5 select-none shrink-0 block">
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$0.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：45%</p>
+                  <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
                     六等奖
                   </span>
                 </div>

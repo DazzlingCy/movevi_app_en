@@ -8,16 +8,17 @@ interface TimeSpaceWheelViewProps {
   setAvailableChances: React.Dispatch<React.SetStateAction<number>>;
   onDrawSuccess: (prizeName: string, amount: string) => void;
   drawnPrizes: { prizeName: string; amount: string; date: string }[];
+  isSubscribed: boolean;
 }
 
 // 6个奖项，角度对应转盘上的扇区中心
 const WHEEL_PRIZES = [
-  { id: '0.88', name: '¥0.88', amount: '0.88元', colorText: '#da3a25', bg: '#ffffff', degCenter: 30 },
-  { id: '1.88', name: '¥1.88', amount: '1.88元', colorText: '#da3a25', bg: '#fff2e8', degCenter: 90 },
-  { id: '88.2', name: '88.2元', amount: '88.2元', colorText: '#b31505', bg: '#ffffff', degCenter: 150, isMega: true },
-  { id: '99.9', name: '99.9元', amount: '99.9元', colorText: '#b31505', bg: '#fff2e8', degCenter: 210, isMega: true },
-  { id: '8.88', name: '¥8.88', amount: '8.88元', colorText: '#da3a25', bg: '#ffffff', degCenter: 270 },
-  { id: '18.88', name: '¥18.88', amount: '18.88元', colorText: '#da3a25', bg: '#fff2e8', degCenter: 330 }
+  { id: '0.88', name: '$0.88', amount: '$0.88', colorText: '#da3a25', bg: '#ffffff', degCenter: 30 },
+  { id: '1.88', name: '$1.88', amount: '$1.88', colorText: '#da3a25', bg: '#fff2e8', degCenter: 90 },
+  { id: '18.80', name: '$18.80', amount: '$18.80', colorText: '#b31505', bg: '#ffffff', degCenter: 150, isMega: true },
+  { id: '38.80', name: '$38.80', amount: '$38.80', colorText: '#b31505', bg: '#fff2e8', degCenter: 210, isMega: true },
+  { id: '3.88', name: '$3.88', amount: '$3.88', colorText: '#da3a25', bg: '#ffffff', degCenter: 270 },
+  { id: '8.88', name: '$8.88', amount: '$8.88', colorText: '#da3a25', bg: '#fff2e8', degCenter: 330 }
 ];
 
 export default function TimeSpaceWheelView({ 
@@ -25,7 +26,8 @@ export default function TimeSpaceWheelView({
   availableChances, 
   setAvailableChances, 
   onDrawSuccess,
-  drawnPrizes
+  drawnPrizes,
+  isSubscribed
 }: TimeSpaceWheelViewProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [wheelRotation, setWheelRotation] = useState(0);
@@ -34,8 +36,8 @@ export default function TimeSpaceWheelView({
   const [ledActive, setLedActive] = useState(true);
 
   // Remaining and divided simulated values strictly resembling the photo details
-  const [remainingPoolAmount, setRemainingPoolAmount] = useState(428.50);
-  const [dividedPercentage, setDividedPercentage] = useState(14.3);
+  const [remainingPoolAmount, setRemainingPoolAmount] = useState(88.50);
+  const [dividedPercentage, setDividedPercentage] = useState(11.5);
 
   // Alternating marquee lights on the outer edge of the wheel
   useEffect(() => {
@@ -66,23 +68,36 @@ export default function TimeSpaceWheelView({
     setIsRotating(true);
     setAvailableChances(prev => prev - 1);
 
-    // Dynamic random selection based on probabilities
-    // Mega prizes (99.9 and 88.2) are slightly rarer but 100% win rate guarantees something
-    const rand = Math.random();
-    let selectedPrizeIndex = 0; // default 0.88
+    // Dynamic random selection based on probabilities & Hidden Rules
+    let selectedPrizeIndex = 0; // default $0.88
 
-    if (rand < 0.45) {
-      selectedPrizeIndex = 0; // ¥0.88
-    } else if (rand < 0.80) {
-      selectedPrizeIndex = 1; // ¥1.88
-    } else if (rand < 0.93) {
-      selectedPrizeIndex = 4; // ¥8.88
-    } else if (rand < 0.97) {
-      selectedPrizeIndex = 5; // ¥18.88
-    } else if (rand < 0.99) {
-      selectedPrizeIndex = 2; // 88.2元
+    if (!isSubscribed) {
+      const drawnCount = drawnPrizes.length;
+      if (drawnCount === 0) {
+        selectedPrizeIndex = 1; // 1st draw: $1.88
+      } else if (drawnCount === 1) {
+        selectedPrizeIndex = 1; // 2nd draw: $1.88
+      } else if (drawnCount === 2) {
+        selectedPrizeIndex = 0; // 3rd draw: $0.88
+      } else {
+        // Standard random choice
+        const rand = Math.random();
+        if (rand < 0.45) selectedPrizeIndex = 0; // $0.88
+        else if (rand < 0.80) selectedPrizeIndex = 1; // $1.88
+        else if (rand < 0.93) selectedPrizeIndex = 4; // $3.88
+        else if (rand < 0.97) selectedPrizeIndex = 5; // $8.88
+        else if (rand < 0.99) selectedPrizeIndex = 2; // $18.80
+        else selectedPrizeIndex = 3; // $38.80
+      }
     } else {
-      selectedPrizeIndex = 3; // 99.9元
+      // For subscribed users (Standard random probability)
+      const rand = Math.random();
+      if (rand < 0.45) selectedPrizeIndex = 0; // $0.88
+      else if (rand < 0.80) selectedPrizeIndex = 1; // $1.88
+      else if (rand < 0.93) selectedPrizeIndex = 4; // $3.88
+      else if (rand < 0.97) selectedPrizeIndex = 5; // $8.88
+      else if (rand < 0.99) selectedPrizeIndex = 2; // $18.80
+      else selectedPrizeIndex = 3; // $38.80
     }
 
     const prize = WHEEL_PRIZES[selectedPrizeIndex];
@@ -99,7 +114,7 @@ export default function TimeSpaceWheelView({
       setShowResultModal(prize);
       
       // Update the fake cash pool parameters slightly for realism
-      const drawnAmount = parseFloat(prize.amount.replace('元', ''));
+      const drawnAmount = parseFloat(prize.amount.replace('元', '').replace('$', ''));
       setRemainingPoolAmount(prev => Math.max(0, Number((prev - drawnAmount).toFixed(2))));
       setDividedPercentage(prev => Number((prev + 0.3).toFixed(1)));
 
@@ -139,13 +154,13 @@ export default function TimeSpaceWheelView({
           <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/35 rounded-full px-5 py-1.5 flex items-center gap-1.5 shrink-0 shadow-inner mt-1 mb-4">
             <span className="animate-ping w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <span className="text-[10px] font-black tracking-widest text-amber-300 uppercase leading-none">
-              ✨ 限时现金奖池 ¥500 (抽空即止)
+              ✨ 限时现金奖池 $100 (抽空即止)
             </span>
           </div>
 
           {/* Sub Row: Stats remaining */}
           <div className="w-[88%] bg-black/40 border border-white/5 rounded-2xl py-2 px-4 flex items-center justify-between text-[11px] text-slate-400 font-bold mb-6">
-            <p>当前剩余: <span className="text-amber-400 font-extrabold font-mono text-xs">¥{remainingPoolAmount.toFixed(2)}</span></p>
+            <p>当前剩余: <span className="text-amber-400 font-extrabold font-mono text-xs">${remainingPoolAmount.toFixed(2)}</span></p>
             <div className="h-4 w-px bg-white/10" />
             <p className="flex items-center gap-1">
               <span>已瓜分:</span>
@@ -306,17 +321,26 @@ export default function TimeSpaceWheelView({
 
         {/* 6 Grid items displaying individual potential prizes and their frequency */}
         <div className="grid grid-cols-3 gap-2 mt-3.5">
-          {WHEEL_PRIZES.map(p => (
-            <div 
-              key={p.id} 
-              className="bg-slate-900/60 border border-white/5 rounded-2xl py-2 px-1 flex flex-col items-center justify-center text-center"
-            >
-              <span className="text-xs font-black text-[#fb7185] font-mono">{p.name}</span>
-              <span className="text-[8px] text-slate-500 font-bold mt-0.5 uppercase tracking-wide">
-                100%可抽
-              </span>
-            </div>
-          ))}
+          {WHEEL_PRIZES.map(p => {
+            let prob = '';
+            if (p.id === '0.88') prob = '概率 45%';
+            else if (p.id === '1.88') prob = '概率 35%';
+            else if (p.id === '3.88') prob = '概率 13%';
+            else if (p.id === '8.88') prob = '概率 4%';
+            else if (p.id === '18.80') prob = '概率 2%';
+            else if (p.id === '38.80') prob = '概率 1%';
+            return (
+              <div 
+                key={p.id} 
+                className="bg-slate-900/60 border border-white/5 rounded-2xl py-2 px-1 flex flex-col items-center justify-center text-center"
+              >
+                <span className="text-xs font-black text-[#fb7185] font-mono">{p.name}</span>
+                <span className="text-[8px] text-slate-500 font-bold mt-0.5 uppercase tracking-wide">
+                  {prob}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
