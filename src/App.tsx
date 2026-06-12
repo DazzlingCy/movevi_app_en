@@ -14,11 +14,12 @@ import LitRecordsView from './components/LitRecordsView';
 import LeaderboardView from './components/LeaderboardView';
 import WeekendMedleyView from './components/WeekendMedleyView';
 import SubscriptionModal from './components/SubscriptionModal';
+import MedalDrawView from './components/MedalDrawView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [showIntro, setShowIntro] = useState(true);
-  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley', data?: any} | null>(null);
+  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw', data?: any} | null>(null);
 
   // Overseas Subscription status
   const [isSubscribed, setIsSubscribed] = useState(() => {
@@ -58,12 +59,14 @@ export default function App() {
   const [completedChapters, setCompletedChapters] = useState<number[]>([]);
   const [targetFlight, setTargetFlight] = useState<{fromCityId: string, toCityId: string} | null>(null);
   const [pendingSelectionFrom, setPendingSelectionFrom] = useState<string | null>(null);
+  const [showMedalPrompt, setShowMedalPrompt] = useState(false);
+  const [hasGuidedToMedalDraw, setHasGuidedToMedalDraw] = useState(false);
   const [userStats, setUserStats] = useState({
-    completedCities: 3,
-    completedRoutes: 36,
-    totalDistance: 62.0,
-    totalTimeHours: 12.0,
-    lightValue: 120
+    completedCities: 1,
+    completedRoutes: 1,
+    totalDistance: 2.5,
+    totalTimeHours: 0.5,
+    lightValue: 40
   });
 
   const tabs = [
@@ -115,7 +118,12 @@ export default function App() {
           setTargetFlight(null);
         }} />;
       case 'events':
-        return <EventsTab onSelectMedley={() => setFullScreenPage({ type: 'weekendMedley' })} />;
+        return (
+          <EventsTab 
+            onSelectMedley={() => setFullScreenPage({ type: 'weekendMedley' })} 
+            onSelectMedalDraw={() => setFullScreenPage({ type: 'medalDraw' })}
+          />
+        );
       case 'cities':
         return <CitiesTab onCityClick={(city) => setFullScreenPage({ type: 'cityRoutes', data: city })} />;
       case 'profile':
@@ -254,6 +262,7 @@ export default function App() {
                    const realCityData = CITIES.find(c => c.id === previousCityData.id) || previousCityData;
                    const currentCompleted = realCityData.completedRouteIndices || [];
                    
+                   let isNewlyCompleted = false;
                    if (!currentCompleted.includes(routeIndex)) {
                      realCityData.completedRouteIndices = [...currentCompleted, routeIndex];
                      if (!realCityData.completedRouteTimestamps) {
@@ -264,6 +273,7 @@ export default function App() {
                      
                      // If this is a newly completed route, increment completedRoutes counter
                      setUserStats(prev => ({ ...prev, completedRoutes: prev.completedRoutes + 1 }));
+                     isNewlyCompleted = true;
                    }
                    
                    if (realCityData.completed === realCityData.routes && realCityData.status !== 'lit') {
@@ -295,6 +305,12 @@ export default function App() {
 
                    // Navigate back to cityRoutes with the updated data
                    setFullScreenPage({ type: 'cityRoutes', data: realCityData });
+
+                   // 如果未订阅会员，首次完成路线后开启大转盘抽奖引导弹窗
+                   if (isNewlyCompleted && !isSubscribed && !hasGuidedToMedalDraw) {
+                     setShowMedalPrompt(true);
+                     setHasGuidedToMedalDraw(true);
+                   }
                  }}
                />
             )}
@@ -334,6 +350,17 @@ export default function App() {
                  }}
                />
             )}
+            {fullScreenPage.type === 'medalDraw' && (
+              <MedalDrawView 
+                onBack={() => setFullScreenPage(null)}
+                onGoToRunning={() => {
+                  setFullScreenPage(null);
+                  setActiveTab('cities');
+                }}
+                userStats={userStats}
+                setUserStats={setUserStats}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -344,6 +371,67 @@ export default function App() {
         onClose={() => setIsSubscriptionModalOpen(false)}
         onSubscribeSuccess={handleSubscribeSuccess}
       />
+
+      {/* 首次完成路线且未订阅会员 引导提示弹窗 */}
+      <AnimatePresence>
+        {showMedalPrompt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75 z-[150] flex items-center justify-center p-6 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="w-full max-w-xs bg-[#fffcf2] rounded-3xl p-6 text-slate-800 shadow-2xl relative border border-orange-200"
+            >
+              {/* Top Banner Accent */}
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg border-4 border-[#fffcf2] text-3xl">
+                🎁
+              </div>
+
+              <div className="text-center mt-8">
+                <span className="text-[10px] bg-red-100 text-red-600 font-black px-2 py-0.5 rounded-full uppercase tracking-widest font-sans inline-block">
+                  星光奖励发放
+                </span>
+                <h3 className="text-base font-black text-slate-950 mt-2 leading-tight">
+                  恭喜完成首次路线！
+                </h3>
+                <p className="text-xs text-slate-650 mt-2 font-medium leading-relaxed">
+                  您获得了一条路线的专属励勋！已为您发放 <strong className="text-orange-600 font-extrabold text-sm">3 枚路线勋章</strong>！可在木卫六勋章大转盘中兑换 <strong className="text-orange-600 font-extrabold text-sm">3 次抽奖机会</strong>，100% 抽取现金红包！
+                </p>
+
+                {/* Subtitle explaining unsubscribed status perk */}
+                <div className="mt-4 p-3 bg-amber-50 rounded-2xl border border-amber-200/20 text-left">
+                  <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
+                    💡 <span className="font-bold">特权提示</span>：每次完成路线都可参与大转盘抽奖！
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setShowMedalPrompt(false);
+                    setFullScreenPage({ type: 'medalDraw' });
+                  }}
+                  className="w-full py-3 bg-gradient-to-r from-orange-400 to-red-500 hover:from-orange-500 hover:to-red-650 text-white font-black rounded-xl text-xs tracking-wider shadow-lg active:scale-98 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span>立即去抽奖 🧧</span>
+                </button>
+                <button
+                  onClick={() => setShowMedalPrompt(false)}
+                  className="w-full py-2.5 bg-slate-150 hover:bg-slate-200 text-slate-500 font-bold rounded-xl text-xs transition-colors"
+                >
+                  暂不抽取
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

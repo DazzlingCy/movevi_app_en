@@ -3,9 +3,10 @@ import { Gift, Globe2, ChevronRight, Sparkles, MessageSquare, Calendar } from 'l
 
 interface EventsTabProps {
   onSelectMedley?: () => void;
+  onSelectMedalDraw?: () => void;
 }
 
-export default function EventsTab({ onSelectMedley }: EventsTabProps) {
+export default function EventsTab({ onSelectMedley, onSelectMedalDraw }: EventsTabProps) {
   return (
     <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
       <div className="sticky top-0 z-20 bg-black/40 backdrop-blur-md pt-safeb flex items-center justify-center p-3.5 border-b border-white/10">
@@ -18,6 +19,7 @@ export default function EventsTab({ onSelectMedley }: EventsTabProps) {
           whileTap={{ scale: 0.98 }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          onClick={onSelectMedalDraw}
           className="relative w-full h-[170px] rounded-2xl overflow-hidden shadow-2xl cursor-pointer group border border-amber-500/30"
         >
           <img 
