@@ -8,10 +8,11 @@ interface RouteDetailViewProps {
   onBack: () => void;
   onStart: () => void;
   isSubscribed: boolean;
+  premiumAccessLabel?: string;
   onOpenSubscription: () => void;
 }
 
-export default function RouteDetailView({ cityId, routeIndex, image, onBack, onStart, isSubscribed, onOpenSubscription }: RouteDetailViewProps) {
+export default function RouteDetailView({ cityId, routeIndex, image, onBack, onStart, isSubscribed, premiumAccessLabel, onOpenSubscription }: RouteDetailViewProps) {
   const routeData = getRouteData(cityId, routeIndex);
 
   return (
@@ -36,7 +37,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
           {routeIndex > 1 ? (
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 ${isSubscribed ? 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300' : 'bg-amber-500/25 border border-amber-500/40 text-amber-300'}`}>
               <Crown size={12} className={isSubscribed ? 'text-emerald-300' : 'text-amber-300 fill-amber-300'} />
-              <span>{isSubscribed ? 'Premium Unlocked' : 'Premium Route'}</span>
+              <span>{isSubscribed ? (premiumAccessLabel || 'Premium Unlocked') : 'Premium Route'}</span>
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 bg-slate-500/25 border border-slate-500/40 text-slate-300">

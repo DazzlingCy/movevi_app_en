@@ -6,6 +6,10 @@
 
 This contains everything you need to run your app locally.
 
+## Product documentation
+
+- [国外 App 订阅付费完整流程](docs/overseas-app-subscription-flow.md)
+
 View your app in AI Studio: https://ai.studio/apps/54076504-9537-4b91-9299-30d4dd1d700f
 
 ## Run Locally

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, BarChart2, Globe2, Lock, Crown } from 'lucide-react';
+import { ChevronLeft, BarChart2, Globe2, Crown, Lock } from 'lucide-react';
 import { CityData } from '../data/cities';
 
 import { getRouteData } from '../data/cities';
@@ -11,10 +11,11 @@ interface CityRoutesViewProps {
   onRouteClick: (routeIndex: number) => void;
   onExploreNext?: (currentCityId: string) => void;
   isSubscribed: boolean;
+  premiumAccessLabel?: string;
   onOpenSubscription: () => void;
 }
 
-export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNext, isSubscribed, onOpenSubscription }: CityRoutesViewProps) {
+export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNext, isSubscribed, premiumAccessLabel, onOpenSubscription }: CityRoutesViewProps) {
   const [showLitModal, setShowLitModal] = useState(false);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isLightingUp, setIsLightingUp] = useState(false);
@@ -101,12 +102,15 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
       {/* Route List */}
       <div className="px-4 space-y-4">
         {Array.from({ length: Math.max(city.routes, 3) }).map((_, i) => {
-          // Adjust logic so earlier routes are completed/unlocked for demo purpose
           const routeId = i + 1;
-          const isCompleted = city.completedRouteIndices?.includes(routeId);
-          // Unlock the first one, or ones that are completed, or the one next to the last completed
-          const lastCompleted = (city.completedRouteIndices || []).reduce((max, cur) => Math.max(max, cur), 0);
-          const isUnlocked = routeId === 1 || isCompleted || routeId === lastCompleted + 1;
+          const isFreeRoute = routeId === 1;
+          const isPremiumRoute = routeId > 1;
+          const completedRouteIds = city.completedRouteIndices || [];
+          const isCompleted = completedRouteIds.includes(routeId);
+          const lastCompletedRouteId = completedRouteIds.reduce((max, current) => Math.max(max, current), 0);
+          const isSequentiallyUnlocked = isFreeRoute || isCompleted || routeId === lastCompletedRouteId + 1;
+          const shouldOpenSubscription = isPremiumRoute && !isSubscribed;
+          const canOpenRoute = isSequentiallyUnlocked && (isFreeRoute || isSubscribed);
 
           const routeData = getRouteData(city.id, routeId);
           const numSpots = routeData.spots.split('—').length || 3;
@@ -115,22 +119,34 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
           return (
             <div 
               key={i} 
-              onClick={() => isUnlocked && onRouteClick(routeId)}
-              className={`bg-white rounded-2xl p-4 flex gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] ${!isUnlocked ? 'opacity-70 grayscale-[20%]' : 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all'}`}
+              onClick={() => {
+                if (canOpenRoute) {
+                  onRouteClick(routeId);
+                  return;
+                }
+                if (shouldOpenSubscription) {
+                  onOpenSubscription();
+                }
+              }}
+              className={`bg-white rounded-2xl p-4 flex gap-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all ${
+                canOpenRoute || shouldOpenSubscription
+                  ? 'cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]'
+                  : 'opacity-70 grayscale-[20%]'
+              }`}
             >
               {/* Left Image Area */}
               <div className="w-[100px] h-[130px] bg-slate-100 rounded-xl overflow-hidden shrink-0 relative shadow-inner">
                 <img src={city.image} alt="Route" className="absolute inset-0 w-full h-full object-cover" />
-                {!isUnlocked ? (
-                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                    <div className="bg-gradient-to-b from-[#ffb48f] to-[#ff8c5a] p-2.5 rounded-full shadow-lg border-2 border-white/80">
-                      <Lock size={18} className="text-white" />
-                    </div>
-                  </div>
-                ) : (isUnlocked && routeId > 1 && !isSubscribed) ? (
-                  <div className="absolute inset-0 bg-black/15 flex items-center justify-center">
+                {isPremiumRoute && !isSubscribed ? (
+                  <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
                     <div className="bg-gradient-to-b from-amber-400 to-amber-500 p-2.5 rounded-full shadow-lg border-2 border-white/80">
                       <Crown size={16} className="text-slate-950 fill-slate-950" />
+                    </div>
+                  </div>
+                ) : !isSequentiallyUnlocked ? (
+                  <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                    <div className="bg-gradient-to-b from-slate-500 to-slate-700 p-2.5 rounded-full shadow-lg border-2 border-white/80">
+                      <Lock size={16} className="text-white" />
                     </div>
                   </div>
                 ) : null}
@@ -140,10 +156,31 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
               <div className="flex-1 overflow-hidden flex flex-col justify-between py-1">
                 <h3 className="text-[15px] font-bold text-slate-800 flex flex-wrap items-center gap-1.5 leading-snug">
                   <span>Route {routeId}: {routeData.title}</span>
-                  {routeId > 1 && (
-                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider ${isSubscribed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                      <Crown size={8} className={isSubscribed ? 'text-emerald-800' : 'text-amber-800 fill-amber-800'} />
-                      <span>{isSubscribed ? 'Member' : 'Premium'}</span>
+                  {isFreeRoute && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider bg-emerald-100 text-emerald-800">
+                      Free
+                    </span>
+                  )}
+                  {isPremiumRoute && (
+                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider ${
+                      !isSubscribed
+                        ? 'bg-amber-100 text-amber-800'
+                        : isSequentiallyUnlocked
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {isSubscribed && !isSequentiallyUnlocked ? (
+                        <Lock size={8} className="text-slate-500" />
+                      ) : (
+                        <Crown size={8} className={isSubscribed ? 'text-emerald-800' : 'text-amber-800 fill-amber-800'} />
+                      )}
+                      <span>
+                        {!isSubscribed
+                          ? 'Premium'
+                          : isSequentiallyUnlocked
+                            ? (premiumAccessLabel || 'Member')
+                            : 'Locked'}
+                      </span>
                     </span>
                   )}
                 </h3>

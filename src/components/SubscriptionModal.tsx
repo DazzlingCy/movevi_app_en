@@ -2,21 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Check, Crown, ShieldCheck, CreditCard, 
-  Sparkles, Lock, RefreshCcw, Landmark, 
-  CheckCircle, AlertCircle, Info, ChevronRight 
+  Sparkles, Lock, Landmark, 
+  CheckCircle, AlertCircle, ChevronRight 
 } from 'lucide-react';
+import { SubscriptionPlan, getPlanName, getPlanPrice } from '../lib/subscription';
 
 interface SubscriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubscribeSuccess: () => void;
+  onSubscribeSuccess: (paymentMethodLabel: string, plan: SubscriptionPlan, mode: CheckoutMode) => void;
 }
 
-type PaymentMethod = 'card' | 'applepay' | 'googlepay' | 'paypal';
+type PaymentMethod = 'card' | 'applepay';
+type CheckoutMode = 'trial' | 'paid';
 
 export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess }: SubscriptionModalProps) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [step, setStep] = useState<'benefits' | 'checkout' | 'processing' | 'success'>('benefits');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan>('premium_monthly');
+  const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>('trial');
   
   // Card forms
   const [cardNumber, setCardNumber] = useState('');
@@ -35,11 +39,11 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
   // Processing indicators
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingSteps = [
-    'Secure communication channel established...',
-    'Performing Stripe 3D Secure verification...',
-    'Authorizing $4.99 USD with international banking node...',
-    'Generating license keys and tokenizing profile...',
-    'Premium activation finalized!'
+    'Opening secure checkout...',
+    'Confirming payment method...',
+    `Authorizing ${getPlanPrice(selectedPlan)}...`,
+    `Creating your ${getPlanName(selectedPlan).toLowerCase()} membership...`,
+    'Premium access is ready.'
   ];
 
   // Auto-format card number
@@ -81,6 +85,15 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
     if (cleanNum.startsWith('3')) return 'Amex';
     if (cleanNum.startsWith('6')) return 'Discover';
     return 'Unknown';
+  };
+
+  const getPaymentMethodLabel = () => {
+    if (paymentMethod === 'applepay') return 'Apple Pay / Google Pay';
+
+    const cleanCard = cardNumber.replace(/\D/g, '');
+    const last4 = cleanCard.slice(-4) || '4242';
+    const brandName = getCardBrandName() === 'Unknown' ? 'Card' : getCardBrandName();
+    return `${brandName} ending in ${last4}`;
   };
 
   // Validate form and start payment
@@ -134,7 +147,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
       const timer4 = setTimeout(() => setLoadingStep(4), 3400);
       const timer5 = setTimeout(() => {
         setStep('success');
-        onSubscribeSuccess();
+        onSubscribeSuccess(getPaymentMethodLabel(), selectedPlan, checkoutMode);
       }, 4200);
 
       return () => {
@@ -156,6 +169,9 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
       setCvv('');
       setCardName('');
       setErrors({});
+      setPaymentMethod('card');
+      setSelectedPlan('premium_monthly');
+      setCheckoutMode('trial');
     }
   }, [isOpen]);
 
@@ -243,21 +259,53 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                   </div>
                 </div>
 
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-extrabold text-slate-200">Membership plan</h4>
+                    <span className="text-[10px] text-cyan-400 font-mono uppercase tracking-widest">One simple price</span>
+                  </div>
+                  <div className="text-left p-4 rounded-xl border border-amber-400 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.12)]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-100">{getPlanName(selectedPlan)}</span>
+                      <Check size={14} className="text-amber-400 stroke-[3]" />
+                    </div>
+                    <div className="mt-2 text-lg font-black text-slate-100">$4.99</div>
+                    <p className="text-[10px] text-slate-500 mt-1">Monthly Premium access</p>
+                  </div>
+                </div>
+
                 {/* Subscription Action footer */}
                 <div className="pt-2 text-center">
                   <div className="text-2xl font-black text-slate-100 flex items-center justify-center gap-2">
-                    <span>$4.99</span>
-                    <span className="text-sm font-normal text-slate-500">/ month</span>
+                    <span>{getPlanPrice(selectedPlan).split('/')[0]}</span>
+                    <span className="text-sm font-normal text-slate-500">/month</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1">Cross-platform integration. Cancel or manage subscriptions anytime.</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Renews monthly. Cancel anytime from Profile before your next billing date.</p>
                   
                   <button
-                    onClick={() => setStep('checkout')}
+                    onClick={() => {
+                      setCheckoutMode('paid');
+                      setStep('checkout');
+                    }}
                     className="w-full mt-4 py-4 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black rounded-xl tracking-wide shadow-[0_0_25px_rgba(245,158,11,0.25)] flex items-center justify-center gap-2 transition-all active:scale-98"
                   >
-                    <span>Upgrade to Premium</span>
+                    <span>Subscribe - $4.99/month</span>
                     <ChevronRight size={18} className="stroke-[3]" />
                   </button>
+                  <button
+                    onClick={() => {
+                      setCheckoutMode('paid');
+                      setStep('checkout');
+                    }}
+                    className="w-full mt-3 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                  >
+                    Subscribe now without trial
+                  </button>
+                  <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-slate-500 font-semibold">
+                    <button className="hover:text-cyan-300 transition-colors">Restore Purchases</button>
+                    <button className="hover:text-cyan-300 transition-colors">Terms</button>
+                    <button className="hover:text-cyan-300 transition-colors">Privacy</button>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -273,8 +321,10 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-lg font-bold text-slate-100">Overseas Checkout</h3>
-                  <p className="text-xs text-slate-400 mt-1">Select a globally compatible secure routing channel</p>
+                  <h3 className="text-lg font-bold text-slate-100">Secure checkout</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Enter your payment details for {getPlanName(selectedPlan)}. {checkoutMode === 'trial' ? `Your first charge is after the trial: ${getPlanPrice(selectedPlan)}.` : `You will be charged ${getPlanPrice(selectedPlan)} today.`}
+                  </p>
                 </div>
 
                 {/* Global Payment Methods Grid */}
@@ -285,6 +335,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                   >
                     <CreditCard size={16} />
                     <span>Credit Card</span>
+                    <span className="ml-auto text-[8px] uppercase tracking-widest text-amber-400">Default</span>
                   </button>
 
                   <button
@@ -376,7 +427,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                           type="password" 
                           value={cvv}
                           onChange={handleCvvChange}
-                          placeholder="•••"
+                          placeholder="123"
                           className="w-full bg-[#05070a] border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-slate-100 placeholder:text-slate-600 text-center tracking-widest focus:outline-none focus:border-cyan-400 transition-colors"
                         />
                         {errors.cvv && (
@@ -390,7 +441,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
 
                     <div className="flex items-center gap-2.5 pt-2 text-[11px] text-slate-400">
                       <Lock size={12} className="text-cyan-400" />
-                      <span>256-bit AES cryptographic transaction secured via Stripe Node</span>
+                      <span>Demo checkout modeled after Stripe. No real card will be charged.</span>
                     </div>
                   </div>
                 ) : (
@@ -399,18 +450,18 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                       <Sparkles size={24} className="text-cyan-400 animate-pulse" />
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                      One-tap mobile integration payments support instant activation with your default credit card details.
+                      One-tap wallets let you confirm the monthly subscription with your saved payment method.
                     </p>
                     <div className="text-xs font-bold text-cyan-400 bg-cyan-950/40 py-2.5 rounded-xl border border-cyan-500/10">
-                      Ready for Biometric ID / FaceID Verification
+                      Ready for wallet confirmation
                     </div>
                   </div>
                 )}
 
                 {/* Cost declaration */}
                 <div className="flex justify-between items-center px-4 py-3 bg-white/[0.02] border border-white/5 rounded-xl text-xs">
-                  <span className="text-slate-400 font-medium">Subtotal Due (Monthly Billing):</span>
-                  <span className="text-slate-100 font-bold">$4.99 USD</span>
+                  <span className="text-slate-400 font-medium">{checkoutMode === 'trial' ? 'Due today, then after trial:' : 'Due today:'}</span>
+                  <span className="text-slate-100 font-bold">{checkoutMode === 'trial' ? `$0.00, then ${getPlanPrice(selectedPlan)}` : getPlanPrice(selectedPlan)}</span>
                 </div>
 
                 {/* Back / Pay Actions */}
@@ -425,7 +476,13 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                     onClick={handleStartCheckout}
                     className="flex-[2] py-3.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 text-xs font-black rounded-xl tracking-wider shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                   >
-                    Authorize Settlement ($4.99)
+                    {paymentMethod === 'card'
+                      ? checkoutMode === 'trial'
+                        ? 'Start trial with card'
+                        : `Subscribe with card - ${getPlanPrice(selectedPlan)}`
+                      : checkoutMode === 'trial'
+                        ? 'Confirm wallet trial'
+                        : `Confirm wallet - ${getPlanPrice(selectedPlan)}`}
                   </button>
                 </div>
               </motion.div>
@@ -450,8 +507,8 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold text-slate-200">Processing Your Order</h3>
-                  <p className="text-xs text-slate-500">Connecting securely with global authorization endpoints...</p>
+                  <h3 className="text-lg font-bold text-slate-200">Starting your subscription</h3>
+                  <p className="text-xs text-slate-500">Confirming payment and activating Premium access...</p>
                 </div>
 
                 {/* Realtime logs */}
@@ -500,15 +557,20 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                 </motion.div>
 
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-black text-slate-100 tracking-wide">License Activated!</h3>
-                  <p className="text-xs text-emerald-400 font-medium font-mono">MOVEVI MEMBER ID: EXPLORER-#8429</p>
+                  <h3 className="text-2xl font-black text-slate-100 tracking-wide">
+                    {checkoutMode === 'trial' ? 'Premium trial started' : 'Premium is active'}
+                  </h3>
+                  <p className="text-xs text-emerald-400 font-medium font-mono">
+                    {checkoutMode === 'trial' ? `7 days free, then ${getPlanPrice(selectedPlan)}` : `Renews at ${getPlanPrice(selectedPlan)}`}
+                  </p>
                 </div>
 
                 <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 text-xs text-slate-400 leading-relaxed text-left space-y-2 w-full">
-                  <p className="font-semibold text-slate-200">Premium Benefits Activated:</p>
+                  <p className="font-semibold text-slate-200">Your membership is ready:</p>
                   <ul className="space-y-1.5 list-disc pl-4">
-                    <li>All 36+ courses lit memory coordinates unlocked globally.</li>
-                    <li>Full access granted to subsequent urban trails in every city.</li>
+                    <li>All premium city routes are unlocked.</li>
+                    <li>You can manage, cancel, or restart membership from Profile.</li>
+                    <li>Canceling stops renewal while keeping access until the current period ends.</li>
                   </ul>
                 </div>
 

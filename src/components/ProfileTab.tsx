@@ -1,5 +1,28 @@
-import { Settings, ChevronRight, Mail, SquarePen, Medal, Map as MapIcon, MonitorSmartphone, Wallet, HeadphonesIcon, FileText, BookOpen, ClipboardList, Crown } from 'lucide-react';
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import {
+  Settings,
+  ChevronRight,
+  Mail,
+  SquarePen,
+  Medal,
+  Map as MapIcon,
+  MonitorSmartphone,
+  Wallet,
+  HeadphonesIcon,
+  FileText,
+  BookOpen,
+  ClipboardList,
+  Crown,
+  RefreshCcw,
+  X,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import {
+  SubscriptionState,
+  formatBillingDate,
+  getPlanName,
+  getPlanPrice,
+} from '../lib/subscription';
 
 interface UserStats {
   completedCities: number;
@@ -11,11 +34,28 @@ interface UserStats {
 interface ProfileTabProps {
   userStats: UserStats;
   isSubscribed: boolean;
+  subscription: SubscriptionState;
   onOpenSubscription: () => void;
   onCancelSubscription: () => void;
+  onResumeSubscription: () => void;
+  onUpdatePaymentMethod: () => void;
 }
 
-export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription, onCancelSubscription }: ProfileTabProps) {
+export default function ProfileTab({
+  userStats,
+  isSubscribed,
+  subscription,
+  onOpenSubscription,
+  onCancelSubscription,
+  onResumeSubscription,
+  onUpdatePaymentMethod,
+}: ProfileTabProps) {
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const isCancellationPending = isSubscribed && subscription.status === 'canceled_at_period_end';
+  const hasBillingIssue = subscription.status === 'grace_period' || subscription.status === 'billing_retry';
+  const billingDate = formatBillingDate(subscription.currentPeriodEnd);
+
   const stats = [
     { label: 'Cities Completed', value: userStats.completedCities.toString() },
     { label: 'Routes Completed', value: userStats.completedRoutes.toString() },
@@ -33,8 +73,14 @@ export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription
     { icon: Settings, label: 'Settings' },
   ];
 
+  const confirmCancelSubscription = () => {
+    onCancelSubscription();
+    setShowCancelConfirm(false);
+    setShowManageModal(false);
+  };
+
   return (
-    <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar">
+    <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
       {/* Header Profile Info */}
       <div className="relative pt-12 pb-16 px-6 bg-gradient-to-b from-cyan-900/20 via-cyan-900/5 to-transparent">
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none blur-3xl" />
@@ -90,30 +136,61 @@ export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription
       <div className="px-5 space-y-6 -mt-8 relative z-20">
         {/* Premium Banner Section */}
         {isSubscribed ? (
-          <div className="bg-gradient-to-r from-emerald-950/40 to-emerald-900/30 border border-emerald-500/20 rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg">
+          <div className={`bg-gradient-to-r ${
+            hasBillingIssue
+              ? 'from-red-950/35 to-amber-950/20 border-red-500/25'
+              : isCancellationPending
+                ? 'from-amber-950/40 to-amber-900/20 border-amber-500/25'
+                : 'from-emerald-950/40 to-emerald-900/30 border-emerald-500/20'
+          } border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg`}>
             <div className="absolute right-[-10px] top-[-10px] opacity-10 pointer-events-none">
-              <Crown size={110} className="text-emerald-400 rotate-12" />
+              <Crown size={110} className={`${hasBillingIssue ? 'text-red-400' : isCancellationPending ? 'text-amber-400' : 'text-emerald-400'} rotate-12`} />
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <Crown size={20} className="fill-emerald-450 text-emerald-400" />
+              <div className={`w-10 h-10 rounded-2xl ${hasBillingIssue ? 'bg-red-500/10 border-red-500/30 text-red-400' : isCancellationPending ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'} border flex items-center justify-center`}>
+                <Crown size={20} className={hasBillingIssue ? 'fill-red-400 text-red-400' : isCancellationPending ? 'fill-amber-400 text-amber-400' : 'fill-emerald-400 text-emerald-400'} />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-400 font-extrabold">Active Status</span>
-                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">Premium Road Explorer</h3>
+                <span className={`text-[10px] uppercase font-mono tracking-widest font-extrabold ${hasBillingIssue ? 'text-red-300' : isCancellationPending ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {hasBillingIssue ? 'Payment issue' : isCancellationPending ? 'Ending soon' : 'Active'}
+                </span>
+                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">{getPlanName(subscription.plan)}</h3>
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              Premium subscription active. Feel free to run subsequent city routes!
+              {hasBillingIssue
+                ? 'Update your payment method to keep Premium active.'
+                : isCancellationPending
+                  ? `Premium stays available until ${billingDate}.`
+                  : 'All premium routes are unlocked.'}
             </p>
             <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/5">
-              <span className="text-[10px] text-emerald-500 font-bold font-mono">Auto-renews: July 4, 10:26 AM</span>
-              <button 
-                onClick={onCancelSubscription}
-                className="text-slate-500 hover:text-red-400 text-xs font-semibold transition-colors bg-white/5 hover:bg-red-500/10 px-3 py-1.5 rounded-xl border border-white/5 hover:border-red-500/10"
-              >
-                Cancel Member
-              </button>
+              <span className={`text-[10px] font-bold font-mono ${hasBillingIssue ? 'text-red-300' : isCancellationPending ? 'text-amber-400' : 'text-emerald-500'}`}>
+                {hasBillingIssue ? 'Action needed' : isCancellationPending ? 'Access remains active' : 'Premium enabled'}
+              </span>
+              {isCancellationPending ? (
+                <button 
+                  onClick={onResumeSubscription}
+                  className="text-emerald-300 hover:text-emerald-200 text-xs font-semibold transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5"
+                >
+                  <RefreshCcw size={12} />
+                  Restart membership
+                </button>
+              ) : hasBillingIssue ? (
+                <button
+                  onClick={onUpdatePaymentMethod}
+                  className="text-red-200 hover:text-white text-xs font-semibold transition-colors bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 rounded-xl border border-red-500/20"
+                >
+                  Update payment
+                </button>
+              ) : (
+                <button 
+                  onClick={onOpenSubscription}
+                  className="text-slate-300 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/5"
+                >
+                  Membership
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -126,12 +203,12 @@ export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription
                 <Crown size={20} className="fill-amber-400 text-amber-400 animate-pulse" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Premium Unlocked</span>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Free plan</span>
                 <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">Unlock All 36+ Scenic Routes</h3>
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              The first route of each city is free. Upgrade for <strong className="text-amber-400 font-extrabold font-mono">$4.99/mo</strong> to unlock subsequent routes and get double track light outputs.
+              Subscribe to unlock every premium route.
             </p>
             <div className="mt-4 pt-2">
               <button 
@@ -139,7 +216,7 @@ export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription
                 className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs rounded-xl tracking-wide shadow-[0_4px_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1.5 transition-all"
               >
                 <Crown size={14} className="fill-slate-950" />
-                <span>Subscribe to Premium — $4.99/mo</span>
+                <span>View Premium</span>
               </button>
             </div>
           </div>
@@ -196,6 +273,182 @@ export default function ProfileTab({ userStats, isSubscribed, onOpenSubscription
           })}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showManageModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[220] max-w-md mx-auto bg-black/75 backdrop-blur-sm flex items-end sm:rounded-[40px] sm:overflow-hidden"
+          >
+            <motion.div
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
+              className="w-full bg-[#090D14] border-t border-white/10 rounded-t-[28px] p-6 shadow-2xl max-h-[88vh] overflow-y-auto hide-scrollbar"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-cyan-400 font-black font-mono">Membership & Billing</span>
+                  <h3 className="text-lg font-black text-slate-100 mt-1">Manage MOVEVI Premium</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setShowManageModal(false);
+                  }}
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10"
+                >
+                  <X size={16} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-4 text-xs text-slate-300">
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Current plan</span>
+                      <h4 className="text-base font-black text-slate-100 mt-1">{getPlanName(subscription.plan)}</h4>
+                      <p className="text-slate-400 mt-1">{getPlanPrice(subscription.plan)} · All premium city routes</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                      isCancellationPending
+                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                        : hasBillingIssue
+                          ? 'bg-red-500/10 text-red-300 border border-red-500/20'
+                          : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                    }`}>
+                      {isCancellationPending ? 'Ending' : hasBillingIssue ? 'Payment issue' : 'Active'}
+                    </span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="bg-black/20 border border-white/5 rounded-xl p-3">
+                      <span className="block text-slate-500">Billing date</span>
+                      <strong className="block text-slate-100 mt-1">{billingDate}</strong>
+                    </div>
+                    <div className="bg-black/20 border border-white/5 rounded-xl p-3">
+                      <span className="block text-slate-500">Managed by</span>
+                      <strong className="block text-slate-100 mt-1">
+                        {subscription.provider === 'mock_netflix' ? 'MOVEVI Account' : subscription.provider}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Payment method</span>
+                      <p className="text-slate-100 font-bold mt-1">{subscription.paymentMethodLabel || 'Card on file'}</p>
+                    </div>
+                    <button
+                      onClick={onUpdatePaymentMethod}
+                      className="px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-300 text-[11px] font-black transition-colors"
+                    >
+                      Update
+                    </button>
+                  </div>
+                  {hasBillingIssue && (
+                    <p className="mt-3 text-red-300 leading-relaxed">
+                      {subscription.billingIssueMessage || 'We could not renew your membership. Update payment to keep Premium active.'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Billing history</span>
+                    <span className="text-slate-500">Latest</span>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {(subscription.billingHistory.length > 0
+                      ? subscription.billingHistory.slice(0, 3)
+                      : [{ id: 'upcoming', date: subscription.currentPeriodEnd || new Date().toISOString(), description: getPlanName(subscription.plan), amount: getPlanPrice(subscription.plan), status: 'upcoming' as const }]
+                    ).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-3 border-t border-white/5 pt-2 first:border-t-0 first:pt-0">
+                        <div>
+                          <p className="text-slate-200 font-semibold">{item.description}</p>
+                          <p className="text-slate-500 text-[10px]">{formatBillingDate(item.date)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-slate-100 font-bold">{item.amount}</p>
+                          <p className={`text-[10px] uppercase font-black ${
+                            item.status === 'failed'
+                              ? 'text-red-300'
+                              : item.status === 'upcoming'
+                                ? 'text-cyan-300'
+                                : item.status === 'refunded'
+                                  ? 'text-amber-300'
+                                  : 'text-emerald-300'
+                          }`}>
+                            {item.status}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
+                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Cancellation policy</span>
+                  <p className="mt-2 leading-relaxed text-slate-400">
+                    Like Netflix-style membership management, canceling stops your next renewal but Premium remains available until {billingDate}. There is no prorated refund in this demo.
+                  </p>
+                </div>
+              </div>
+
+              {showCancelConfirm && (
+                <div className="mt-5 bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
+                  <h4 className="text-sm font-black text-red-100">Cancel membership?</h4>
+                  <p className="text-xs text-red-200/80 mt-2 leading-relaxed">
+                    Your Premium routes stay unlocked until {billingDate}. After that, your account returns to the free plan unless you restart membership.
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => setShowCancelConfirm(false)}
+                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                    >
+                      Keep Premium
+                    </button>
+                    <button
+                      onClick={confirmCancelSubscription}
+                      className="flex-1 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-100 text-xs font-black rounded-xl transition-all"
+                    >
+                      Confirm cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setShowManageModal(false);
+                  }}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                >
+                  Done
+                </button>
+                <button
+                  onClick={onUpdatePaymentMethod}
+                  className="flex-1 py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-300 text-xs font-bold rounded-xl transition-all"
+                >
+                  Update payment
+                </button>
+                <button
+                  onClick={() => setShowCancelConfirm(true)}
+                  disabled={isCancellationPending}
+                  className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 disabled:bg-white/5 disabled:text-slate-600 border border-red-500/20 disabled:border-white/5 text-red-300 text-xs font-bold rounded-xl transition-all"
+                >
+                  {isCancellationPending ? 'Canceled' : 'Cancel'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
