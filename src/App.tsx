@@ -428,28 +428,28 @@ export default function App() {
 
               <div className="mt-10 text-center">
                 <span className="inline-flex rounded-full bg-red-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-red-500 ring-1 ring-red-100">
-                  奖励已到账
+                  Reward added
                 </span>
                 <h3 className="mt-3 text-[22px] font-black leading-tight tracking-tight text-slate-950">
-                  路线完成！
+                  Route complete!
                 </h3>
 
                 <div className="mt-5 flex items-center justify-center rounded-2xl border border-orange-100 bg-white/65 px-4 py-3 shadow-[0_8px_22px_rgba(251,146,60,0.08)]">
                   <div className="flex-1">
                     <strong className="block text-2xl font-black leading-none text-orange-600">3</strong>
-                    <span className="mt-1 block text-[11px] font-bold text-slate-600">路线勋章</span>
+                    <span className="mt-1 block text-[11px] font-bold text-slate-600">Route medals</span>
                   </div>
                   <div className="mx-4 h-9 w-px bg-orange-100" />
                   <div className="flex-1">
                     <strong className="block text-2xl font-black leading-none text-orange-600">3</strong>
-                    <span className="mt-1 block text-[11px] font-bold text-slate-600">抽奖机会</span>
+                    <span className="mt-1 block text-[11px] font-bold text-slate-600">Draw chances</span>
                   </div>
                 </div>
 
                 {/* Subtitle explaining unsubscribed status perk */}
                 <div className="mt-5 rounded-2xl border border-amber-200/60 bg-amber-50/70 px-4 py-3">
                   <p className="text-center text-[11px] font-semibold leading-relaxed text-amber-800">
-                    完成更多路线，可获得更多抽奖机会。
+                    Complete more routes to earn more draw chances.
                   </p>
                 </div>
               </div>
@@ -462,13 +462,13 @@ export default function App() {
                   }}
                   className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 py-4 text-sm font-black tracking-wide text-white shadow-[0_16px_34px_rgba(249,115,22,0.28)] transition-all hover:brightness-105 active:scale-[0.98]"
                 >
-                  <span>去抽奖</span>
+                  <span>Go to draw</span>
                 </button>
                 <button
                   onClick={() => setShowMedalPrompt(false)}
                   className="w-full rounded-xl py-2.5 text-sm font-bold text-slate-500 transition-colors hover:bg-slate-900/5 hover:text-slate-700"
                 >
-                  稍后
+                  Later
                 </button>
               </div>
             </motion.div>

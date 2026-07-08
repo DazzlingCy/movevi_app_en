@@ -49,25 +49,25 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
     const remainingMedals = totalMedals - redeemedMedals;
 
     if (remainingMedals <= 0) {
-      showToast('❌ 暂无可兑换的勋章，先去跑步通关获得勋章吧！');
+      showToast('❌ No medals available. Finish a route to earn medals first.');
       return;
     }
 
     setRedeemedMedals(prev => prev + 1);
     setAvailableChances(prev => prev + 1);
-    showToast('🎉 成功消耗1枚路线勋章，兑换1次抽奖机会！');
+    showToast('🎉 1 route medal redeemed for 1 draw chance.');
   };
 
 
 
   const handleDraw = () => {
     if (availableChances <= 0) {
-      showToast('💡 您当前没有抽奖机会哦，请先在步骤二中兑换抽奖机会！');
+      showToast('💡 No draw chances yet. Redeem medals in Step 2 first.');
       return;
     }
 
     if (remainingPool <= 0) {
-      showToast('⚠️ 本期奖池已抽空了哦！点击下方【切换模拟状态】即可体验抽奖！');
+      showToast('⚠️ This prize pool is empty. Try again in the next issue.');
       return;
     }
 
@@ -77,18 +77,18 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
 
     // Mock draw probability corresponding to categories
     const r = Math.random();
-    let result = { tier: '六等奖', amount: '$0.88', icon: '🧧' };
+    let result = { tier: 'Sixth Prize', amount: '$0.88', icon: '🧧' };
     
     if (r < 0.05) {
-      result = { tier: '一等奖', amount: '$38.80', icon: '🏆' };
+      result = { tier: 'First Prize', amount: '$38.80', icon: '🏆' };
     } else if (r < 0.15) {
-      result = { tier: '二等奖', amount: '$18.80', icon: '🥈' };
+      result = { tier: 'Second Prize', amount: '$18.80', icon: '🥈' };
     } else if (r < 0.30) {
-      result = { tier: '三等奖', amount: '$8.88', icon: '🥉' };
+      result = { tier: 'Third Prize', amount: '$8.88', icon: '🥉' };
     } else if (r < 0.50) {
-      result = { tier: '四等奖', amount: '$3.88', icon: '🧧' };
+      result = { tier: 'Fourth Prize', amount: '$3.88', icon: '🧧' };
     } else if (r < 0.75) {
-      result = { tier: '五等奖', amount: '$1.88', icon: '🧧' };
+      result = { tier: 'Fifth Prize', amount: '$1.88', icon: '🧧' };
     }
 
     setTimeout(() => {
@@ -142,7 +142,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
         >
           <ChevronLeft size={26} className="stroke-[2.5]" />
         </button>
-        <h1 className="text-lg font-bold text-slate-900 tracking-wide text-center flex-1 pr-9">勋章抽奖</h1>
+        <h1 className="text-lg font-bold text-slate-900 tracking-wide text-center flex-1 pr-9">Medal Draw</h1>
       </div>
 
       {/* Main Column Scrollable Area */}
@@ -159,16 +159,16 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             
             {/* STARS OF LIGHT Heading Banner */}
             <span className="text-[11px] font-black uppercase tracking-[0.3em] text-[#ffeada] opacity-90">
-              轻 盈 之 星
+              LIGHT STAR
             </span>
             <h2 className="text-xl font-black text-white italic tracking-wider mt-0.5" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
               - STARS <span className="text-amber-200">OF</span> LIGHT -
             </h2>
 
-            {/* Graphic Calligraphy Box "跑遍全世界" */}
+            {/* Graphic campaign title */}
             <div className="relative mt-3 mb-2 px-10 py-2 bg-gradient-to-r from-transparent via-white/10 to-transparent">
               <span className="text-3xl font-extrabold text-white tracking-widest drop-shadow-[0_3px_5px_rgba(154,23,2,0.6)] font-serif block italic">
-                跑遍全世界
+                RUN THE WORLD
               </span>
             </div>
 
@@ -188,17 +188,17 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             </div>
           </div>
 
-          {/* Golden Badge Row: 第一期轻盈之星 & 活动规则 */}
+          {/* Golden badge row and rules entry */}
           <div className="mx-4 mt-2 bg-gradient-to-r from-[#fda262] to-[#fd924a] border border-white/20 rounded-2xl flex items-center justify-between px-4 py-2.5 text-white shadow-md">
             <div className="flex items-center gap-1.5 font-bold">
               <span className="w-1.5 h-3.5 bg-white rounded-full" />
-              <span className="text-xs text-[#ffeae0]">第一期轻盈之星</span>
+              <span className="text-xs text-[#ffeae0]">Issue 1 Light Star</span>
             </div>
             <button 
               onClick={() => setShowRuleModal(true)}
               className="text-xs text-[#fff3eb] hover:text-white flex items-center gap-0.5 font-semibold bg-white/10 px-2.5 py-1 rounded-full transition-colors"
             >
-              <span>活动规则</span>
+              <span>Rules</span>
               <ChevronRight size={12} />
             </button>
           </div>
@@ -207,21 +207,21 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
         {/* 2. Text Details Section */}
         <div className="mx-4 bg-white/10 border border-white/15 rounded-3xl p-5 text-white backdrop-blur-md mb-4 -mt-1 shadow-lg relative z-10">
           <h3 className="text-lg font-extrabold flex items-center gap-2">
-            <span>跑遍全世界</span>
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">第一期</span>
+            <span>Run the World</span>
+            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">Issue 1</span>
           </h3>
           <p className="text-xs text-[#ffe1cc] mt-1.5 flex items-center gap-1">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-300 animate-pulse"></span>
-            <span>3225人已加入并累计里程</span>
+            <span>3,225 runners joined and logged miles</span>
           </p>
           <div className="mt-4 pt-3.5 border-t border-white/10 space-y-1.5 text-xs text-[#ffdccc]">
             <p className="flex items-start">
-              <span className="font-bold text-white shrink-0 mr-1">本期时间：</span>
-              <span>2026/6/8-2026/7/8（抽完截止）</span>
+              <span className="font-bold text-white shrink-0 mr-1">This issue:</span>
+              <span>Jun 8-Jul 8, 2026 or until the pool ends</span>
             </p>
             <p className="flex items-start">
-              <span className="font-bold text-white shrink-0 mr-1">下期时间：</span>
-              <span>本期结束后，1-3工作日后即开始下期</span>
+              <span className="font-bold text-white shrink-0 mr-1">Next issue:</span>
+              <span>Starts 1-3 business days after this issue</span>
             </p>
           </div>
         </div>
@@ -235,20 +235,20 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
           <div className="bg-[#fffcf6] border border-orange-200/40 rounded-3xl p-4.5 flex items-center justify-between shadow-md">
             <div className="flex-1 pr-3">
               <div className="inline-flex py-0.5 px-2 bg-gradient-to-r from-[#ffa44a] to-[#ff8c20] text-white text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">
-                步骤一
+                Step 1
               </div>
               <h4 className="text-[13px] font-bold text-slate-800 mt-2 leading-relaxed">
-                跑完一条路线，并获得勋章
+                Finish a route and earn medals
               </h4>
               <p className="text-[11px] text-[#aa6c45] mt-1">
-                已累积路线勋章: <strong className="text-[#f97316] text-sm font-black font-mono">{userStats.completedRoutes * 3}</strong> 枚
+                Route medals earned: <strong className="text-[#f97316] text-sm font-black font-mono">{userStats.completedRoutes * 3}</strong>
               </p>
             </div>
             <button 
               onClick={onGoToRunning}
               className="bg-[#2fced6] hover:bg-[#20b6be] active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-[0_3px_12px_rgba(47,206,214,0.3)] transition-all shrink-0"
             >
-              去跑步
+              Run
             </button>
           </div>
 
@@ -256,21 +256,21 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
           <div className="bg-[#fffcf6] border border-orange-200/40 rounded-3xl p-4.5 flex items-center justify-between shadow-md">
             <div className="flex-1 pr-3">
               <div className="inline-flex py-0.5 px-2 bg-gradient-to-r from-[#ffa44a] to-[#ff8c20] text-white text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">
-                步骤二
+                Step 2
               </div>
               <h4 className="text-[13px] font-bold text-slate-800 mt-2 leading-relaxed">
-                每个勋章兑换1次抽奖机会
+                Redeem 1 draw chance per medal
               </h4>
               <div className="text-[11px] text-[#aa6c45] mt-1 space-y-0.5">
-                <p>待兑换勋章: <strong className="text-orange-500 font-bold font-mono">{availableMedalCount}</strong> 枚</p>
-                <p>可用抽奖次数: <strong className="text-amber-500 font-bold font-mono">{availableChances}</strong> 次</p>
+                <p>Medals to redeem: <strong className="text-orange-500 font-bold font-mono">{availableMedalCount}</strong></p>
+                <p>Draw chances: <strong className="text-amber-500 font-bold font-mono">{availableChances}</strong></p>
               </div>
             </div>
             <button 
               onClick={handleRedeemChance}
               className="bg-[#ff8f29] hover:bg-[#e87a1c] active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-[0_3px_12px_rgba(255,143,41,0.3)] transition-all shrink-0"
             >
-              兑换抽奖
+              Redeem
             </button>
           </div>
 
@@ -279,10 +279,10 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-3">
                 <div className="inline-flex py-0.5 px-2 bg-gradient-to-r from-[#ffa44a] to-[#ff8c20] text-white text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">
-                  步骤三
+                  Step 3
                 </div>
                 <h4 className="text-[13px] font-bold text-slate-800 mt-2 leading-relaxed">
-                  大转盘抽取现金奖励
+                  Draw cash rewards
                 </h4>
               </div>
               
@@ -291,14 +291,14 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
                   onClick={() => setShowWheelView(true)}
                   className="bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-lg transition-all shrink-0"
                 >
-                  进行抽奖 ({availableChances})
+                  Draw ({availableChances})
                 </button>
               ) : (
                 <button 
                   onClick={() => setShowWheelView(true)}
                   className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-lg transition-all shrink-0"
                 >
-                  进行抽奖 ({availableChances})
+                  Draw ({availableChances})
                 </button>
               )}
             </div>
@@ -307,13 +307,13 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             <div className="mt-2.5 pt-2 border-t border-orange-100/60 flex items-center justify-between">
               {isPoolEmpty ? (
                 <>
-                  <span className="text-[10px] text-[#f44336] font-bold font-sans">本期奖池已抽空</span>
-                  <span className="text-[10px] text-[#ff8f29] font-bold font-sans">下期开始：6月10日 20:00</span>
+                  <span className="text-[10px] text-[#f44336] font-bold font-sans">Prize pool empty</span>
+                  <span className="text-[10px] text-[#ff8f29] font-bold font-sans">Next: Jun 10, 20:00</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[10px] text-teal-600 font-bold font-sans">🎉 本期正在火热进行中！</span>
-                  <span className="text-[10px] text-orange-600 font-bold font-sans">剩余奖池：${remainingPool.toFixed(2)}</span>
+                  <span className="text-[10px] text-teal-600 font-bold font-sans">🎉 Live now</span>
+                  <span className="text-[10px] text-orange-600 font-bold font-sans">Pool left: ${remainingPool.toFixed(2)}</span>
                 </>
               )}
             </div>
@@ -323,76 +323,76 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
           <div className="bg-[#fffcf6] border border-orange-200/40 rounded-3xl p-4.5 flex items-center justify-between shadow-md">
             <div className="flex-1 pr-3">
               <div className="inline-flex py-0.5 px-2 bg-gradient-to-r from-[#ffa44a] to-[#ff8c20] text-white text-[10px] font-black rounded-lg uppercase tracking-wider shadow-sm">
-                步骤四
+                Step 4
               </div>
               <h4 className="text-[13px] font-bold text-slate-800 mt-2 leading-relaxed">
-                去木卫六小程序提现
+                Withdraw in MOVEVI
               </h4>
-              <p className="text-[11px] text-[#aa6c45] mt-1">方便快捷，极速到账现金</p>
+              <p className="text-[11px] text-[#aa6c45] mt-1">Fast cash payout</p>
             </div>
             <button 
-              onClick={() => showToast('🏦 感谢测试！模拟提现成功，实际提现将通过木卫六小程序发放 🧧')}
+              onClick={() => showToast('🏦 Test withdrawal complete. Real payouts are issued through MOVEVI.')}
               className="bg-[#2ecc71] hover:bg-[#27ae60] active:scale-95 text-white font-extrabold text-xs px-4 py-2.5 rounded-2xl shadow-[0_3px_12px_rgba(46,204,113,0.3)] transition-all shrink-0"
             >
-              去提现
+              Withdraw
             </button>
           </div>
 
         </div>
 
-        {/* 4. Details Blocks: 第一期活动, 奖池, 奖励 lists */}
+        {/* 4. Detail blocks: event, prize pool, and reward list */}
         <div className="mt-6 mx-4 space-y-4">
           
-          {/* 第一期活动 */}
+          {/* Issue 1 event */}
           <div className="bg-[#fffbf6] rounded-3xl p-5 shadow-sm border border-orange-100/50">
             <div className="flex items-center justify-between pb-3.5 border-b border-orange-100">
               <div className="flex items-center gap-1.5">
                 <span className="p-1 rounded-lg bg-orange-100 text-orange-600">
                   <Trophy size={14} className="stroke-[2.5]" />
                 </span>
-                <span className="text-sm font-black text-slate-850">第一期活动</span>
+                <span className="text-sm font-black text-slate-850">Issue 1 Event</span>
               </div>
             </div>
             <div className="mt-3 text-[12px] text-slate-650 space-y-2 leading-relaxed font-medium">
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-orange-100 text-[#d85c18] flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">1</span>
-                <span>完成跑遍全世界路线获得勋章；</span>
+                <span>Complete Run the World routes to earn medals.</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="w-5 h-5 rounded-full bg-orange-100 text-[#d85c18] flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">2</span>
-                <span>勋章兑换抽奖机会。</span>
+                <span>Redeem medals for draw chances.</span>
               </div>
             </div>
           </div>
 
-          {/* 第一期奖池 */}
+          {/* Issue 1 prize pool */}
           <div className="bg-[#fffbf6] rounded-3xl p-5 shadow-sm border border-orange-100/50">
             <div className="flex items-center justify-between pb-3 border-b border-orange-100">
               <div className="flex items-center gap-1.5">
                 <span className="p-1 rounded-lg bg-orange-100 text-orange-600">
                   <Gift size={14} />
                 </span>
-                <span className="text-sm font-black text-slate-850">第一期奖池</span>
+                <span className="text-sm font-black text-slate-850">Issue 1 Prize Pool</span>
               </div>
               <button 
                 onClick={() => {
                   if (drawnPrizes.length === 0) {
-                    showToast('📜 暂无往期中奖历史！可在 Sandbox 下开启抽奖进行测试体验。');
+                    showToast('📜 No reward history yet. Start a draw to test the flow.');
                   } else {
-                    showToast(`🏆 您的测试内抽中历史: ${drawnPrizes.map(p => `${p.prizeName}(${p.amount})`).join(', ')}`);
+                    showToast(`🏆 Test reward history: ${drawnPrizes.map(p => `${p.prizeName}(${p.amount})`).join(', ')}`);
                   }
                 }}
                 className="text-xs text-orange-500 font-bold hover:text-orange-600 flex items-center gap-0.5 bg-orange-50 px-2 py-1 rounded-full"
               >
-                <span>往期奖励公示</span>
+                <span>Past rewards</span>
                 <ChevronRight size={12} />
               </button>
             </div>
             
             <div className="mt-4">
               <div className="flex justify-between items-center text-xs text-slate-500 font-bold mb-1.5">
-                <span>剩：${remainingPool.toFixed(2)}</span>
-                <span>总：$100.00</span>
+                <span>Left: ${remainingPool.toFixed(2)}</span>
+                <span>Total: $100.00</span>
               </div>
               <div className="w-full h-3 bg-[#f2e6db] rounded-full overflow-hidden">
                 <motion.div 
@@ -405,20 +405,20 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             </div>
           </div>
 
-          {/* 第一期奖励列表 100% 还原布局 */}
+          {/* Issue 1 rewards */}
           <div className="bg-[#fffbf6] rounded-3xl p-5 shadow-sm border border-orange-100/50">
             <div className="flex items-center justify-between pb-3.5 border-b border-orange-100">
               <div className="flex items-center gap-1.5">
                 <span className="p-1 rounded-lg bg-orange-100 text-orange-600">
                   <Coins size={14} />
                 </span>
-                <span className="text-sm font-black text-slate-850">第一期奖励</span>
+                <span className="text-sm font-black text-slate-850">Issue 1 Rewards</span>
               </div>
               <button 
-                onClick={() => showToast('🎯 精准中奖概率：一等奖(1%)、二等奖(2%)、三等奖(4%)、四等奖(13%)、五等奖(35%)、六等奖(45%) 🎉')}
+                onClick={() => showToast('🎯 Odds: First Prize 1%, Second 2%, Third 4%, Fourth 13%, Fifth 35%, Sixth 45%.')}
                 className="text-xs text-orange-500 font-bold hover:text-orange-600 flex items-center gap-0.5 bg-orange-50 px-2 py-1 rounded-full"
               >
-                <span>中奖概率</span>
+                <span>Odds</span>
                 <ChevronRight size={12} />
               </button>
             </div>
@@ -426,7 +426,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             {/* Grid display layout matching screenshot precisely */}
             <div className="mt-4 space-y-3">
               
-              {/* 一等奖 (Full Width Big Card) */}
+              {/* First prize */}
               <div className="bg-gradient-to-r from-red-50 to-amber-50 rounded-2xl p-4 border border-red-100 flex items-center justify-between overflow-hidden relative group">
                 {/* Background Sparkles */}
                 <div className="absolute right-2 bottom-0 opacity-10 pointer-events-none text-red-500 font-black text-6xl select-none">🧧</div>
@@ -439,73 +439,73 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
                   </div>
                   <div>
                     <span className="inline-block px-2 py-0.5 bg-red-100 border border-red-200 text-red-700 text-[10px] font-black rounded-lg mb-1">
-                      一等奖
+                      First Prize
                     </span>
                     <h5 className="text-sm font-extrabold text-[#d32f2f] leading-tight">
-                      现金 $38.80
+                      Cash $38.80
                     </h5>
-                    <p className="text-[10px] text-slate-500 font-bold mt-0.5">中奖概率：1%</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-0.5">Odds: 1%</p>
                   </div>
                 </div>
                 <div className="text-right font-black font-mono text-slate-800 text-xs shrink-0 bg-white/60 px-2.5 py-1.5 rounded-xl border border-black/5">
-                  数量*1
+                  Qty * 1
                 </div>
               </div>
 
-              {/* 二、三等奖 (2 Columns Layout) */}
+              {/* Second and third prizes */}
               <div className="grid grid-cols-2 gap-3">
-                {/* 二等奖 */}
+                {/* Second prize */}
                 <div className="bg-gradient-to-b from-red-50 to-white rounded-2xl p-3 border border-red-50 flex flex-col items-center text-center relative overflow-hidden">
                   <span className="px-2 py-0.5 bg-red-100 border border-red-200 text-[#d32f2f] text-[9px] font-black rounded-lg mb-2">
-                    二等奖
+                    Second Prize
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-[#d32f2f]">现金 $18.80</h6>
-                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">中奖概率：2%</p>
-                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">数量 * 2</p>
+                  <h6 className="text-xs font-black text-[#d32f2f]">Cash $18.80</h6>
+                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">Odds: 2%</p>
+                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">Qty * 2</p>
                 </div>
                 
-                {/* 三等奖 */}
+                {/* Third prize */}
                 <div className="bg-gradient-to-b from-red-50 to-white rounded-2xl p-3 border border-red-50 flex flex-col items-center text-center relative overflow-hidden">
                   <span className="px-2 py-0.5 bg-red-100 border border-red-200 text-[#d32f2f] text-[9px] font-black rounded-lg mb-2">
-                    三等奖
+                    Third Prize
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-[#d32f2f]">现金 $8.88</h6>
-                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">中奖概率：4%</p>
-                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">数量 * 3</p>
+                  <h6 className="text-xs font-black text-[#d32f2f]">Cash $8.88</h6>
+                  <p className="text-[10px] text-[#f43f5e] font-bold mt-0.5">Odds: 4%</p>
+                  <p className="text-[10px] text-slate-400 font-bold font-mono mt-1">Qty * 3</p>
                 </div>
               </div>
 
-              {/* 四、五、六等奖 (3 Columns Grid) */}
+              {/* Fourth, fifth, and sixth prizes */}
               <div className="grid grid-cols-3 gap-2 pb-2">
-                {/* 四等奖 */}
+                {/* Fourth prize */}
                 <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$3.88</p>
-                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：13%</p>
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">Cash $3.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">Odds: 13%</p>
                   <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    四等奖
+                    Fourth
                   </span>
                 </div>
 
-                {/* 五等奖 */}
+                {/* Fifth prize */}
                 <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$1.88</p>
-                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：35%</p>
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">Cash $1.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">Odds: 35%</p>
                   <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    五等奖
+                    Fifth
                   </span>
                 </div>
 
-                {/* 六等奖 */}
+                {/* Sixth prize */}
                 <div className="bg-white rounded-xl p-2.5 border border-slate-100 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-rose-600 leading-tight">现金$0.88</p>
-                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">概率：45%</p>
+                  <p className="text-[11px] font-black text-rose-600 leading-tight">Cash $0.88</p>
+                  <p className="text-[9px] text-[#f43f5e] font-bold mt-0.5">Odds: 45%</p>
                   <span className="w-full text-[9px] py-0.5 bg-orange-100/65 text-orange-850 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    六等奖
+                    Sixth
                   </span>
                 </div>
               </div>
@@ -548,7 +548,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
               </div>
               
               <p className="text-[11px] font-bold uppercase tracking-widest text-yellow-300">
-                恭喜获得
+                You won
               </p>
               
               <h3 className="text-2xl font-black text-white mt-1">
@@ -556,7 +556,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
               </h3>
               
               <div className="my-5 bg-white/10 rounded-2xl p-4 border border-white/10">
-                <span className="text-[10px] text-yellow-100 block">现金红包已存入暂存账户</span>
+                <span className="text-[10px] text-yellow-100 block">Cash reward saved to your pending balance</span>
                 <span className="text-3xl font-black text-yellow-400 block mt-1">
                   {drawnResult.amount}
                 </span>
@@ -565,11 +565,11 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
               <button
                 onClick={() => {
                   setDrawnResult(null);
-                  showToast('🎉 金额已注入您的模拟账户！前往 步骤四 即可模拟提现。');
+                  showToast('🎉 Reward added to your test balance. Go to Step 4 to withdraw.');
                 }}
                 className="w-full py-3 bg-gradient-to-r from-yellow-400 to-amber-400 hover:from-yellow-300 hover:to-amber-300 text-red-950 font-black rounded-xl text-xs tracking-wider shadow-md active:scale-98 transition-all"
               >
-                收下奖金
+                Claim reward
               </button>
             </motion.div>
           </motion.div>
@@ -596,7 +596,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
               🧧
             </motion.div>
             <p className="text-xs text-yellow-400 font-extrabold tracking-widest mt-6 animate-pulse">
-              正在前往木卫六模拟抽取现金红包...
+              Drawing your cash reward...
             </p>
           </div>
         )}
@@ -619,21 +619,21 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
             >
               <h3 className="text-base font-black text-[#d85c18] pb-3 border-b border-orange-100 flex items-center gap-1.5">
                 <AlertCircle size={18} />
-                <span>活动规则说明</span>
+                <span>Activity Rules</span>
               </h3>
               
               <div className="mt-4 space-y-3.5 text-xs text-slate-600 leading-relaxed font-medium">
                 <p>
-                  <strong className="text-slate-850">1. 活动对象:</strong> 全体注册轻盈星光运动的用户均可参与。
+                  <strong className="text-slate-850">1. Eligibility:</strong> All registered MOVEVI users can join.
                 </p>
                 <p>
-                  <strong className="text-slate-850">2. 勋章获取:</strong> 进入任一城市并在此运行通过完整的公里挑战，即可对应获得专属于该路线的勋章（第一趟旅途免费且100%可得勋章）。
+                  <strong className="text-slate-850">2. Medal earning:</strong> Complete any city route to earn that route's medals. The first route in each city is free.
                 </p>
                 <p>
-                  <strong className="text-slate-800">3. 兑换规则:</strong> 本期阶段在盲盒活动时间内，每消耗 1 枚路线勋章即可对应转换成 1 次兑抽资格。
+                  <strong className="text-slate-800">3. Redemption:</strong> During the event period, 1 route medal can be redeemed for 1 draw chance.
                 </p>
                 <p>
-                  <strong className="text-slate-800">4. 奖金提现:</strong> 抽中现金会立刻存储至木卫六小程序，微信钱包极速提现，每个设备每日限发。
+                  <strong className="text-slate-800">4. Cash withdrawal:</strong> Cash rewards are saved to your MOVEVI account and can be withdrawn after verification.
                 </p>
               </div>
 
@@ -642,7 +642,7 @@ export default function MedalDrawView({ onBack, onGoToRunning, isSubscribed, use
                   onClick={() => setShowRuleModal(false)}
                   className="w-full py-3 bg-[#f88636] text-white font-black rounded-xl text-xs tracking-wider hover:bg-[#e17429] transition-colors"
                 >
-                  我知道了
+                  Got it
                 </button>
               </div>
             </motion.div>
