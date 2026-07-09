@@ -390,7 +390,7 @@ export default function HomeTab({ onNavigate, completedChapters = [], targetFlig
             <div className="text-xs font-semibold tracking-wide text-slate-100">Mu Xiaoliu</div>
             <div className="flex items-center text-[10px] text-cyan-300">
               <span className="mr-1">Glow:</span>
-              <span className="font-mono font-bold">{userStats?.lightValue || 120}</span>
+              <span className="font-mono font-bold">{userStats?.lightValue ?? 0}</span>
             </div>
           </div>
         </div>
@@ -814,9 +814,13 @@ export default function HomeTab({ onNavigate, completedChapters = [], targetFlig
                  </button>
                  <button 
                    onClick={() => {
-                      if (userStats && userStats.lightValue >= 3) {
+                      const currentLightValue = Number(userStats?.lightValue ?? 0);
+                      if (currentLightValue >= 3) {
                         if (setUserStats) {
-                          setUserStats((prev: any) => ({ ...prev, lightValue: prev.lightValue - 3 }));
+                          setUserStats((prev: any) => ({
+                            ...prev,
+                            lightValue: Math.max(0, Number(prev.lightValue ?? 0) - 3),
+                          }));
                         }
                         const available = CITIES.filter(c => c.status !== 'lit' && c.status !== 'upcoming');
                         const shuffled = [...available].sort(() => 0.5 - Math.random());

@@ -90,7 +90,7 @@ export default function App() {
     completedRoutes: 0,
     totalDistance: 0.0,
     totalTimeHours: 0.0,
-    lightValue: 0
+    lightValue: 120
   });
 
   const tabs = [

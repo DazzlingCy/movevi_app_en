@@ -82,7 +82,7 @@ export default function ProfileTab({
   return (
     <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
       {/* Header Profile Info */}
-      <div className="relative pt-12 pb-16 px-6 bg-gradient-to-b from-cyan-900/20 via-cyan-900/5 to-transparent">
+      <div className="relative pt-12 pb-10 px-6 bg-gradient-to-b from-cyan-900/20 via-cyan-900/5 to-transparent">
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none blur-3xl" />
         
         {/* Top bar with icons */}
@@ -95,7 +95,7 @@ export default function ProfileTab({
           </button>
         </div>
 
-        <div className="flex flex-col items-start gap-4 relative z-10 border-b border-white/5 pb-8">
+        <div className="flex flex-col items-start gap-4 relative z-10 border-b border-white/5 pb-5">
           <div className="flex items-center gap-4 w-full">
             <div className="w-20 h-20 rounded-full border-2 border-cyan-400/50 p-1 relative shadow-[0_0_20px_rgba(34,211,238,0.2)] bg-[#05070A] shrink-0">
               <img 
@@ -133,7 +133,7 @@ export default function ProfileTab({
         </div>
       </div>
 
-      <div className="px-5 space-y-6 -mt-8 relative z-20">
+      <div className="px-5 space-y-4 -mt-6 relative z-20">
         {/* Premium Banner Section */}
         {isSubscribed ? (
           <div className={`bg-gradient-to-r ${
@@ -142,7 +142,13 @@ export default function ProfileTab({
               : isCancellationPending
                 ? 'from-amber-950/40 to-amber-900/20 border-amber-500/25'
                 : 'from-emerald-950/40 to-emerald-900/30 border-emerald-500/20'
-          } border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg`}>
+          } border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]`}>
+            <button
+              type="button"
+              onClick={onOpenSubscription}
+              aria-label="Open membership details"
+              className="absolute inset-0 z-10 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset"
+            />
             <div className="absolute right-[-10px] top-[-10px] opacity-10 pointer-events-none">
               <Crown size={110} className={`${hasBillingIssue ? 'text-red-400' : isCancellationPending ? 'text-amber-400' : 'text-emerald-400'} rotate-12`} />
             </div>
@@ -171,7 +177,7 @@ export default function ProfileTab({
               {isCancellationPending ? (
                 <button 
                   onClick={onResumeSubscription}
-                  className="text-emerald-300 hover:text-emerald-200 text-xs font-semibold transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5"
+                  className="relative z-20 text-emerald-300 hover:text-emerald-200 text-xs font-semibold transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5"
                 >
                   <RefreshCcw size={12} />
                   Restart membership
@@ -179,14 +185,14 @@ export default function ProfileTab({
               ) : hasBillingIssue ? (
                 <button
                   onClick={onUpdatePaymentMethod}
-                  className="text-red-200 hover:text-white text-xs font-semibold transition-colors bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 rounded-xl border border-red-500/20"
+                  className="relative z-20 text-red-200 hover:text-white text-xs font-semibold transition-colors bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 rounded-xl border border-red-500/20"
                 >
                   Update payment
                 </button>
               ) : (
                 <button 
                   onClick={onOpenSubscription}
-                  className="text-slate-300 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/5"
+                  className="relative z-20 text-slate-300 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/5"
                 >
                   Membership
                 </button>
@@ -194,7 +200,13 @@ export default function ProfileTab({
             </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/20 rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg">
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/20 rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]">
+            <button
+              type="button"
+              onClick={onOpenSubscription}
+              aria-label="View MOVEVI Premium"
+              className="absolute inset-0 z-10 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
+            />
             <div className="absolute right-[-10px] top-[-15px] opacity-10 pointer-events-none">
               <Crown size={120} className="text-amber-400 rotate-12" />
             </div>
@@ -213,7 +225,7 @@ export default function ProfileTab({
             <div className="mt-4 pt-2">
               <button 
                 onClick={onOpenSubscription}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs rounded-xl tracking-wide shadow-[0_4px_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1.5 transition-all"
+                className="relative z-20 w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs rounded-xl tracking-wide shadow-[0_4px_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1.5 transition-all"
               >
                 <Crown size={14} className="fill-slate-950" />
                 <span>View Premium</span>

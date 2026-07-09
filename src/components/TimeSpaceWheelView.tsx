@@ -54,14 +54,14 @@ export default function TimeSpaceWheelView({
 
   const handleShare = () => {
     setAvailableChances(prev => prev + 1);
-    triggerToast('🎉 分享成功！已免费赠送您 1 次抽奖机会 🎁');
+    triggerToast('Share complete. You earned 1 free draw.');
   };
 
   const handleDraw = () => {
     if (isRotating) return;
 
     if (availableChances <= 0) {
-      triggerToast('💡 您当前没有抽奖机会哦，可以用勋章兑换或立即分享！');
+      triggerToast('No draws left. Earn or redeem another draw to continue.');
       return;
     }
 
@@ -114,7 +114,7 @@ export default function TimeSpaceWheelView({
       setShowResultModal(prize);
       
       // Update the fake cash pool parameters slightly for realism
-      const drawnAmount = parseFloat(prize.amount.replace('元', '').replace('$', ''));
+      const drawnAmount = parseFloat(prize.amount.replace('$', ''));
       setRemainingPoolAmount(prev => Math.max(0, Number((prev - drawnAmount).toFixed(2))));
       setDividedPercentage(prev => Number((prev + 0.3).toFixed(1)));
 
@@ -135,8 +135,8 @@ export default function TimeSpaceWheelView({
           <ChevronLeft size={22} className="text-slate-300" />
         </button>
         <div className="text-center">
-          <h2 className="text-md font-extrabold tracking-wider text-slate-100 italic">时空大转盘</h2>
-          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">转动幸运大转盘，100%抽取现金奖励</p>
+          <h2 className="text-md font-extrabold tracking-wider text-slate-100 italic">Cosmic Prize Wheel</h2>
+          <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Every spin wins a cash prize</p>
         </div>
         <div className="w-10 h-10" /> {/* Spacer */}
       </div>
@@ -153,17 +153,17 @@ export default function TimeSpaceWheelView({
           {/* Top Yellow Badge Info Indicator */}
           <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/35 rounded-full px-5 py-1.5 flex items-center gap-1.5 shrink-0 shadow-inner mt-1 mb-4">
             <span className="animate-ping w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-            <span className="text-[10px] font-black tracking-widest text-amber-300 uppercase leading-none">
-              ✨ 限时现金奖池 $100 (抽空即止)
+            <span className="text-[10px] font-black tracking-wide text-amber-300 uppercase leading-none">
+              Limited $100 cash pool · While supplies last
             </span>
           </div>
 
           {/* Sub Row: Stats remaining */}
           <div className="w-[88%] bg-black/40 border border-white/5 rounded-2xl py-2 px-4 flex items-center justify-between text-[11px] text-slate-400 font-bold mb-6">
-            <p>当前剩余: <span className="text-amber-400 font-extrabold font-mono text-xs">${remainingPoolAmount.toFixed(2)}</span></p>
+            <p>Remaining: <span className="text-amber-400 font-extrabold font-mono text-xs">${remainingPoolAmount.toFixed(2)}</span></p>
             <div className="h-4 w-px bg-white/10" />
             <p className="flex items-center gap-1">
-              <span>已瓜分:</span>
+              <span>Claimed:</span>
               <strong className="text-yellow-400 font-bold font-mono">{dividedPercentage}%</strong>
             </p>
           </div>
@@ -255,7 +255,7 @@ export default function TimeSpaceWheelView({
                           <div className="absolute top-0 left-0 right-0 h-[10px] bg-[#990d00] rounded-b-lg border-b border-amber-400/25" />
                           {/* Semicircular seal badge */}
                           <div className="absolute top-[12px] w-[12px] h-[12px] rounded-full bg-gradient-to-r from-amber-300 to-yellow-400 border border-yellow-300 flex items-center justify-center text-[6px] text-[#b31402] font-black select-none">
-                            福
+                            $
                           </div>
                         </div>
 
@@ -290,8 +290,8 @@ export default function TimeSpaceWheelView({
                   boxShadow: '0 6px 16px rgba(179,20,2,0.4), inset 0 2px 4px rgba(255,255,255,0.4)'
                 }}
               >
-                <span className="text-sm font-black tracking-normal leading-tight select-none">立即</span>
-                <span className="text-sm font-black tracking-normal leading-tight select-none">抽奖</span>
+                <span className="text-sm font-black tracking-normal leading-tight select-none">SPIN</span>
+                <span className="text-sm font-black tracking-normal leading-tight select-none">NOW</span>
               </button>
 
             </div>
@@ -299,11 +299,11 @@ export default function TimeSpaceWheelView({
 
           {/* Light Orange Capsule Banner telling remaining times */}
           <div className="w-[90%] bg-gradient-to-r from-[#ffe8d6] to-[#ffdcb8] rounded-full py-2.5 px-4 flex items-center justify-center gap-1.5 shadow-md">
-            <span className="text-xs text-[#a25a1e] font-black">您还有</span>
+            <span className="text-xs text-[#a25a1e] font-black">You have</span>
             <span className="px-2.5 py-0.5 bg-white border border-[#fcb57c] rounded-md text-[#e11d48] font-black font-mono text-xs">
               {availableChances}
             </span>
-            <span className="text-xs text-[#a25a1e] font-black">次抽奖机会</span>
+            <span className="text-xs text-[#a25a1e] font-black">draws left</span>
           </div>
 
         </div>
@@ -314,21 +314,21 @@ export default function TimeSpaceWheelView({
         <div className="flex items-center justify-between pb-3 border-b border-white/5">
           <div className="flex items-center gap-1.5">
             <Trophy size={13} className="text-amber-400" />
-            <span className="text-[11px] font-black text-amber-400 uppercase tracking-widest">奖池与概率</span>
+            <span className="text-[11px] font-black text-amber-400 uppercase tracking-widest">Prizes & Odds</span>
           </div>
-          <span className="text-[10px] text-slate-500 font-medium">公开展示</span>
+          <span className="text-[10px] text-slate-500 font-medium">Published odds</span>
         </div>
 
         {/* 6 Grid items displaying individual potential prizes and their frequency */}
         <div className="grid grid-cols-3 gap-2 mt-3.5">
           {WHEEL_PRIZES.map(p => {
             let prob = '';
-            if (p.id === '0.88') prob = '概率 45%';
-            else if (p.id === '1.88') prob = '概率 35%';
-            else if (p.id === '3.88') prob = '概率 13%';
-            else if (p.id === '8.88') prob = '概率 4%';
-            else if (p.id === '18.80') prob = '概率 2%';
-            else if (p.id === '38.80') prob = '概率 1%';
+            if (p.id === '0.88') prob = '45% chance';
+            else if (p.id === '1.88') prob = '35% chance';
+            else if (p.id === '3.88') prob = '13% chance';
+            else if (p.id === '8.88') prob = '4% chance';
+            else if (p.id === '18.80') prob = '2% chance';
+            else if (p.id === '38.80') prob = '1% chance';
             return (
               <div 
                 key={p.id} 
@@ -348,7 +348,7 @@ export default function TimeSpaceWheelView({
       {drawnPrizes.length > 0 && (
         <div className="w-full max-w-[348px] mx-auto mt-4 bg-[#12141c]/50 border border-white/5 rounded-3xl p-4.5 shrink-0">
           <h4 className="text-[11px] font-black text-amber-400 tracking-widest flex items-center gap-1.5 pb-2.5 border-b border-white/5 uppercase">
-            <span>🎁 我的模拟抽中历史（仅本地保存）</span>
+            <span>My Draw History · Saved on This Device</span>
           </h4>
           <div className="mt-3.5 space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
             {drawnPrizes.map((p, idx) => (
@@ -397,15 +397,15 @@ export default function TimeSpaceWheelView({
               </div>
 
               <p className="text-[10px] font-black uppercase tracking-widest text-[#fef08a]">
-                转盘开奖啦
+                Winning Spin
               </p>
 
               <h3 className="text-xl font-black text-white mt-1">
-                恭喜获得现金福利！
+                You won a cash prize!
               </h3>
 
               <div className="my-5 bg-white/10 rounded-2xl p-4.5 border border-white/10 shadow-inner">
-                <span className="text-[10px] text-yellow-200 block font-bold">现金红包已派发至您的运动记录账户</span>
+                <span className="text-[10px] text-yellow-200 block font-bold">Added to your rewards balance</span>
                 <span className="text-3xl font-black text-yellow-300 block mt-1.5 font-mono">
                   {showResultModal.amount}
                 </span>
@@ -415,7 +415,7 @@ export default function TimeSpaceWheelView({
                 onClick={() => setShowResultModal(null)}
                 className="w-full py-3 bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-300 hover:to-amber-200 text-red-950 font-black rounded-xl text-xs tracking-wider shadow-md active:scale-95 transition-all"
               >
-                收下奖金
+                Collect Prize
               </button>
             </motion.div>
           </motion.div>
