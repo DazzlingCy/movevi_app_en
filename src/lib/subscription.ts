@@ -34,8 +34,6 @@ export interface SubscriptionState {
 
 const SUBSCRIPTION_STORAGE_KEY = 'movevi_subscription_state';
 const LEGACY_SUBSCRIPTION_STORAGE_KEY = 'movevi_is_subscribed';
-const SUBSCRIPTION_DEFAULT_VERSION_KEY = 'movevi_subscription_default_version';
-const SUBSCRIPTION_DEFAULT_VERSION = 'free-first-route-v2';
 
 const defaultSubscription: SubscriptionState = {
   status: 'free',
@@ -197,38 +195,11 @@ export const saveSubscriptionState = (subscription: SubscriptionState) => {
 };
 
 export const readSubscriptionState = (): SubscriptionState => {
-  if (localStorage.getItem(SUBSCRIPTION_DEFAULT_VERSION_KEY) !== SUBSCRIPTION_DEFAULT_VERSION) {
-    const freeSubscription = createFreeSubscription();
-    localStorage.setItem(SUBSCRIPTION_DEFAULT_VERSION_KEY, SUBSCRIPTION_DEFAULT_VERSION);
-    localStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
-    localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
-    saveSubscriptionState(freeSubscription);
-    return freeSubscription;
-  }
-
-  const storedSubscription = localStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
-
-  if (storedSubscription) {
-    try {
-      const parsed = JSON.parse(storedSubscription) as Partial<SubscriptionState>;
-      const normalized = normalizeSubscription(parsed);
-      saveSubscriptionState(normalized);
-      return normalized;
-    } catch {
-      const freeSubscription = createFreeSubscription();
-      saveSubscriptionState(freeSubscription);
-      return freeSubscription;
-    }
-  }
-
-  if (localStorage.getItem(LEGACY_SUBSCRIPTION_STORAGE_KEY) === 'true') {
-    const migratedSubscription = createActiveSubscription('Card ending in 4242');
-    saveSubscriptionState(migratedSubscription);
-    localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
-    return migratedSubscription;
-  }
-
-  return createFreeSubscription();
+  const freeSubscription = createFreeSubscription();
+  localStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+  saveSubscriptionState(freeSubscription);
+  return freeSubscription;
 };
 
 export const formatBillingDate = (isoDate: string | null) => {
