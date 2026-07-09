@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Compass, Trophy, Map as MapIcon, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import HomeTab from './components/HomeTab';
-import EventsTab from './components/EventsTab';
 import { CITIES } from './data/cities';
 import CitiesTab from './components/CitiesTab';
 import ProfileTab from './components/ProfileTab';
@@ -143,9 +142,13 @@ export default function App() {
         }} />;
       case 'events':
         return (
-          <EventsTab 
-            onSelectMedley={() => setFullScreenPage({ type: 'weekendMedley' })} 
-            onSelectMedalDraw={() => setFullScreenPage({ type: 'medalDraw' })}
+          <MedalDrawView
+            isSubscribed={hasPremiumAccess}
+            showHeader={false}
+            onBack={() => setActiveTab('home')}
+            onGoToRunning={() => setActiveTab('cities')}
+            userStats={userStats}
+            setUserStats={setUserStats}
           />
         );
       case 'cities':
