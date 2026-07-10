@@ -1,33 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, Share2, Volume2, Trophy, Award, Gift, Clock, Sparkles } from 'lucide-react';
+import {
+  PRIZE_POOL_TOTAL_AMOUNT,
+  PRIZE_POOL_TOTAL_SPOTS,
+  PRIZE_TIERS,
+  formatPrizeAmount,
+  pickPrizeTier,
+} from '../lib/prizePool';
 
 interface TimeSpaceWheelViewProps {
   onBack: () => void;
   availableChances: number;
   setAvailableChances: React.Dispatch<React.SetStateAction<number>>;
+  remainingPoolAmount: number;
+  setRemainingPoolAmount: React.Dispatch<React.SetStateAction<number>>;
   onDrawSuccess: (prizeName: string, amount: string) => void;
   drawnPrizes: { prizeName: string; amount: string; date: string }[];
-  isSubscribed: boolean;
 }
 
-// 6个奖项，角度对应转盘上的扇区中心
-const WHEEL_PRIZES = [
-  { id: '0.88', name: '$0.88', amount: '$0.88', colorText: '#da3a25', bg: '#ffffff', degCenter: 30 },
-  { id: '1.88', name: '$1.88', amount: '$1.88', colorText: '#da3a25', bg: '#fff2e8', degCenter: 90 },
-  { id: '18.80', name: '$18.80', amount: '$18.80', colorText: '#b31505', bg: '#ffffff', degCenter: 150, isMega: true },
-  { id: '38.80', name: '$38.80', amount: '$38.80', colorText: '#b31505', bg: '#fff2e8', degCenter: 210, isMega: true },
-  { id: '3.88', name: '$3.88', amount: '$3.88', colorText: '#da3a25', bg: '#ffffff', degCenter: 270 },
-  { id: '8.88', name: '$8.88', amount: '$8.88', colorText: '#da3a25', bg: '#fff2e8', degCenter: 330 }
-];
+const WHEEL_PRIZE_ORDER = ['0.10', '0.25', '2.00', '19.25', '0.50', '1.00'];
+const WHEEL_PRIZES = WHEEL_PRIZE_ORDER.map((id, index) => {
+  const prize = PRIZE_TIERS.find((tier) => tier.id === id) || PRIZE_TIERS[0];
+  return {
+    ...prize,
+    name: formatPrizeAmount(prize.amount),
+    degCenter: index * 60 + 30,
+  };
+});
 
 export default function TimeSpaceWheelView({ 
   onBack, 
   availableChances, 
   setAvailableChances, 
+  remainingPoolAmount,
+  setRemainingPoolAmount,
   onDrawSuccess,
   drawnPrizes,
-  isSubscribed
 }: TimeSpaceWheelViewProps) {
   const [isRotating, setIsRotating] = useState(false);
   const [wheelRotation, setWheelRotation] = useState(0);
@@ -35,9 +44,7 @@ export default function TimeSpaceWheelView({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [ledActive, setLedActive] = useState(true);
 
-  // Remaining and divided simulated values strictly resembling the photo details
-  const [remainingPoolAmount, setRemainingPoolAmount] = useState(88.50);
-  const [dividedPercentage, setDividedPercentage] = useState(11.5);
+  const dividedPercentage = PRIZE_POOL_TOTAL_AMOUNT - remainingPoolAmount;
 
   // Alternating marquee lights on the outer edge of the wheel
   useEffect(() => {
@@ -68,39 +75,8 @@ export default function TimeSpaceWheelView({
     setIsRotating(true);
     setAvailableChances(prev => prev - 1);
 
-    // Dynamic random selection based on probabilities & Hidden Rules
-    let selectedPrizeIndex = 0; // default $0.88
-
-    if (!isSubscribed) {
-      const drawnCount = drawnPrizes.length;
-      if (drawnCount === 0) {
-        selectedPrizeIndex = 1; // 1st draw: $1.88
-      } else if (drawnCount === 1) {
-        selectedPrizeIndex = 1; // 2nd draw: $1.88
-      } else if (drawnCount === 2) {
-        selectedPrizeIndex = 0; // 3rd draw: $0.88
-      } else {
-        // Standard random choice
-        const rand = Math.random();
-        if (rand < 0.45) selectedPrizeIndex = 0; // $0.88
-        else if (rand < 0.80) selectedPrizeIndex = 1; // $1.88
-        else if (rand < 0.93) selectedPrizeIndex = 4; // $3.88
-        else if (rand < 0.97) selectedPrizeIndex = 5; // $8.88
-        else if (rand < 0.99) selectedPrizeIndex = 2; // $18.80
-        else selectedPrizeIndex = 3; // $38.80
-      }
-    } else {
-      // For subscribed users (Standard random probability)
-      const rand = Math.random();
-      if (rand < 0.45) selectedPrizeIndex = 0; // $0.88
-      else if (rand < 0.80) selectedPrizeIndex = 1; // $1.88
-      else if (rand < 0.93) selectedPrizeIndex = 4; // $3.88
-      else if (rand < 0.97) selectedPrizeIndex = 5; // $8.88
-      else if (rand < 0.99) selectedPrizeIndex = 2; // $18.80
-      else selectedPrizeIndex = 3; // $38.80
-    }
-
-    const prize = WHEEL_PRIZES[selectedPrizeIndex];
+    const selectedTier = pickPrizeTier(drawnPrizes.length);
+    const prize = WHEEL_PRIZES.find((wheelPrize) => wheelPrize.id === selectedTier.id) || WHEEL_PRIZES[0];
 
     // Calculation: Extra full rounds (5-8 rounds) + offset back to 0° pointer
     const targetDegCenter = prize.degCenter;
@@ -114,11 +90,10 @@ export default function TimeSpaceWheelView({
       setShowResultModal(prize);
       
       // Update the fake cash pool parameters slightly for realism
-      const drawnAmount = parseFloat(prize.amount.replace('$', ''));
+      const drawnAmount = prize.amount;
       setRemainingPoolAmount(prev => Math.max(0, Number((prev - drawnAmount).toFixed(2))));
-      setDividedPercentage(prev => Number((prev + 0.3).toFixed(1)));
 
-      onDrawSuccess(prize.name, prize.amount);
+      onDrawSuccess(prize.tier, prize.name);
     }, 4000); // 4 seconds total transition rotation
   };
 
@@ -154,7 +129,7 @@ export default function TimeSpaceWheelView({
           <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-400/35 rounded-full px-5 py-1.5 flex items-center gap-1.5 shrink-0 shadow-inner mt-1 mb-4">
             <span className="animate-ping w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <span className="text-[10px] font-black tracking-wide text-amber-300 uppercase leading-none">
-              Limited $100 cash pool · While supplies last
+              ${PRIZE_POOL_TOTAL_AMOUNT.toFixed(0)} cash pool · {PRIZE_POOL_TOTAL_SPOTS} prizes
             </span>
           </div>
 
@@ -322,13 +297,7 @@ export default function TimeSpaceWheelView({
         {/* 6 Grid items displaying individual potential prizes and their frequency */}
         <div className="grid grid-cols-3 gap-2 mt-3.5">
           {WHEEL_PRIZES.map(p => {
-            let prob = '';
-            if (p.id === '0.88') prob = '45% chance';
-            else if (p.id === '1.88') prob = '35% chance';
-            else if (p.id === '3.88') prob = '13% chance';
-            else if (p.id === '8.88') prob = '4% chance';
-            else if (p.id === '18.80') prob = '2% chance';
-            else if (p.id === '38.80') prob = '1% chance';
+            const prob = `${p.chance}% · ${p.quantity} spots`;
             return (
               <div 
                 key={p.id} 
@@ -407,7 +376,7 @@ export default function TimeSpaceWheelView({
               <div className="my-5 bg-white/10 rounded-2xl p-4.5 border border-white/10 shadow-inner">
                 <span className="text-[10px] text-yellow-200 block font-bold">Added to your rewards balance</span>
                 <span className="text-3xl font-black text-yellow-300 block mt-1.5 font-mono">
-                  {showResultModal.amount}
+                  {showResultModal.name}
                 </span>
               </div>
 

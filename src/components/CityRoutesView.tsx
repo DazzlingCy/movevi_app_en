@@ -103,14 +103,12 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
       <div className="px-4 space-y-4">
         {Array.from({ length: Math.max(city.routes, 3) }).map((_, i) => {
           const routeId = i + 1;
-          const isFreeRoute = routeId === 1;
-          const isPremiumRoute = routeId > 1;
           const completedRouteIds = city.completedRouteIndices || [];
           const isCompleted = completedRouteIds.includes(routeId);
           const lastCompletedRouteId = completedRouteIds.reduce((max, current) => Math.max(max, current), 0);
-          const isSequentiallyUnlocked = isFreeRoute || isCompleted || routeId === lastCompletedRouteId + 1;
-          const shouldOpenSubscription = isPremiumRoute && !isSubscribed;
-          const canOpenRoute = isSequentiallyUnlocked && (isFreeRoute || isSubscribed);
+          const isSequentiallyUnlocked = routeId === 1 || isCompleted || routeId === lastCompletedRouteId + 1;
+          const shouldOpenSubscription = !isSubscribed;
+          const canOpenRoute = isSubscribed && isSequentiallyUnlocked;
 
           const routeData = getRouteData(city.id, routeId);
           const numSpots = routeData.spots.split('—').length || 3;
@@ -137,7 +135,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
               {/* Left Image Area */}
               <div className="w-[100px] h-[130px] bg-slate-100 rounded-xl overflow-hidden shrink-0 relative shadow-inner">
                 <img src={city.image} alt="Route" className="absolute inset-0 w-full h-full object-cover" />
-                {isPremiumRoute && !isSubscribed ? (
+                {!isSubscribed ? (
                   <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
                     <div className="bg-gradient-to-b from-amber-400 to-amber-500 p-2.5 rounded-full shadow-lg border-2 border-white/80">
                       <Crown size={16} className="text-slate-950 fill-slate-950" />
@@ -156,33 +154,26 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
               <div className="flex-1 overflow-hidden flex flex-col justify-between py-1">
                 <h3 className="text-[15px] font-bold text-slate-800 flex flex-wrap items-center gap-1.5 leading-snug">
                   <span>Route {routeId}: {routeData.title}</span>
-                  {isFreeRoute && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider bg-emerald-100 text-emerald-800">
-                      Free
-                    </span>
-                  )}
-                  {isPremiumRoute && (
-                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider ${
-                      !isSubscribed
-                        ? 'bg-amber-100 text-amber-800'
+                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider ${
+                    !isSubscribed
+                      ? 'bg-amber-100 text-amber-800'
+                      : isSequentiallyUnlocked
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {isSubscribed && !isSequentiallyUnlocked ? (
+                      <Lock size={8} className="text-slate-500" />
+                    ) : (
+                      <Crown size={8} className={isSubscribed ? 'text-emerald-800' : 'text-amber-800 fill-amber-800'} />
+                    )}
+                    <span>
+                      {!isSubscribed
+                        ? 'Premium'
                         : isSequentiallyUnlocked
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {isSubscribed && !isSequentiallyUnlocked ? (
-                        <Lock size={8} className="text-slate-500" />
-                      ) : (
-                        <Crown size={8} className={isSubscribed ? 'text-emerald-800' : 'text-amber-800 fill-amber-800'} />
-                      )}
-                      <span>
-                        {!isSubscribed
-                          ? 'Premium'
-                          : isSequentiallyUnlocked
-                            ? (premiumAccessLabel || 'Member')
-                            : 'Locked'}
-                      </span>
+                          ? (premiumAccessLabel || 'Member')
+                          : 'Locked'}
                     </span>
-                  )}
+                  </span>
                 </h3>
                 
                 <div className="bg-[#fff9f0] rounded px-3 py-2 my-2 border border-[#fef0dd]">

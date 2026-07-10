@@ -3,12 +3,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Gift, Trophy, Check, ArrowLeft, Play, Coins, AlertCircle } from 'lucide-react';
 import TimeSpaceWheelView from './TimeSpaceWheelView';
 import runTheWorldHero from '../assets/run-the-world-hero.webp';
+import {
+  PRIZE_POOL_TOTAL_AMOUNT,
+  PRIZE_POOL_TOTAL_SPOTS,
+  PRIZE_TIERS,
+  formatPrizeAmount,
+  pickPrizeTier,
+} from '../lib/prizePool';
 
 interface MedalDrawViewProps {
   onBack: () => void;
   onGoToRunning: () => void;
   showHeader?: boolean;
-  isSubscribed: boolean;
   userStats: {
     completedCities: number;
     completedRoutes: number;
@@ -29,7 +35,6 @@ export default function MedalDrawView({
   onBack,
   onGoToRunning,
   showHeader = true,
-  isSubscribed,
   userStats,
   setUserStats,
 }: MedalDrawViewProps) {
@@ -38,7 +43,7 @@ export default function MedalDrawView({
   const [showWheelView, setShowWheelView] = useState(false);
   const [availableChances, setAvailableChances] = useState(0);
   const [redeemedMedals, setRedeemedMedals] = useState(0);
-  const [remainingPool, setRemainingPool] = useState(88.50); // Initialize with regular pool amount
+  const [remainingPool, setRemainingPool] = useState(PRIZE_POOL_TOTAL_AMOUNT);
   const [drawnPrizes, setDrawnPrizes] = useState<{ prizeName: string; amount: string; date: string }[]>([]);
   
   // Custom states for animations / modals
@@ -81,24 +86,15 @@ export default function MedalDrawView({
     }
 
     setAvailableChances(prev => prev - 1);
-    setRemainingPool(prev => Math.max(0, prev - 0.88)); // subtract $0.88 or similar
     setShowDrawAnimation(true);
 
-    // Mock draw probability corresponding to categories
-    const r = Math.random();
-    let result = { tier: 'Sixth Prize', amount: '$0.88', icon: '🧧' };
-    
-    if (r < 0.05) {
-      result = { tier: 'First Prize', amount: '$38.80', icon: '🏆' };
-    } else if (r < 0.15) {
-      result = { tier: 'Second Prize', amount: '$18.80', icon: '🥈' };
-    } else if (r < 0.30) {
-      result = { tier: 'Third Prize', amount: '$8.88', icon: '🥉' };
-    } else if (r < 0.50) {
-      result = { tier: 'Fourth Prize', amount: '$3.88', icon: '🧧' };
-    } else if (r < 0.75) {
-      result = { tier: 'Fifth Prize', amount: '$1.88', icon: '🧧' };
-    }
+    const selectedPrize = pickPrizeTier(drawnPrizes.length);
+    const result = {
+      tier: selectedPrize.tier,
+      amount: formatPrizeAmount(selectedPrize.amount),
+      icon: selectedPrize.tier === 'First Prize' ? '🏆' : '🧧',
+    };
+    setRemainingPool(prev => Math.max(0, Number((prev - selectedPrize.amount).toFixed(2))));
 
     setTimeout(() => {
       setDrawnResult(result);
@@ -117,6 +113,7 @@ export default function MedalDrawView({
   // Total medals calculation (each route awards 3 medals)
   const totalMedals = userStats.completedRoutes * 3;
   const availableMedalCount = Math.max(0, totalMedals - redeemedMedals);
+  const [sixthPrize, fifthPrize, fourthPrize, thirdPrize, secondPrize, firstPrize] = PRIZE_TIERS;
 
   if (showWheelView) {
     return (
@@ -124,8 +121,9 @@ export default function MedalDrawView({
         onBack={() => setShowWheelView(false)}
         availableChances={availableChances}
         setAvailableChances={setAvailableChances}
+        remainingPoolAmount={remainingPool}
+        setRemainingPoolAmount={setRemainingPool}
         drawnPrizes={drawnPrizes}
-        isSubscribed={isSubscribed}
         onDrawSuccess={(prizeName, amount) => {
           setDrawnPrizes(prev => [
             {
@@ -393,12 +391,12 @@ export default function MedalDrawView({
             <div className="mt-4">
               <div className="flex justify-between items-center text-xs text-slate-400 font-bold mb-1.5">
                 <span>Left: ${remainingPool.toFixed(2)}</span>
-                <span>Total: $100.00</span>
+                <span>${PRIZE_POOL_TOTAL_AMOUNT.toFixed(0)} · {PRIZE_POOL_TOTAL_SPOTS} prizes</span>
               </div>
               <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: isPoolEmpty ? '0%' : `${(remainingPool / 100) * 100}%` }}
+                  animate={{ width: isPoolEmpty ? '0%' : `${(remainingPool / PRIZE_POOL_TOTAL_AMOUNT) * 100}%` }}
                   transition={{ duration: 0.8 }}
                   className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
                 />
@@ -415,13 +413,6 @@ export default function MedalDrawView({
                 </span>
                 <span className="text-sm font-black text-slate-100">Issue 1 Rewards</span>
               </div>
-              <button 
-                onClick={() => showToast('🎯 Odds: First Prize 1%, Second 2%, Third 4%, Fourth 13%, Fifth 35%, Sixth 45%.')}
-                className="text-xs text-amber-300 font-bold hover:text-amber-200 flex items-center gap-0.5 bg-amber-500/10 border border-amber-500/15 px-2 py-1 rounded-full"
-              >
-                <span>Odds</span>
-                <ChevronRight size={12} />
-              </button>
             </div>
 
             {/* Grid display layout matching screenshot precisely */}
@@ -443,13 +434,13 @@ export default function MedalDrawView({
                       First Prize
                     </span>
                     <h5 className="text-sm font-extrabold text-red-300 leading-tight">
-                      Cash $38.80
+                      Cash {formatPrizeAmount(firstPrize.amount)}
                     </h5>
-                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Odds: 1%</p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Odds: {firstPrize.chance}%</p>
                   </div>
                 </div>
                 <div className="text-right font-black font-mono text-slate-200 text-xs shrink-0 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10">
-                  Qty * 1
+                  Qty * {firstPrize.quantity}
                 </div>
               </div>
 
@@ -461,9 +452,9 @@ export default function MedalDrawView({
                     Second Prize
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-red-300">Cash $18.80</h6>
-                  <p className="text-[10px] text-red-400 font-bold mt-0.5">Odds: 2%</p>
-                  <p className="text-[10px] text-slate-500 font-bold font-mono mt-1">Qty * 2</p>
+                  <h6 className="text-xs font-black text-red-300">Cash {formatPrizeAmount(secondPrize.amount)}</h6>
+                  <p className="text-[10px] text-red-400 font-bold mt-0.5">Odds: {secondPrize.chance}%</p>
+                  <p className="text-[10px] text-slate-500 font-bold font-mono mt-1">Qty * {secondPrize.quantity}</p>
                 </div>
                 
                 {/* Third prize */}
@@ -472,9 +463,9 @@ export default function MedalDrawView({
                     Third Prize
                   </span>
                   <div className="text-3xl mb-1">🧧</div>
-                  <h6 className="text-xs font-black text-red-300">Cash $8.88</h6>
-                  <p className="text-[10px] text-red-400 font-bold mt-0.5">Odds: 4%</p>
-                  <p className="text-[10px] text-slate-500 font-bold font-mono mt-1">Qty * 3</p>
+                  <h6 className="text-xs font-black text-red-300">Cash {formatPrizeAmount(thirdPrize.amount)}</h6>
+                  <p className="text-[10px] text-red-400 font-bold mt-0.5">Odds: {thirdPrize.chance}%</p>
+                  <p className="text-[10px] text-slate-500 font-bold font-mono mt-1">Qty * {thirdPrize.quantity}</p>
                 </div>
               </div>
 
@@ -483,30 +474,30 @@ export default function MedalDrawView({
                 {/* Fourth prize */}
                 <div className="bg-[#111720] rounded-xl p-2.5 border border-white/5 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash $3.88</p>
-                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: 13%</p>
+                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash {formatPrizeAmount(fourthPrize.amount)}</p>
+                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: {fourthPrize.chance}%</p>
                   <span className="w-full text-[9px] py-0.5 bg-amber-500/10 text-amber-300 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    Fourth
+                    Fourth · {fourthPrize.quantity}
                   </span>
                 </div>
 
                 {/* Fifth prize */}
                 <div className="bg-[#111720] rounded-xl p-2.5 border border-white/5 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash $1.88</p>
-                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: 35%</p>
+                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash {formatPrizeAmount(fifthPrize.amount)}</p>
+                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: {fifthPrize.chance}%</p>
                   <span className="w-full text-[9px] py-0.5 bg-amber-500/10 text-amber-300 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    Fifth
+                    Fifth · {fifthPrize.quantity}
                   </span>
                 </div>
 
                 {/* Sixth prize */}
                 <div className="bg-[#111720] rounded-xl p-2.5 border border-white/5 flex flex-col items-center justify-between text-center min-h-[125px]">
                   <div className="text-2xl mb-1 mt-1">🧧</div>
-                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash $0.88</p>
-                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: 45%</p>
+                  <p className="text-[11px] font-black text-red-300 leading-tight">Cash {formatPrizeAmount(sixthPrize.amount)}</p>
+                  <p className="text-[9px] text-red-400 font-bold mt-0.5">Odds: {sixthPrize.chance}%</p>
                   <span className="w-full text-[9px] py-0.5 bg-amber-500/10 text-amber-300 rounded-lg text-center font-bold tracking-tight mt-2 select-none shrink-0 block">
-                    Sixth
+                    Sixth · {sixthPrize.quantity}
                   </span>
                 </div>
               </div>
@@ -628,7 +619,7 @@ export default function MedalDrawView({
                   <strong className="text-slate-200">1. Eligibility:</strong> All registered MOVEVI users can join.
                 </p>
                 <p>
-                  <strong className="text-slate-200">2. Medal earning:</strong> Complete any city route to earn that route's medals. The first route in each city is free.
+                  <strong className="text-slate-200">2. Medal earning:</strong> Complete any city route with an active Premium membership to earn that route's medals.
                 </p>
                 <p>
                   <strong className="text-slate-200">3. Redemption:</strong> During the event period, 1 route medal can be redeemed for 1 draw chance.

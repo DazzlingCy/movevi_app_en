@@ -230,7 +230,7 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-200">Unlock All 36+ Urban Trails</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Run subsequent courses in Paris, Tokyo, London, Shanghai, and New York. No more lockouts.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">Run every route in Paris, Tokyo, London, Shanghai, New York, and more.</p>
                     </div>
                   </div>
                 </div>
@@ -239,18 +239,18 @@ export default function SubscriptionModal({ isOpen, onClose, onSubscribeSuccess 
                 <div className="bg-slate-950/40 p-4 rounded-xl border border-white/5 text-xs text-slate-400 space-y-2">
                   <div className="flex justify-between border-b border-white/5 pb-2 font-semibold text-slate-200">
                     <span>Feature Availability</span>
-                    <span>Free Experience</span>
+                    <span>Without Premium</span>
                     <span className="text-amber-400">Premium Explorer</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>First route of each city</span>
-                    <span className="text-[#2ecc71] font-semibold">Free</span>
-                    <span className="text-slate-100 font-semibold">Free</span>
+                    <span>All city routes</span>
+                    <span className="text-slate-600">Locked</span>
+                    <span className="text-[#2ecc71] font-semibold">Included</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Subsequent routes (Route 2+3)</span>
+                    <span>Sequential route progression</span>
                     <span className="text-slate-600">Locked</span>
-                    <span className="text-[#2ecc71] font-semibold">Unlimited</span>
+                    <span className="text-[#2ecc71] font-semibold">Included</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Overseas City Expansion</span>

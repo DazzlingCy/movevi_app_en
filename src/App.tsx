@@ -143,7 +143,6 @@ export default function App() {
       case 'events':
         return (
           <MedalDrawView
-            isSubscribed={hasPremiumAccess}
             showHeader={false}
             onBack={() => setActiveTab('home')}
             onGoToRunning={() => setActiveTab('cities')}
@@ -382,7 +381,7 @@ export default function App() {
                />
             )}
             {fullScreenPage.type === 'medalDraw' && (
-              <MedalDrawView isSubscribed={hasPremiumAccess} 
+              <MedalDrawView
                 onBack={() => setFullScreenPage(null)}
                 onGoToRunning={() => {
                   setFullScreenPage(null);

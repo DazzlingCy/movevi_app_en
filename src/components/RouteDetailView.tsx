@@ -34,16 +34,10 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
 
         {/* Info overlay */}
         <div className="absolute bottom-16 left-6 right-6 text-white drop-shadow-md">
-          {routeIndex > 1 ? (
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 ${isSubscribed ? 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300' : 'bg-amber-500/25 border border-amber-500/40 text-amber-300'}`}>
-              <Crown size={12} className={isSubscribed ? 'text-emerald-300' : 'text-amber-300 fill-amber-300'} />
-              <span>{isSubscribed ? (premiumAccessLabel || 'Premium Unlocked') : 'Premium Route'}</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 bg-slate-500/25 border border-slate-500/40 text-slate-300">
-              <span>Free Route</span>
-            </div>
-          )}
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 ${isSubscribed ? 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300' : 'bg-amber-500/25 border border-amber-500/40 text-amber-300'}`}>
+            <Crown size={12} className={isSubscribed ? 'text-emerald-300' : 'text-amber-300 fill-amber-300'} />
+            <span>{isSubscribed ? (premiumAccessLabel || 'Premium Unlocked') : 'Premium Route'}</span>
+          </div>
           <h1 className="text-2xl font-bold mb-3 tracking-wide drop-shadow-lg">Route {routeIndex}: {routeData.title}</h1>
           <div className="flex items-center text-sm font-medium">
             <div className="flex -space-x-2 mr-3">
@@ -154,7 +148,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
            Reviews
          </button>
          
-         {routeIndex > 1 && !isSubscribed ? (
+         {!isSubscribed ? (
            <button 
              onClick={onOpenSubscription} 
              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 px-4 py-3.5 rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-amber-500/20 tracking-wider transition-all active:scale-95 whitespace-nowrap uppercase gap-1"
