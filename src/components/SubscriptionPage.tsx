@@ -114,10 +114,45 @@ export default function SubscriptionPage({
 
   const isCancellationPending = subscription.status === 'canceled_at_period_end' && isSubscribed;
   const hasBillingIssue = subscription.status === 'grace_period' || subscription.status === 'billing_retry';
+  const isEnded = subscription.status === 'expired';
+  const isRefunded = subscription.status === 'refunded';
+  const isInactiveAfterHistory = isEnded || isRefunded;
   const billingDate = formatBillingDate(subscription.currentPeriodEnd);
   const planName = getPlanName(plan);
   const planPrice = getPlanPrice(plan);
   const statusLabel = getSubscriptionStatusLabel(subscription);
+  const visibleStatusLabel = subscription.status === 'free' ? 'Free plan' : statusLabel;
+  const heroHeadline = hasBillingIssue
+    ? 'Update payment to keep Premium.'
+    : isCancellationPending
+      ? 'Premium ends soon.'
+      : isEnded
+        ? 'Restart Premium.'
+        : isRefunded
+          ? 'Premium was refunded.'
+          : isSubscribed
+            ? 'Premium is active.'
+            : 'Unlock every route.';
+  const heroDescription = hasBillingIssue
+    ? 'Your payment needs attention. Premium stays available during the grace period.'
+    : isCancellationPending
+      ? `Premium remains available until ${billingDate}.`
+      : isEnded
+        ? 'Your previous membership has ended. Subscribe again to unlock premium routes.'
+        : isRefunded
+          ? 'Your refund has been processed and Premium access has been removed.'
+          : isSubscribed
+            ? 'All premium routes are unlocked while your membership is active.'
+            : 'Get all Premium routes for $4.99/month. Cancel before renewal anytime.';
+  const statusClassName = hasBillingIssue
+    ? 'border-red-500/30 bg-red-500/10 text-red-200'
+    : isCancellationPending
+      ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+      : isSubscribed
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+        : isInactiveAfterHistory
+          ? 'border-slate-500/30 bg-slate-500/10 text-slate-200'
+          : 'border-slate-500/30 bg-slate-500/10 text-slate-300';
 
   const paymentMethodLabel = useMemo(() => {
     if (paymentMethod === 'wallet') return 'Apple Pay / Google Pay';
@@ -203,18 +238,14 @@ export default function SubscriptionPage({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${
-                  hasBillingIssue
-                    ? 'border-red-500/30 bg-red-500/10 text-red-200'
-                    : isSubscribed
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                      : 'border-slate-500/30 bg-slate-500/10 text-slate-300'
+                  statusClassName
                 }`}>
                   {hasBillingIssue && <AlertCircle size={12} />}
-                  {isSubscribed ? statusLabel : 'Free plan'}
+                  {visibleStatusLabel}
                 </span>
-                <h2 className="mt-4 text-3xl font-black tracking-tight text-white">Unlock every route.</h2>
+                <h2 className="mt-4 text-3xl font-black tracking-tight text-white">{heroHeadline}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                  Get all Premium routes for $4.99/month. Cancel before renewal anytime.
+                  {heroDescription}
                 </p>
               </div>
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-[0_0_28px_rgba(251,191,36,0.35)]">
@@ -290,7 +321,7 @@ export default function SubscriptionPage({
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 py-4 text-sm font-black text-slate-950 transition-colors hover:bg-amber-300"
               >
                 <Lock size={17} />
-                {isSubscribed ? 'Manage payment' : 'Subscribe for $4.99/month'}
+                {hasBillingIssue ? 'Update payment method' : isSubscribed ? 'Manage payment' : 'Subscribe for $4.99/month'}
               </button>
             )}
 

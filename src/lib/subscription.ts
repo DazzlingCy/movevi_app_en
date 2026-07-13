@@ -223,11 +223,11 @@ export const getSubscriptionStatusLabel = (subscription: SubscriptionState) => {
     case 'grace_period':
       return `Payment issue - access until ${formatBillingDate(subscription.currentPeriodEnd)}`;
     case 'billing_retry':
-      return 'Payment retry required';
+      return 'Payment update needed';
     case 'refunded':
-      return 'Refunded';
+      return 'Refund processed';
     case 'expired':
-      return 'Expired';
+      return 'Membership ended';
     default:
       return 'Free plan';
   }
