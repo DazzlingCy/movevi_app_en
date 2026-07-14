@@ -46,7 +46,7 @@ export default function App() {
   };
 
   const handleSubscribeSuccess = (paymentMethodLabel: string, plan: SubscriptionPlan, _mode: 'trial' | 'paid') => {
-    updateSubscription(createActiveSubscription(paymentMethodLabel, plan));
+    updateSubscription(createActiveSubscription(paymentMethodLabel, plan, !subscription.hasUsedIntroOffer));
   };
 
   const handleCancelSubscription = () => {

@@ -13,6 +13,8 @@ import {
   SubscriptionPlan,
   SubscriptionState,
   formatBillingDate,
+  getIntroOfferPrice,
+  getPlanMonthlyAmount,
   getPlanName,
   getPlanPrice,
   getSubscriptionStatusLabel,
@@ -41,7 +43,7 @@ type PaymentErrors = {
 const plan: SubscriptionPlan = 'premium_monthly';
 
 const benefits = [
-  'All premium city routes',
+  'All global routes',
   'New route drops included',
   'Cancel anytime before renewal',
 ];
@@ -113,37 +115,47 @@ export default function SubscriptionPage({
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   const isCancellationPending = subscription.status === 'canceled_at_period_end' && isSubscribed;
-  const hasBillingIssue = subscription.status === 'grace_period' || subscription.status === 'billing_retry';
+  const isGracePeriod = subscription.status === 'grace_period';
+  const isBillingRetry = subscription.status === 'billing_retry';
+  const hasBillingIssue = isGracePeriod || isBillingRetry;
   const isEnded = subscription.status === 'expired';
-  const isRefunded = subscription.status === 'refunded';
-  const isInactiveAfterHistory = isEnded || isRefunded;
+  const isInactiveAfterHistory = isEnded;
+  const isPaymentUpdate = isSubscribed || hasBillingIssue;
   const billingDate = formatBillingDate(subscription.currentPeriodEnd);
   const planName = getPlanName(plan);
   const planPrice = getPlanPrice(plan);
+  const monthlyAmount = getPlanMonthlyAmount(plan);
+  const introOfferPrice = getIntroOfferPrice(plan);
+  const isIntroOfferEligible = !subscription.hasUsedIntroOffer && !isPaymentUpdate;
+  const checkoutAmount = isIntroOfferEligible ? introOfferPrice : monthlyAmount;
+  const checkoutPriceLabel = isIntroOfferEligible ? `${introOfferPrice} first month` : planPrice;
   const statusLabel = getSubscriptionStatusLabel(subscription);
-  const visibleStatusLabel = subscription.status === 'free' ? 'Free plan' : statusLabel;
-  const heroHeadline = hasBillingIssue
+  const shouldShowStatusBadge = subscription.status !== 'free';
+  const visibleStatusLabel = statusLabel;
+  const heroHeadline = isGracePeriod
     ? 'Update payment to keep Premium.'
-    : isCancellationPending
-      ? 'Premium ends soon.'
-      : isEnded
-        ? 'Restart Premium.'
-        : isRefunded
-          ? 'Premium was refunded.'
+    : isBillingRetry
+      ? 'Update payment to restart Premium.'
+      : isCancellationPending
+        ? 'Premium ends soon.'
+        : isEnded
+          ? 'Restart Premium.'
           : isSubscribed
             ? 'Premium is active.'
-            : 'Unlock every route.';
-  const heroDescription = hasBillingIssue
+            : 'Unlock all global routes.';
+  const heroDescription = isGracePeriod
     ? 'Your payment needs attention. Premium stays available during the grace period.'
-    : isCancellationPending
-      ? `Premium remains available until ${billingDate}.`
-      : isEnded
-        ? 'Your previous membership has ended. Subscribe again to unlock premium routes.'
-        : isRefunded
-          ? 'Your refund has been processed and Premium access has been removed.'
+    : isBillingRetry
+      ? 'Premium is paused until you update your payment method.'
+      : isCancellationPending
+        ? `Premium remains available until ${billingDate}.`
+        : isEnded
+          ? 'Your previous membership has ended. Subscribe again to unlock all global routes.'
           : isSubscribed
-            ? 'All premium routes are unlocked while your membership is active.'
-            : 'Get all Premium routes for $4.99/month. Cancel before renewal anytime.';
+            ? 'All global routes are unlocked while your membership is active.'
+            : isIntroOfferEligible
+              ? `Start for ${introOfferPrice} today, then ${planPrice}. Cancel before renewal anytime.`
+              : `Get every global route for ${planPrice}. Cancel before renewal anytime.`;
   const statusClassName = hasBillingIssue
     ? 'border-red-500/30 bg-red-500/10 text-red-200'
     : isCancellationPending
@@ -190,7 +202,7 @@ export default function SubscriptionPage({
 
     setIsProcessing(true);
     setProcessingStep(paymentMethod === 'wallet' ? 'Opening wallet...' : 'Checking card...');
-    window.setTimeout(() => setProcessingStep(paymentMethod === 'wallet' ? 'Confirming wallet...' : 'Authorizing $4.99...'), 700);
+    window.setTimeout(() => setProcessingStep(paymentMethod === 'wallet' ? 'Confirming wallet...' : `Authorizing ${checkoutAmount}...`), 700);
     window.setTimeout(() => setProcessingStep('Activating Premium...'), 1400);
     window.setTimeout(() => {
       if (isSubscribed || hasBillingIssue) {
@@ -198,7 +210,7 @@ export default function SubscriptionPage({
         setLastAction('Payment method updated.');
       } else {
         onSubscribe(paymentMethodLabel, plan, 'paid');
-        setLastAction('Premium is active. All premium routes are unlocked.');
+        setLastAction('Premium is active. All global routes are unlocked.');
       }
 
       setIsProcessing(false);
@@ -237,12 +249,14 @@ export default function SubscriptionPage({
           <section className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-amber-950/20 p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${
-                  statusClassName
-                }`}>
-                  {hasBillingIssue && <AlertCircle size={12} />}
-                  {visibleStatusLabel}
-                </span>
+                {shouldShowStatusBadge && (
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase ${
+                    statusClassName
+                  }`}>
+                    {hasBillingIssue && <AlertCircle size={12} />}
+                    {visibleStatusLabel}
+                  </span>
+                )}
                 <h2 className="mt-4 text-3xl font-black tracking-tight text-white">{heroHeadline}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-slate-400">
                   {heroDescription}
@@ -258,11 +272,13 @@ export default function SubscriptionPage({
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-sm font-black text-slate-100">{planName}</h3>
-                <p className="mt-1 text-xs text-slate-500">One monthly plan. All Premium routes.</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {isIntroOfferEligible ? `First month ${introOfferPrice}, then ${planPrice}.` : 'One monthly plan. All global routes.'}
+                </p>
               </div>
               <div className="text-right">
-                <strong className="block text-xl font-black text-white">$4.99</strong>
-                <span className="text-xs text-slate-500">/month</span>
+                <strong className="block text-xl font-black text-white">{isIntroOfferEligible ? introOfferPrice : monthlyAmount}</strong>
+                <span className="text-xs text-slate-500">{isIntroOfferEligible ? 'first month' : '/month'}</span>
               </div>
             </div>
           </section>
@@ -281,12 +297,12 @@ export default function SubscriptionPage({
             </div>
           </section>
 
-          {isSubscribed && (
+          {(isSubscribed || hasBillingIssue) && (
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <h3 className="text-sm font-black text-slate-100">Your membership</h3>
               <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                 <div className="rounded-xl border border-white/5 bg-black/20 p-3">
-                  <span className="block text-slate-500">Renewal</span>
+                  <span className="block text-slate-500">{isCancellationPending ? 'Ends' : isBillingRetry ? 'Last period' : 'Renewal'}</span>
                   <strong className="mt-1 block text-slate-100">{billingDate}</strong>
                 </div>
                 <div className="rounded-xl border border-white/5 bg-black/20 p-3">
@@ -321,7 +337,7 @@ export default function SubscriptionPage({
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 py-4 text-sm font-black text-slate-950 transition-colors hover:bg-amber-300"
               >
                 <Lock size={17} />
-                {hasBillingIssue ? 'Update payment method' : isSubscribed ? 'Manage payment' : 'Subscribe for $4.99/month'}
+                {hasBillingIssue ? 'Update payment method' : isSubscribed ? 'Manage payment' : `Subscribe for ${checkoutPriceLabel}`}
               </button>
             )}
 
@@ -342,13 +358,17 @@ export default function SubscriptionPage({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Order summary</span>
-                <h2 className="mt-1 text-lg font-black text-slate-100">{isSubscribed ? 'Update payment' : planName}</h2>
+                <h2 className="mt-1 text-lg font-black text-slate-100">{isPaymentUpdate ? 'Update payment' : planName}</h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  {isSubscribed ? 'No charge today.' : 'Billed today, then monthly until canceled.'}
+                  {isPaymentUpdate
+                    ? 'No charge today in this demo.'
+                    : isIntroOfferEligible
+                      ? `First month ${introOfferPrice}, then ${planPrice} until canceled.`
+                      : 'Billed today, then monthly until canceled.'}
                 </p>
               </div>
               <div className="text-right">
-                <strong className="block text-xl font-black text-white">{isSubscribed ? '$0.00' : '$4.99'}</strong>
+                <strong className="block text-xl font-black text-white">{isPaymentUpdate ? '$0.00' : checkoutAmount}</strong>
                 <span className="text-xs text-slate-500">USD</span>
               </div>
             </div>
@@ -501,8 +521,8 @@ export default function SubscriptionPage({
 
           <section className="space-y-3">
             <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs">
-              <span className="text-slate-400">{isSubscribed ? 'Charge today' : 'Due today'}</span>
-              <strong className="text-slate-100">{isSubscribed ? '$0.00 USD' : '$4.99 USD'}</strong>
+              <span className="text-slate-400">{isPaymentUpdate ? 'Charge today' : 'Due today'}</span>
+              <strong className="text-slate-100">{isPaymentUpdate ? '$0.00 USD' : `${checkoutAmount} USD`}</strong>
             </div>
 
             <button

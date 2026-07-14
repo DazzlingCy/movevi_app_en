@@ -5,9 +5,8 @@ export type SubscriptionStatus =
   | 'canceled_at_period_end'
   | 'grace_period'
   | 'billing_retry'
-  | 'expired'
-  | 'refunded';
-export type LegacySubscriptionStatus = SubscriptionStatus | 'canceled';
+  | 'expired';
+export type LegacySubscriptionStatus = SubscriptionStatus | 'canceled' | 'refunded';
 export type SubscriptionPlan = 'premium_monthly';
 export type SubscriptionProvider = 'mock_netflix' | 'mock_stripe' | 'app_store' | 'google_play' | 'stripe';
 
@@ -16,7 +15,7 @@ export interface BillingHistoryItem {
   date: string;
   description: string;
   amount: string;
-  status: 'paid' | 'upcoming' | 'failed' | 'refunded';
+  status: 'paid' | 'upcoming' | 'failed';
 }
 
 export interface SubscriptionState {
@@ -24,6 +23,7 @@ export interface SubscriptionState {
   plan: SubscriptionPlan;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  hasUsedIntroOffer: boolean;
   provider: SubscriptionProvider;
   paymentMethodLabel: string | null;
   startedAt: string | null;
@@ -34,12 +34,22 @@ export interface SubscriptionState {
 
 const SUBSCRIPTION_STORAGE_KEY = 'movevi_subscription_state';
 const LEGACY_SUBSCRIPTION_STORAGE_KEY = 'movevi_is_subscribed';
+const subscriptionStatuses: SubscriptionStatus[] = [
+  'free',
+  'trialing',
+  'active',
+  'canceled_at_period_end',
+  'grace_period',
+  'billing_retry',
+  'expired',
+];
 
 const defaultSubscription: SubscriptionState = {
   status: 'free',
   plan: 'premium_monthly',
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
+  hasUsedIntroOffer: false,
   provider: 'mock_netflix',
   paymentMethodLabel: null,
   startedAt: null,
@@ -60,6 +70,10 @@ export const getPlanName = (_plan: SubscriptionPlan) => 'Premium Monthly';
 
 export const getPlanPrice = (_plan: SubscriptionPlan) => '$4.99/month';
 
+export const getPlanMonthlyAmount = (_plan: SubscriptionPlan) => '$4.99';
+
+export const getIntroOfferPrice = (_plan: SubscriptionPlan) => '$0.99';
+
 export const getNextBillingDate = (plan: SubscriptionPlan = 'premium_monthly') => addDays(getPlanPeriodDays(plan));
 
 const createBillingItem = (
@@ -78,24 +92,30 @@ const createBillingItem = (
 export const createActiveSubscription = (
   paymentMethodLabel: string,
   plan: SubscriptionPlan = 'premium_monthly',
+  useIntroOffer = false,
 ): SubscriptionState => ({
   status: 'active',
   plan,
   currentPeriodEnd: getNextBillingDate(plan),
   cancelAtPeriodEnd: false,
+  hasUsedIntroOffer: true,
   provider: 'mock_netflix',
   paymentMethodLabel,
   startedAt: new Date().toISOString(),
   trialEndsAt: null,
   billingIssueMessage: null,
-  billingHistory: [createBillingItem(getPlanName(plan), getPlanPrice(plan))],
+  billingHistory: [
+    createBillingItem(
+      useIntroOffer ? `${getPlanName(plan)} - First month` : getPlanName(plan),
+      useIntroOffer ? getIntroOfferPrice(plan) : getPlanPrice(plan),
+    ),
+  ],
 });
 
 export const createFreeSubscription = (): SubscriptionState => ({ ...defaultSubscription });
 
 export const hasPremiumAccess = (subscription: SubscriptionState, now = Date.now()) => {
   if (
-    subscription.status !== 'trialing' &&
     subscription.status !== 'active' &&
     subscription.status !== 'canceled_at_period_end' &&
     subscription.status !== 'grace_period'
@@ -145,15 +165,25 @@ type StoredSubscriptionState = Partial<Omit<SubscriptionState, 'status'>> & {
 
 export const normalizeSubscription = (subscription: StoredSubscriptionState | null): SubscriptionState => {
   if (!subscription || typeof subscription !== 'object') return createFreeSubscription();
-  const status = (subscription.status === 'canceled'
+  const rawStatus = subscription.status === 'canceled'
     ? 'canceled_at_period_end'
-    : subscription.status || 'free') as LegacySubscriptionStatus;
+    : subscription.status === 'refunded'
+      ? 'expired'
+      : subscription.status || 'free';
+  const status = subscriptionStatuses.includes(rawStatus as SubscriptionStatus)
+    ? (rawStatus as SubscriptionStatus)
+    : 'free';
 
   const normalized: SubscriptionState = {
-    status: status === 'canceled' ? 'canceled_at_period_end' : status,
+    status,
     plan: 'premium_monthly',
     currentPeriodEnd: subscription.currentPeriodEnd || null,
     cancelAtPeriodEnd: Boolean(subscription.cancelAtPeriodEnd),
+    hasUsedIntroOffer: Boolean(
+      subscription.hasUsedIntroOffer ||
+      subscription.startedAt ||
+      (Array.isArray(subscription.billingHistory) && subscription.billingHistory.length > 0)
+    ),
     provider: subscription.provider || 'mock_netflix',
     paymentMethodLabel: subscription.paymentMethodLabel || null,
     startedAt: subscription.startedAt || null,
@@ -179,7 +209,7 @@ export const normalizeSubscription = (subscription: StoredSubscriptionState | nu
     };
   }
 
-  if (normalized.status === 'free' || normalized.status === 'expired' || normalized.status === 'refunded') {
+  if (normalized.status === 'free' || normalized.status === 'expired') {
     return {
       ...normalized,
       cancelAtPeriodEnd: false,
@@ -195,9 +225,30 @@ export const saveSubscriptionState = (subscription: SubscriptionState) => {
 };
 
 export const readSubscriptionState = (): SubscriptionState => {
+  try {
+    const storedSubscription = localStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
+    if (storedSubscription) {
+      const normalized = normalizeSubscription(JSON.parse(storedSubscription));
+      localStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+      return normalized;
+    }
+
+    const legacySubscription = localStorage.getItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+    if (legacySubscription === 'true') {
+      const migrated = createActiveSubscription('Legacy subscription');
+      saveSubscriptionState(migrated);
+      localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+      return migrated;
+    }
+
+    localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+  } catch {
+    localStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+  }
+
   const freeSubscription = createFreeSubscription();
-  localStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
-  localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
   saveSubscriptionState(freeSubscription);
   return freeSubscription;
 };
@@ -224,8 +275,6 @@ export const getSubscriptionStatusLabel = (subscription: SubscriptionState) => {
       return `Payment issue - access until ${formatBillingDate(subscription.currentPeriodEnd)}`;
     case 'billing_retry':
       return 'Payment update needed';
-    case 'refunded':
-      return 'Refund processed';
     case 'expired':
       return 'Membership ended';
     default:

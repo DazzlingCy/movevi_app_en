@@ -20,6 +20,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import {
   SubscriptionState,
   formatBillingDate,
+  getIntroOfferPrice,
   getPlanName,
   getPlanPrice,
 } from '../lib/subscription';
@@ -53,8 +54,70 @@ export default function ProfileTab({
   const [showManageModal, setShowManageModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const isCancellationPending = isSubscribed && subscription.status === 'canceled_at_period_end';
-  const hasBillingIssue = subscription.status === 'grace_period' || subscription.status === 'billing_retry';
+  const isGracePeriod = subscription.status === 'grace_period';
+  const isBillingRetry = subscription.status === 'billing_retry';
+  const isExpired = subscription.status === 'expired';
+  const hasBillingIssue = isGracePeriod || isBillingRetry;
+  const isInactiveMembership = isExpired;
+  const shouldShowMembershipStatus = isSubscribed || hasBillingIssue || isInactiveMembership;
+  const introOfferPrice = getIntroOfferPrice(subscription.plan);
+  const showIntroOffer = !subscription.hasUsedIntroOffer;
   const billingDate = formatBillingDate(subscription.currentPeriodEnd);
+  const membershipToneClass = hasBillingIssue
+    ? 'from-red-950/35 to-amber-950/20 border-red-500/25'
+    : isInactiveMembership
+      ? 'from-slate-900/70 to-slate-800/35 border-slate-600/25'
+      : isCancellationPending
+        ? 'from-amber-950/40 to-amber-900/20 border-amber-500/25'
+        : 'from-emerald-950/40 to-emerald-900/30 border-emerald-500/20';
+  const membershipAccentClass = hasBillingIssue
+    ? 'text-red-400'
+    : isInactiveMembership
+      ? 'text-slate-400'
+      : isCancellationPending
+        ? 'text-amber-400'
+        : 'text-emerald-400';
+  const membershipIconClass = hasBillingIssue
+    ? 'bg-red-500/10 border-red-500/30 text-red-400'
+    : isInactiveMembership
+      ? 'bg-slate-500/10 border-slate-500/30 text-slate-300'
+      : isCancellationPending
+        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+  const membershipLabelClass = hasBillingIssue
+    ? 'text-red-300'
+    : isInactiveMembership
+      ? 'text-slate-300'
+      : isCancellationPending
+        ? 'text-amber-400'
+        : 'text-emerald-400';
+  const membershipLabel = isBillingRetry
+    ? 'Premium paused'
+    : isGracePeriod
+      ? 'Payment issue'
+      : isExpired
+        ? 'Membership ended'
+        : isCancellationPending
+          ? 'Ending soon'
+          : 'Active';
+  const membershipDescription = isGracePeriod
+    ? 'Update your payment method to keep Premium active.'
+    : isBillingRetry
+      ? 'Premium is paused until your payment method is updated.'
+      : isExpired
+        ? 'Your membership has ended. Restart Premium to unlock all global routes.'
+        : isCancellationPending
+          ? `Premium stays available until ${billingDate}.`
+          : 'All global routes are unlocked.';
+  const membershipFooterLabel = isGracePeriod
+    ? 'Action needed'
+    : isBillingRetry
+      ? 'Access paused'
+      : isExpired
+        ? 'Premium inactive'
+        : isCancellationPending
+          ? 'Access remains active'
+          : 'Premium enabled';
 
   const stats = [
     { label: 'Cities Completed', value: userStats.completedCities.toString() },
@@ -135,14 +198,8 @@ export default function ProfileTab({
 
       <div className="px-5 space-y-4 -mt-6 relative z-20">
         {/* Premium Banner Section */}
-        {isSubscribed ? (
-          <div className={`bg-gradient-to-r ${
-            hasBillingIssue
-              ? 'from-red-950/35 to-amber-950/20 border-red-500/25'
-              : isCancellationPending
-                ? 'from-amber-950/40 to-amber-900/20 border-amber-500/25'
-                : 'from-emerald-950/40 to-emerald-900/30 border-emerald-500/20'
-          } border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]`}>
+        {shouldShowMembershipStatus ? (
+          <div className={`bg-gradient-to-r ${membershipToneClass} border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]`}>
             <button
               type="button"
               onClick={onOpenSubscription}
@@ -150,29 +207,25 @@ export default function ProfileTab({
               className="absolute inset-0 z-10 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset"
             />
             <div className="absolute right-[-10px] top-[-10px] opacity-10 pointer-events-none">
-              <Crown size={110} className={`${hasBillingIssue ? 'text-red-400' : isCancellationPending ? 'text-amber-400' : 'text-emerald-400'} rotate-12`} />
+              <Crown size={110} className={`${membershipAccentClass} rotate-12`} />
             </div>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-2xl ${hasBillingIssue ? 'bg-red-500/10 border-red-500/30 text-red-400' : isCancellationPending ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'} border flex items-center justify-center`}>
-                <Crown size={20} className={hasBillingIssue ? 'fill-red-400 text-red-400' : isCancellationPending ? 'fill-amber-400 text-amber-400' : 'fill-emerald-400 text-emerald-400'} />
+              <div className={`w-10 h-10 rounded-2xl ${membershipIconClass} border flex items-center justify-center`}>
+                <Crown size={20} className={`${membershipAccentClass} fill-current`} />
               </div>
               <div>
-                <span className={`text-[10px] uppercase font-mono tracking-widest font-extrabold ${hasBillingIssue ? 'text-red-300' : isCancellationPending ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  {hasBillingIssue ? 'Payment issue' : isCancellationPending ? 'Ending soon' : 'Active'}
+                <span className={`text-[10px] uppercase font-mono tracking-widest font-extrabold ${membershipLabelClass}`}>
+                  {membershipLabel}
                 </span>
                 <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">{getPlanName(subscription.plan)}</h3>
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              {hasBillingIssue
-                ? 'Update your payment method to keep Premium active.'
-                : isCancellationPending
-                  ? `Premium stays available until ${billingDate}.`
-                  : 'All premium routes are unlocked.'}
+              {membershipDescription}
             </p>
             <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/5">
-              <span className={`text-[10px] font-bold font-mono ${hasBillingIssue ? 'text-red-300' : isCancellationPending ? 'text-amber-400' : 'text-emerald-500'}`}>
-                {hasBillingIssue ? 'Action needed' : isCancellationPending ? 'Access remains active' : 'Premium enabled'}
+              <span className={`text-[10px] font-bold font-mono ${membershipLabelClass}`}>
+                {membershipFooterLabel}
               </span>
               {isCancellationPending ? (
                 <button 
@@ -184,10 +237,17 @@ export default function ProfileTab({
                 </button>
               ) : hasBillingIssue ? (
                 <button
-                  onClick={onUpdatePaymentMethod}
+                  onClick={onOpenSubscription}
                   className="relative z-20 text-red-200 hover:text-white text-xs font-semibold transition-colors bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 rounded-xl border border-red-500/20"
                 >
                   Update payment
+                </button>
+              ) : isInactiveMembership ? (
+                <button
+                  onClick={onOpenSubscription}
+                  className="relative z-20 text-slate-200 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/10"
+                >
+                  Restart Premium
                 </button>
               ) : (
                 <button 
@@ -216,11 +276,13 @@ export default function ProfileTab({
               </div>
               <div>
                 <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Free plan</span>
-                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">Unlock All 36+ Scenic Routes</h3>
+                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">Unlock All Global Routes</h3>
               </div>
             </div>
             <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              Subscribe to unlock every premium route.
+              {showIntroOffer
+                ? `Start for ${introOfferPrice} today. Then ${getPlanPrice(subscription.plan)}.`
+                : 'Subscribe to unlock every route worldwide.'}
             </p>
             <div className="mt-4 pt-2">
               <button 
@@ -322,7 +384,7 @@ export default function ProfileTab({
                     <div>
                       <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Current plan</span>
                       <h4 className="text-base font-black text-slate-100 mt-1">{getPlanName(subscription.plan)}</h4>
-                      <p className="text-slate-400 mt-1">{getPlanPrice(subscription.plan)} · All premium city routes</p>
+                      <p className="text-slate-400 mt-1">{getPlanPrice(subscription.plan)} · All global routes</p>
                     </div>
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
                       isCancellationPending
@@ -390,9 +452,7 @@ export default function ProfileTab({
                               ? 'text-red-300'
                               : item.status === 'upcoming'
                                 ? 'text-cyan-300'
-                                : item.status === 'refunded'
-                                  ? 'text-amber-300'
-                                  : 'text-emerald-300'
+                                : 'text-emerald-300'
                           }`}>
                             {item.status}
                           </p>
@@ -405,7 +465,7 @@ export default function ProfileTab({
                 <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
                   <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Cancellation policy</span>
                   <p className="mt-2 leading-relaxed text-slate-400">
-                    Like Netflix-style membership management, canceling stops your next renewal but Premium remains available until {billingDate}. There is no prorated refund in this demo.
+                    Canceling stops your next renewal. Premium remains available until {billingDate}.
                   </p>
                 </div>
               </div>
