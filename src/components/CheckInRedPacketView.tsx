@@ -33,17 +33,17 @@ interface CheckInRedPacketViewProps {
 
 const PLAN_DAYS = 30;
 const REWARD_AMOUNTS: Record<number, string> = {
-  1: '¥0.38',
-  7: '¥0.68',
-  15: '¥0.88',
-  21: '¥1.08',
-  30: '¥1.28',
+  1: '$0.20',
+  7: '$0.35',
+  15: '$0.45',
+  21: '$0.60',
+  30: '$0.90',
 };
 
 const allDays = Array.from({ length: PLAN_DAYS }, (_, index) => index + 1);
-const getRewardAmount = (day: number) => REWARD_AMOUNTS[day] || '¥0.18';
+const getRewardAmount = (day: number) => REWARD_AMOUNTS[day] || '$0.10';
 
-const parseAmount = (amount: string) => Number(amount.replace('¥', ''));
+const parseAmount = (amount: string) => Number(amount.replace(/[^0-9.]/g, ''));
 
 export default function CheckInRedPacketView({
   showHeader = false,
@@ -211,10 +211,10 @@ export default function CheckInRedPacketView({
       ...prev,
       checkInActivationClaimed: true,
     }));
-    const amount = '¥1.80';
+    const amount = '$0.99';
     addBalance(amount);
     setResult({ amount, description: '首次激活红包已转入余额' });
-    showToast('获得激活红包 ¥1.80');
+    showToast('获得激活红包 $0.99');
   };
 
   const claimFirstRoute = () => {
@@ -228,10 +228,10 @@ export default function CheckInRedPacketView({
       ...prev,
       checkInFirstRouteClaimed: true,
     }));
-    const amount = '¥2.80';
+    const amount = '$1.99';
     addBalance(amount);
     setResult({ amount, description: '首条路线红包已转入余额' });
-    showToast('获得首条路线红包 ¥2.80');
+    showToast('获得首条路线红包 $1.99');
   };
 
   const completionPercent = Math.round((completedDays.length / PLAN_DAYS) * 100);
@@ -292,7 +292,7 @@ export default function CheckInRedPacketView({
                   <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">首次连接并激活跑步机</span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-mono text-sm font-black text-amber-200">¥1.80</span>
+                  <span className="block font-mono text-sm font-black text-amber-200">$0.99</span>
                   <span className="mt-1 inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-slate-950">
                     {activationClaimed ? '已领取' : activationReady ? '领取' : '去激活'}
                   </span>
@@ -319,7 +319,7 @@ export default function CheckInRedPacketView({
                   <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">完成任意 1 条城市路线</span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-mono text-sm font-black text-amber-200">¥2.80</span>
+                  <span className="block font-mono text-sm font-black text-amber-200">$1.99</span>
                   <span className="mt-1 inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-slate-950">
                     {firstRouteClaimed ? '已领取' : firstRouteReady ? '领取' : '去完成'}
                   </span>
@@ -462,7 +462,7 @@ export default function CheckInRedPacketView({
           <section className="relative mt-4 shrink-0 overflow-hidden rounded-[26px] border border-orange-200/18 bg-gradient-to-br from-[#111816] via-[#19140d] to-[#21120d] p-4 text-slate-100 shadow-[0_20px_54px_rgba(0,0,0,0.34)]">
             <div className="relative flex items-center justify-between gap-3">
               <h2 className="text-lg font-black tracking-tight text-white">
-                30天累计可领 <span className="font-mono text-xl text-amber-300">¥8.80</span>
+                30天累计可领 <span className="font-mono text-xl text-amber-300">$5.00</span>
               </h2>
               <div className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-xs font-bold text-slate-300">
                 已完成{completedDays.length}天
@@ -505,8 +505,8 @@ export default function CheckInRedPacketView({
               <h3 className="text-sm font-black text-white">活动说明</h3>
             </div>
             <div className="mt-3 space-y-1.5 text-xs font-medium leading-relaxed text-slate-400">
-              <p>1. 新用户首次激活跑步机可领取 ¥1.80 红包。</p>
-              <p>2. 新用户首次完成 1 条路线可领取 ¥2.80 红包。</p>
+              <p>1. 新用户首次激活跑步机可领取 $0.99 红包。</p>
+              <p>2. 新用户首次完成 1 条路线可领取 $1.99 红包。</p>
               <p>3. 打卡活动总期限 30 天，每天按顺序完成 1 条推荐路线。</p>
               <p>4. 每完成 1 天即可领取 1 个固定金额红包。</p>
               <p>5. 红包余额可在 Profile 的钱包入口提现。</p>
