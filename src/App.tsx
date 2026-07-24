@@ -321,13 +321,7 @@ export default function App() {
                  {...fullScreenPage.data}
                  onExit={() => setFullScreenPage({ type: 'routeDetail', data: fullScreenPage.data })}
                  onComplete={(stats) => {
-                   // Update user stats
-                   setUserStats(prev => ({
-                     ...prev,
-                     totalDistance: prev.totalDistance + stats.distance,
-                     totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
-                     lightValue: (prev.lightValue || 0) + (stats.calories || Math.floor(stats.distance * 65))
-                   }));
+                   const earnedGlow = stats.calories || Math.floor(stats.distance * 65);
 
                    if (fullScreenPage.data.isCheckInRoute) {
                       const checkInDay = fullScreenPage.data.checkInDay || 1;
@@ -335,18 +329,34 @@ export default function App() {
                         const completedDays = prev.checkInCompletedDays || [];
                         const rewardDays = prev.checkInRewardDays || [];
                         const alreadyCompleted = completedDays.includes(checkInDay);
-                        if (alreadyCompleted) return prev;
                         return {
                           ...prev,
-                          completedRoutes: prev.completedRoutes + 1,
-                          dailyCompletedRoutes: (prev.dailyCompletedRoutes || 0) + 1,
-                          checkInCompletedDays: [...completedDays, checkInDay],
+                          totalDistance: prev.totalDistance + stats.distance,
+                          totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
+                          lightValue: (prev.lightValue || 0) + earnedGlow,
+                          lifetimeLightValue: (prev.lifetimeLightValue ?? prev.lightValue ?? 0) + earnedGlow,
+                          dailyDistance: (prev.dailyDistance || 0) + stats.distance,
+                          dailyTreadmillStarted: true,
+                          completedRoutes: alreadyCompleted ? prev.completedRoutes : prev.completedRoutes + 1,
+                          dailyCompletedRoutes: alreadyCompleted ? (prev.dailyCompletedRoutes || 0) : (prev.dailyCompletedRoutes || 0) + 1,
+                          checkInCompletedDays: alreadyCompleted ? completedDays : [...completedDays, checkInDay],
                           checkInRewardDays: rewardDays.includes(checkInDay) ? rewardDays : [...rewardDays, checkInDay],
                         };
                       });
                       setFullScreenPage({ type: 'checkInRedPacket' });
                       return;
                     }
+
+                   // Update user stats
+                   setUserStats(prev => ({
+                     ...prev,
+                     totalDistance: prev.totalDistance + stats.distance,
+                     totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
+                     lightValue: (prev.lightValue || 0) + earnedGlow,
+                     lifetimeLightValue: (prev.lifetimeLightValue ?? prev.lightValue ?? 0) + earnedGlow,
+                     dailyDistance: (prev.dailyDistance || 0) + stats.distance,
+                     dailyTreadmillStarted: true,
+                   }));
 
                    if (fullScreenPage.data.isActivityRoute) {
                       const activityKey = `${fullScreenPage.data.cityId}-${fullScreenPage.data.routeIndex}`;

@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { feature } from 'topojson-client';
 import { CityData } from '../data/cities';
 import { cn } from '../lib/utils';
+import countriesTopologyUrl from '../assets/globe/countries-110m.json?url';
+import globeTextureUrl from '../assets/globe/earth-dark.svg?url';
 
 interface WorldGlobeProps {
   cities: CityData[];
@@ -37,9 +39,8 @@ type FlightMarker = {
 
 type GlobeHtmlElement = CityPoint | FlightMarker;
 
-const viteBaseUrl = ((import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL || '/');
-const GLOBE_TEXTURE_URL = `${viteBaseUrl}globe/earth-dark.svg`;
-const COUNTRIES_TOPOLOGY_URL = `${viteBaseUrl}globe/countries-110m.json`;
+const GLOBE_TEXTURE_URL = globeTextureUrl;
+const COUNTRIES_TOPOLOGY_URL = countriesTopologyUrl;
 const CAMERA_ALTITUDE = 1.78;
 const REDUCED_CAMERA_ALTITUDE = 1.95;
 

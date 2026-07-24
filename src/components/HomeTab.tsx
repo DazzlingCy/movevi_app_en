@@ -91,8 +91,8 @@ export default function HomeTab({
     : litCount > 0
       ? 100
       : 0;
-  const completedRoutes = availableCities.reduce(
-    (total, city) => total + (city.completedRouteIndices?.length || city.completed || 0),
+  const unlockedRoutes = availableCities.reduce(
+    (total, city) => total + (city.status === 'lit' || city.status === 'in-progress' ? city.routes : 0),
     0
   );
   const glowRank = getGlowRank(userStats?.lifetimeLightValue ?? userStats?.lightValue ?? 0);
@@ -325,9 +325,8 @@ export default function HomeTab({
               </p>
               <div className="mt-auto text-[11px] font-bold leading-5 text-slate-400">
                 <p>
-                  Global routes <span className="font-mono text-sm font-black text-slate-100">{availableCities.length * 3}</span>
+                  Unlocked routes <span className="font-mono text-sm font-black text-slate-100">{unlockedRoutes}</span>
                 </p>
-                <p>Completed routes {completedRoutes}</p>
               </div>
             </div>
 
@@ -461,8 +460,6 @@ export default function HomeTab({
                         <span className="text-[10px] uppercase tracking-widest text-slate-500">Progress</span>
                       </div>
                     </div>
-
-                    <p className="mb-5 text-sm leading-relaxed text-slate-300">{selectedCity.description}</p>
 
                     <div className="mb-6">
                       <div className="mb-2 flex items-end justify-between">

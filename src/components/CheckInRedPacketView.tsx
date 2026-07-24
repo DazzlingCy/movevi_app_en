@@ -1,4 +1,10 @@
-import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   CheckCircle2,
@@ -50,13 +56,16 @@ export default function CheckInRedPacketView({
   const [toast, setToast] = useState<string | null>(null);
   const [result, setResult] = useState<{ amount: string; description: string } | null>(null);
   const [routeOffset, setRouteOffset] = useState(0);
+  const [routeDirection, setRouteDirection] = useState(1);
 
   const started = Boolean(userStats.checkInPlanStarted);
   const completedDays: number[] = userStats.checkInCompletedDays || [];
+  const rewardDays: number[] = userStats.checkInRewardDays || [];
   const openedRewardDays: number[] = userStats.checkInOpenedRewardDays || [];
   const nextDay = Math.min(completedDays.length + 1, PLAN_DAYS);
   const todayCompleted = completedDays.includes(nextDay);
   const planComplete = completedDays.length >= PLAN_DAYS;
+  const canSwitchRoute = started && !todayCompleted && !planComplete;
   const activationReady = Boolean(userStats.dailyTreadmillStarted || userStats.checkInActivationClaimed);
   const activationClaimed = Boolean(userStats.checkInActivationClaimed);
   const firstRouteReady = (userStats.completedRoutes || 0) > 0 || Boolean(userStats.checkInFirstRouteClaimed);
@@ -130,10 +139,17 @@ export default function CheckInRedPacketView({
     showToast(`第${nextDay}天打卡完成，红包已解锁`);
   };
 
-  const switchTodayRoute = () => {
-    if (todayCompleted || planComplete) return;
-    setRouteOffset(prev => (prev + 1) % Math.max(routeOptions.length, 1));
+  const switchTodayRoute = (direction = 1) => {
+    if (!canSwitchRoute) return;
+    const routeCount = Math.max(routeOptions.length, 1);
+    setRouteDirection(direction);
+    setRouteOffset(prev => (prev + direction + routeCount) % routeCount);
     showToast('已切换今日路线');
+  };
+
+  const handleRouteDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number } }) => {
+    if (!canSwitchRoute || Math.abs(info.offset.x) < 44) return;
+    switchTodayRoute(info.offset.x < 0 ? 1 : -1);
   };
 
   const goToTodayRoute = () => {
@@ -157,7 +173,7 @@ export default function CheckInRedPacketView({
   };
 
   const openReward = (day: number) => {
-    if (!completedDays.includes(day)) {
+    if (!rewardDays.includes(day)) {
       showToast('完成当天打卡后可领取红包');
       return;
     }
@@ -219,6 +235,8 @@ export default function CheckInRedPacketView({
   };
 
   const completionPercent = Math.round((completedDays.length / PLAN_DAYS) * 100);
+  const planButtonLabel = planComplete ? '整期已完成' : started ? '打卡已开启' : '开启30天打卡';
+  const planButtonDisabled = started || planComplete;
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#05070A] text-slate-100">
@@ -339,7 +357,7 @@ export default function CheckInRedPacketView({
 
               <button
                 type="button"
-                disabled={started}
+                disabled={planButtonDisabled}
                 onClick={startPlan}
                 className={`mt-4 h-11 w-full rounded-full text-sm font-black shadow-[0_12px_28px_rgba(255,255,255,0.10)] active:scale-[0.98] ${
                   started
@@ -347,13 +365,19 @@ export default function CheckInRedPacketView({
                     : 'bg-white text-slate-950'
                 }`}
               >
-                {started ? '打卡已开启' : '开启30天打卡'}
+                {planButtonLabel}
               </button>
             </div>
           </section>
 
           {started && (
-            <section className="mt-4 shrink-0 rounded-2xl border border-emerald-300/15 bg-[#0d1412]/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]">
+            <motion.section
+              className="mt-4 shrink-0 cursor-grab rounded-2xl border border-emerald-300/15 bg-[#0d1412]/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] active:cursor-grabbing"
+              drag={canSwitchRoute ? 'x' : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.12}
+              onDragEnd={handleRouteDragEnd}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-300/70">
@@ -366,8 +390,8 @@ export default function CheckInRedPacketView({
                     {!planComplete && (
                       <button
                         type="button"
-                        disabled={todayCompleted}
-                        onClick={switchTodayRoute}
+                        disabled={!canSwitchRoute}
+                        onClick={() => switchTodayRoute()}
                         className="inline-flex h-7 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 text-[10px] font-black text-emerald-100 active:scale-95 disabled:opacity-45"
                       >
                         <Shuffle size={12} />
@@ -381,7 +405,20 @@ export default function CheckInRedPacketView({
                 </div>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/25">
+              {canSwitchRoute && (
+                <p className="mt-2 text-[11px] font-bold text-slate-500">左右滑动切换路线</p>
+              )}
+
+              <AnimatePresence mode="wait" custom={routeDirection}>
+              <motion.div
+                key={`${todayRoute.city.id}-${todayRoute.routeIndex}-${nextDay}`}
+                custom={routeDirection}
+                initial={{ opacity: 0, x: routeDirection * 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -routeDirection * 28 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="mt-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/25"
+              >
                 <div className="relative h-32">
                   <CityImage src={todayRoute.city.image} alt={todayRoute.city.name} fallbackLabel={todayRoute.city.name} className="h-full w-full object-cover opacity-75" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -417,8 +454,9 @@ export default function CheckInRedPacketView({
                     {todayCompleted ? '今日已完成' : '去打卡'}
                   </button>
                 </div>
-              </div>
-            </section>
+              </motion.div>
+              </AnimatePresence>
+            </motion.section>
           )}
 
           <section className="relative mt-4 shrink-0 overflow-hidden rounded-[26px] border border-orange-200/18 bg-gradient-to-br from-[#111816] via-[#19140d] to-[#21120d] p-4 text-slate-100 shadow-[0_20px_54px_rgba(0,0,0,0.34)]">
@@ -433,7 +471,7 @@ export default function CheckInRedPacketView({
 
             <div className="hide-scrollbar mt-4 flex gap-3 overflow-x-auto pb-1">
               {allDays.map(day => {
-                const earned = completedDays.includes(day);
+                const earned = rewardDays.includes(day);
                 const opened = openedRewardDays.includes(day);
                 return (
                   <button
