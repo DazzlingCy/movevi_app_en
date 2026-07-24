@@ -27,13 +27,13 @@ export default function LitRecordsView({ onBack }: LitRecordsViewProps) {
         >
           <ChevronRight className="rotate-180" size={20} />
         </button>
-        <h1 className="flex-1 text-center font-bold tracking-widest text-slate-100 pr-8">点亮记录</h1>
+        <h1 className="flex-1 text-center font-bold tracking-widest text-slate-100 pr-8">Lit Routes</h1>
       </div>
 
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-widest flex items-center">
-            <Zap size={16} className="mr-2" /> 探索光迹
+            <Zap size={16} className="mr-2" /> Explore Trails
           </h3>
           <span className="text-[10px] text-slate-500 font-mono">Total {litRoutes.length} Routes</span>
         </div>
@@ -41,7 +41,7 @@ export default function LitRecordsView({ onBack }: LitRecordsViewProps) {
         <div className="relative">
           {litRoutes.length === 0 ? (
              <div className="text-center py-12 bg-white/5 border border-white/10 rounded-2xl">
-               <p className="text-xs text-slate-500">暂无点亮记录，快去探索路线吧</p>
+               <p className="text-xs text-slate-500">No routes lit yet. Start exploring to add one.</p>
              </div>
           ) : (
             <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[27px] before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-cyan-500 before:via-slate-700 before:to-transparent">

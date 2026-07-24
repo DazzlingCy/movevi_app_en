@@ -18,7 +18,7 @@ export interface MedleyRouteItem {
   spots: string;
   intro: string;
   distance: string;
-  duration: string; // "约 25 分钟"
+  duration: string; // For example: "About 25 min"
   rating: number; // e.g. 4.9
 }
 
@@ -343,7 +343,7 @@ export default function WeekendMedleyView({
         ctx.stroke();
 
         // 4. Explorer Information Text
-        // Draw decorative Profile Avatar Circle on Canvas representing 木小六
+        // Draw a decorative profile avatar circle for Mia Liu.
         ctx.strokeStyle = '#D9A74E';
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -366,7 +366,7 @@ export default function WeekendMedleyView({
 
         ctx.font = 'bold 28px sans-serif';
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillText('Mu Xiaoliu', 300, 236);
+        ctx.fillText('Mia Liu', 300, 236);
 
         // Sub description
         ctx.font = '13px sans-serif';
@@ -741,7 +741,7 @@ export default function WeekendMedleyView({
                         <span>{route.distance} km</span>
                       </div>
 
-                      {/* Duration (时长) */}
+                      {/* Duration */}
                       <div className="bg-[#05060b] px-2.5 py-1 rounded-lg border border-white/5 text-cyan-300 flex items-center gap-1 font-semibold">
                         <Clock size={11} className="text-cyan-400" />
                         <span>{route.duration}</span>
@@ -822,17 +822,17 @@ export default function WeekendMedleyView({
               setRecentDrawReward(null);
             }}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-zinc-900/60 hover:bg-zinc-800 border border-zinc-800/80 transition-colors"
-            title="返回主页"
+            title="Back to event"
           >
             <ChevronLeft size={20} className="text-slate-200" />
           </button>
           
           <div className="text-center">
             <h2 className="text-base font-black tracking-wide text-white leading-tight">
-              现金奖励翻牌
+              Pick a Cash Card
             </h2>
             <p className="text-[10px] text-[#8e8e93] mt-1 font-semibold">
-              三张现金卡，选择一张揭晓奖励
+              Choose one of three cards to reveal your reward
             </p>
           </div>
           
@@ -843,9 +843,9 @@ export default function WeekendMedleyView({
                 onUpdateState({ lotteryChances: lotteryChances + 1 });
               }}
               className="px-2 py-1.5 bg-yellow-400/10 hover:bg-yellow-400/20 text-[#f5cb4e] border border-[#ffe082]/15 rounded-lg text-[9px] font-black active:scale-95 transition-all"
-              title="审核调试工具：一键充能 +1 抽奖机会"
+              title="Testing shortcut: add one draw"
             >
-              +1 调试券
+              +1 Test Draw
             </button>
             <div className="px-3 py-1.5 rounded-xl bg-[#1c1c24] border border-zinc-800/80 text-[#ffe285] font-mono font-black text-xs flex items-center gap-1 shadow-sm">
               <span>🎟️</span>
@@ -860,11 +860,11 @@ export default function WeekendMedleyView({
           {/* Main Card Container */}
           <div className="w-full bg-[#12131a] rounded-3xl p-5 border border-zinc-850 shadow-[0_12px_28px_rgba(0,0,0,0.55)] relative overflow-hidden text-center">
             
-            {/* ✨ 周末现金奖池 pill centered */}
+            {/* Centered weekend cash prize pool pill */}
             <div className="flex justify-center mb-6">
               <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-[#ffe082]/15 bg-[#1a1710] text-[#f5cb4e] text-xs font-black tracking-wider shadow-[0_2px_10px_rgba(245,203,78,0.05)]">
                 <Sparkles size={11} className="text-[#f5cb4e]" />
-                <span>周末现金奖池</span>
+                <span>Weekend Cash Prize Pool</span>
               </div>
             </div>
 
@@ -919,12 +919,12 @@ export default function WeekendMedleyView({
                             <Mail size={16} className="text-[#f5cb4e]" />
                           </div>
                           
-                          <span className="text-[12px] font-black text-white tracking-widest block leading-none">现金卡</span>
+                          <span className="text-[12px] font-black text-white tracking-widest block leading-none">Cash Card</span>
                         </div>
 
                         {/* Bottom Label text */}
                         <span className="text-[9px] text-[#4d94ff] font-bold leading-none block text-center mt-1">
-                          点击翻开
+                          Tap to Reveal
                         </span>
                       </div>
 
@@ -949,7 +949,7 @@ export default function WeekendMedleyView({
 
                         {/* Center gold/cash reveal */}
                         <div className="flex flex-col items-center justify-center">
-                          <span className="text-[9px] text-zinc-500 font-semibold tracking-widest block leading-none uppercase">微信红包</span>
+                          <span className="text-[9px] text-zinc-500 font-semibold tracking-widest block leading-none uppercase">WeChat Red Packet</span>
                           <span className={`text-base font-mono font-black mt-1.5 leading-none ${isThisChosen ? 'text-yellow-400 scale-110' : 'text-zinc-400'}`}>
                             ¥{prizeValue || 0.88}
                           </span>
@@ -960,7 +960,7 @@ export default function WeekendMedleyView({
                             ? 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30'
                             : 'bg-zinc-900 border-zinc-800 text-zinc-650'
                         }`}>
-                          {isThisChosen ? "已抽中" : "未选中"}
+                          {isThisChosen ? "Selected" : "Not Selected"}
                         </span>
                       </div>
                     </motion.div>
@@ -971,18 +971,18 @@ export default function WeekendMedleyView({
 
             {/* Below card state text */}
             <p className="text-[11.5px] text-[#8e8e93] font-medium leading-relaxed px-1.5 mt-5">
-              当前剩余 {lotteryChances} 次机会。选择任意一张现金卡翻开，将消耗 1 次机会抽取现金奖励。
+              You have {lotteryChances} {lotteryChances === 1 ? 'draw' : 'draws'} left. Reveal any cash card to use one draw and win a cash reward.
             </p>
           </div>
 
-          {/* 🎁 奖池与概率 */}
+          {/* Prizes and odds */}
           <div className="w-full bg-[#12131a] rounded-3xl p-5 border border-zinc-850 shadow text-left space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-black text-[#f5cb4e] flex items-center gap-1.5 leading-none">
                 <Gift size={14} className="text-[#f5cb4e]/90" />
-                奖池与概率
+                Prizes & Odds
               </span>
-              <span className="text-[11px] text-[#8e8e93] font-bold">公开展示</span>
+              <span className="text-[11px] text-[#8e8e93] font-bold">Published Odds</span>
             </div>
 
             {/* Five column horizontal layout cards */}
@@ -1009,14 +1009,14 @@ export default function WeekendMedleyView({
             </div>
           </div>
 
-          {/* ⏱️ 开奖记录 */}
+          {/* Draw history */}
           <div className="w-full bg-[#12131a] rounded-3xl p-5 border border-zinc-850 shadow text-left space-y-3.5">
             <div className="flex justify-between items-center">
               <span className="text-sm font-black text-slate-200 flex items-center gap-1.5 leading-none">
                 <Clock size={14} className="text-zinc-400" />
-                开奖记录
+                Draw History
               </span>
-              <span className="text-[11px] text-[#8e8e93] font-bold leading-none">{drawHistory.length} 次</span>
+              <span className="text-[11px] text-[#8e8e93] font-bold leading-none">{drawHistory.length} {drawHistory.length === 1 ? 'draw' : 'draws'}</span>
             </div>
 
             {drawHistory.length > 0 ? (
@@ -1026,17 +1026,17 @@ export default function WeekendMedleyView({
                     <div className="flex items-center gap-2">
                       <span className="text-base text-[#f5cb4e]">🎄</span>
                       <div>
-                        <span className="text-zinc-200 block font-bold text-[11px]">微信现金红包</span>
-                        <span className="text-[9.5px] text-zinc-500 font-mono block">已秒到微信钱包余额</span>
+                        <span className="text-zinc-200 block font-bold text-[11px]">WeChat Cash Red Packet</span>
+                        <span className="text-[9.5px] text-zinc-500 font-mono block">Credited to your WeChat Wallet</span>
                       </div>
                     </div>
-                    <span className="text-yellow-400 font-mono font-black text-sm">+{val} 元</span>
+                    <span className="text-yellow-400 font-mono font-black text-sm">+¥{val}</span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-[11.5px] text-[#8e8e93] leading-normal font-medium">
-                暂无记录，完成路线串烧后回来试试手气。
+                No draws yet. Complete the route medley, then come back and try your luck.
               </p>
             )}
           </div>
@@ -1050,19 +1050,19 @@ export default function WeekendMedleyView({
               className="w-full py-4 rounded-2xl bg-[#1c1d27]/75 border border-zinc-800 text-zinc-300 font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 select-none"
             >
               <Ticket size={14} className="text-zinc-400" />
-              <span>请选择一张现金卡</span>
+              <span>Choose a cash card</span>
             </div>
           ) : (
             <div
               className="w-full py-4 rounded-2xl bg-[#0f1016] border border-zinc-900 text-zinc-500 font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 select-none"
             >
               <Ticket size={14} className="text-zinc-600 opacity-60" />
-              <span>暂无抽奖机会</span>
+              <span>No draws available</span>
             </div>
           )}
 
           <span className="text-[10px] text-[#8e8e93] font-semibold text-center pb-2">
-            完成三条路线得 1 次机会，分享成果可再得 1 次
+            Complete three routes to earn one draw. Share your result to earn another.
           </span>
         </div>
 
@@ -1087,7 +1087,7 @@ export default function WeekendMedleyView({
                   <span className="absolute bottom-6 left-12 text-yellow-400 transform -rotate-45 select-none">✨</span>
                 </div>
 
-                <h3 className="text-lg font-black text-yellow-200 tracking-widest mt-4">恭喜翻中现金大吉！</h3>
+                <h3 className="text-lg font-black text-yellow-200 tracking-widest mt-4">You Won a Cash Reward!</h3>
                 <p className="text-[10px] text-yellow-100/50 mt-1 uppercase font-mono tracking-widest font-bold">CASH REWARD SECURED</p>
 
                 <div className="my-6">
@@ -1095,18 +1095,18 @@ export default function WeekendMedleyView({
                   <span className="text-5xl font-black font-mono text-yellow-300 select-all leading-none" style={{ textShadow: '2px 3px 0 rgba(0,0,0,0.15)' }}>
                     {recentDrawReward}
                   </span>
-                  <span className="text-[11px] text-yellow-200 block mt-2.5 font-bold">现金已转入红包余额</span>
+                  <span className="text-[11px] text-yellow-200 block mt-2.5 font-bold">Added to your red packet balance</span>
                 </div>
 
                 <p className="text-[10.5px] text-yellow-100/70 leading-relaxed max-w-[200px] font-bold mb-6">
-                  周末限定汗水结晶！红包款数额已模拟直汇您登录微信号绑定零钱。
+                  Your weekend miles paid off! This reward has been credited to the WeChat Wallet linked to your account.
                 </p>
 
                 <button
                   onClick={handleCloseDrawModal}
                   className="w-full py-3 bg-gradient-to-r from-yellow-300 to-amber-400 hover:from-yellow-200 hover:to-amber-300 text-slate-900 font-extrabold rounded-xl text-xs transition-colors tracking-widest uppercase shadow-md"
                 >
-                  收下现金大吉
+                  Claim Reward
                 </button>
               </motion.div>
             </motion.div>
@@ -1148,13 +1148,13 @@ export default function WeekendMedleyView({
             <button 
               onClick={onBack} 
               className="w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 border border-white/10 backdrop-blur-md transition-colors"
-              title="返回"
+              title="Back"
             >
               <ChevronLeft size={20} className="text-slate-200" />
             </button>
             
             <div className="bg-[#12231c]/70 border border-emerald-500/20 px-3 py-1.5 rounded-full text-[10px] font-black text-emerald-400 tracking-wider flex items-center gap-1.5 shadow-[0_4px_12px_rgba(16,185,129,0.15)] select-none">
-              <span>📅 周末限时开放</span>
+              <span>📅 Weekends Only</span>
             </div>
           </div>
 
@@ -1162,23 +1162,23 @@ export default function WeekendMedleyView({
           <div className="relative z-20 px-5 pt-12 pb-6 text-left">
             {/* Theme category tag */}
             <div className="inline-flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
-              <span>🏛️ 历史文化主题</span>
+              <span>🏛️ History & Culture</span>
             </div>
 
             {/* Huge bold display title */}
             <h1 className="text-[25px] font-black text-white mt-3.5 tracking-wide leading-tight drop-shadow-sm select-none">
-              周末城市记忆串烧
+              Weekend City Memory Medley
             </h1>
 
             {/* Explanatory introduction text */}
             <p className="text-[11px] text-slate-300 leading-relaxed font-semibold mt-3 max-w-[340px] drop-shadow-sm">
-              这个周末，从古寺、皇城、旧街与河岸出发，把三座城市的历史片段串成一段奔跑记忆。每一条路线都是一枚城市印章，完成串烧后解锁现金翻牌抽奖。
+              This weekend, run through ancient temples, imperial landmarks, old streets, and riverfronts across three cities. Each route earns you a city stamp. Complete the medley to unlock the cash card draw.
             </p>
 
             {/* Integrated activity opening schedule banner with custom thin borders */}
             <div className="mt-5 bg-[#0b1213]/85 rounded-2xl p-4 border border-[#f5d06e]/15 max-w-sm shadow-xl">
               <div className="flex items-center gap-1.5 text-[#f5d06e] font-black text-[10.5px] tracking-widest">
-                <span>📅 活动开放时间</span>
+                <span>📅 Event Hours</span>
               </div>
               <p className="text-[14px] font-mono font-black text-slate-100 mt-1.5 tracking-wider font-bold">
                 2026.06.06 00:00 - 06.07 23:59
@@ -1197,33 +1197,33 @@ export default function WeekendMedleyView({
               <span className="text-xl font-black text-slate-100 font-mono tracking-tight leading-none">
                 {selectedRouteIds.length}/3
               </span>
-              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">已选路线</span>
+              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">Routes Selected</span>
             </div>
             {/* Card 2 */}
             <div className="bg-[#090e16]/80 rounded-2xl p-4 border border-white/5 flex flex-col justify-between shadow">
               <span className="text-xl font-black text-emerald-400 font-mono tracking-tight leading-none">
                 {completedCount}/3
               </span>
-              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">完成进度</span>
+              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">Completed</span>
             </div>
             {/* Card 3 */}
             <div className="bg-[#090e16]/80 rounded-2xl p-4 border border-white/5 flex flex-col justify-between shadow">
               <span className="text-xl font-black text-[#f5d06e] font-mono tracking-tight leading-none">
                 {lotteryChances}
               </span>
-              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">抽奖机会</span>
+              <span className="text-[10px] text-slate-500 font-bold mt-2.5 leading-none">Draws</span>
             </div>
           </div>
 
-          {/* CORE CARD SECTION - 我的路线串烧 */}
+          {/* Core card section: My Route Medley */}
           <div className="bg-[#080d15] rounded-2xl p-4 border border-white/5 space-y-4 text-left shadow-lg">
             {/* Section Header */}
             <div className="flex justify-between items-center pb-2.5 border-b border-white/5">
               <span className="text-xs font-black text-slate-200 flex items-center gap-1.5">
-                <span className="text-base select-none leading-none">🗺️</span> 我的路线串烧
+                <span className="text-base select-none leading-none">🗺️</span> My Route Medley
               </span>
               <span className="text-[9.5px] text-slate-400 font-bold bg-[#142334]/50 border border-cyan-500/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <span>🗺️ 自定 10 选 3</span>
+                <span>🗺️ Pick 3 of 10</span>
               </span>
             </div>
 
@@ -1237,10 +1237,10 @@ export default function WeekendMedleyView({
                   <Plus size={16} className="text-[#f5d06e]" />
                 </div>
                 <span className="text-[13px] font-black tracking-wider text-slate-200">
-                  选择 3 条城市路线
+                  Choose 3 City Routes
                 </span>
                 <p className="text-[10px] text-slate-400 max-w-[240px] text-center leading-normal font-semibold">
-                  进入独立路线列表，挑选 3 条历史文化路线。保存后本次活动不可更改。
+                  Choose three history and culture routes from the full list. Once saved, your selection cannot be changed for this event.
                 </p>
               </button>
             ) : (
@@ -1266,7 +1266,7 @@ export default function WeekendMedleyView({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <span className="bg-slate-800 text-[9px] text-[#f5d06e] font-black px-1.5 py-0.5 rounded shrink-0">
-                            跑道 {index + 1}
+                            Route {index + 1}
                           </span>
                           <span className="text-[10px] text-slate-400 font-bold">{item.cityName}</span>
                         </div>
@@ -1278,14 +1278,14 @@ export default function WeekendMedleyView({
                         <span className="text-[10.5px] font-mono text-slate-400 font-bold">{item.distance} km</span>
                         {activityStarted ? (
                           isCompleted ? (
-                            <span className="bg-emerald-950/80 border border-emerald-500/30 text-[#2ebd90] text-[9px] font-black px-2 py-0.5 rounded-md">已完成</span>
+                            <span className="bg-emerald-950/80 border border-emerald-500/30 text-[#2ebd90] text-[9px] font-black px-2 py-0.5 rounded-md">Completed</span>
                           ) : (
                             <button 
                               onClick={() => onNavigateToRouteDetail(item.cityId, item.routeIndex, item.image)}
                               className="bg-[#26b180] hover:bg-[#1f936a] text-white text-[9.5px] font-black px-2.5 py-1 rounded-md flex items-center gap-0.5 active:scale-95 transition-all"
                             >
                               <Play size={8} className="fill-white" />
-                              <span>踏上</span>
+                              <span>Start</span>
                             </button>
                           )
                         ) : (
@@ -1294,7 +1294,7 @@ export default function WeekendMedleyView({
                               onUpdateState({ selectedRouteIds: selectedRouteIds.filter(id => id !== item.id) });
                             }}
                             className="p-1 hover:bg-rose-950/20 text-rose-500 rounded-lg transition-colors"
-                            title="移除"
+                            title="Remove"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -1310,7 +1310,7 @@ export default function WeekendMedleyView({
                     className="w-full py-3 bg-[#05090f] hover:bg-[#152e46]/10 rounded-xl border border-dashed border-slate-800 hover:border-cyan-500/30 text-left pl-3 text-xs font-bold text-slate-500 hover:text-cyan-400 transition-all flex items-center gap-2"
                   >
                     <Plus size={14} />
-                    <span>继续添加记忆跑道 (还需选择 {3 - selectedRouteIds.length} 条)</span>
+                    <span>Add another route ({3 - selectedRouteIds.length} more needed)</span>
                   </button>
                 )}
               </div>
@@ -1320,20 +1320,20 @@ export default function WeekendMedleyView({
           {/* ACTIVITY RULES CARD BLOCK */}
           <div className="bg-[#080d15] rounded-2xl p-4 border border-white/5 text-left space-y-3 shadow-lg">
             <span className="text-xs font-black text-slate-200 flex items-center gap-1.5">
-              <span>✨</span> 活动规则
+              <span>✨</span> How It Works
             </span>
             <ul className="text-[11px] text-slate-400 space-y-2.5 font-bold leading-relaxed">
               <li className="flex gap-2">
                 <span className="text-[#f5d06e] shrink-0">1.</span>
-                <span>保存 3 条路线后，开始跑台挑战，路线中途不可修改。</span>
+                <span>Choose and save three routes to begin. You cannot change them once the challenge starts.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-[#f5d06e] shrink-0">2.</span>
-                <span>完成全部 3 条记忆路线后，点亮连携，直接解锁独立页面的翻卡大奖！</span>
+                <span>Complete all three routes to finish the medley and unlock the cash card draw.</span>
               </li>
               <li className="flex gap-2">
                 <span className="text-[#f5d06e] shrink-0">3.</span>
-                <span>完成串烧或探索过程中，点击“分享海报”转发成果，可额外赠送 <strong className="text-cyan-400">1 次</strong> 大奖翻卡机会。</span>
+                <span>Share your achievement poster during or after the medley to earn <strong className="text-cyan-400">one extra draw</strong>.</span>
               </li>
             </ul>
           </div>
@@ -1341,7 +1341,7 @@ export default function WeekendMedleyView({
           {/* Dynamic Status Callout when active */}
           {activityStarted && !isMedleyAllCompleted && (
             <div className="p-3.5 rounded-xl bg-slate-950/60 text-center border border-white/5 text-[10.5px] text-slate-400 font-bold leading-relaxed text-left">
-              ⏳ 请在跑台上跑完上述 3 条选择的记忆路线，点亮全部 3 段华夏遗珍，即可去翻开微信现金秘宝！
+              ⏳ Complete all three selected routes on your treadmill to unlock the WeChat cash card draw.
             </div>
           )}
 
@@ -1350,9 +1350,9 @@ export default function WeekendMedleyView({
             <div className="p-4 rounded-2xl bg-gradient-to-tr from-[#1b1c2b] to-[#0d0d17] border border-[#f5cb4e]/30 text-center shadow-lg">
               <h4 className="text-xs font-black text-[#f5cb4e] flex items-center justify-center gap-1.5">
                 <Trophy size={14} className="text-[#f5cb4e] fill-amber-500/10" />
-                周末城市记忆串烧已完美完成！
+                Weekend City Memory Medley Complete!
               </h4>
-              <p className="text-[10px] text-slate-300 mt-1.5">恭喜探索家！所有串烧印章均已集齐点亮！请点击下方“前往领奖”跳转单独的时空翻牌界面抽取现金大礼吧！ 🏮</p>
+              <p className="text-[10px] text-slate-300 mt-1.5">Congratulations, explorer! You collected every medley stamp. Tap the reward button below to reveal your cash prize. 🏮</p>
             </div>
           )}
         </div>
@@ -1393,21 +1393,21 @@ export default function WeekendMedleyView({
           >
             {selectedRouteIds.length < 3 ? (
               <>
-                <span>📋 自定配制 3 条跑道</span>
+                <span>📋 Choose 3 Routes</span>
               </>
             ) : !activityStarted ? (
               <>
-                <span>🚀 锁定并开启记忆星途</span>
+                <span>🚀 Lock In & Start</span>
               </>
             ) : isMedleyAllCompleted ? (
               <>
                 <Gift size={14} className="stroke-[2.5]" />
-                <span>🎁 串烧完成，翻卡领现金</span>
+                <span>🎁 Reveal Your Cash Reward</span>
               </>
             ) : (
               <>
                 <Play size={10} className="fill-slate-950" />
-                <span>👟 踏上时空记忆串烧</span>
+                <span>👟 Continue the Medley</span>
               </>
             )}
           </button>
@@ -1419,7 +1419,7 @@ export default function WeekendMedleyView({
               handleGeneratePoster();
             }}
             className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#0e1624] border border-white/5 hover:bg-[#142234] transition-colors"
-            title="生成结业分享海报"
+            title="Create achievement poster"
           >
             <Share2 className="text-slate-300" size={17} />
           </button>
@@ -1432,7 +1432,7 @@ export default function WeekendMedleyView({
                 ? 'bg-[#1b122c] border-purple-500/50 text-purple-300'
                 : 'bg-[#0e1624] border-white/5 text-slate-300 hover:text-amber-300 hover:border-amber-400/30'
             }`}
-            title="前往独立抽奖抽卡页面"
+            title="Open the cash card draw"
           >
             {lotteryChances > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-[8px] font-black text-white flex items-center justify-center animate-bounce">
@@ -1446,10 +1446,10 @@ export default function WeekendMedleyView({
         {/* Footer Sub-indicator Label Row */}
         <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold px-1.5 pb-2 select-none">
           <span>
-            {shareBonusClaimed ? '✅ 分享奖励：已获得+1抽奖机会' : '🎁 转发串烧荣誉海报赠送 1 次翻卡机会'}
+            {shareBonusClaimed ? '✅ Share bonus: +1 draw earned' : '🎁 Share your achievement poster for +1 draw'}
           </span>
           <span>
-            开奖：{drawHistory.length} 次
+            Draws: {drawHistory.length}
           </span>
         </div>
       </div>
@@ -1471,11 +1471,11 @@ export default function WeekendMedleyView({
               <div className="w-12 h-12 bg-cyan-950 text-cyan-400 rounded-full flex items-center justify-center mb-3 border border-cyan-500/30 shadow-inner">
                 <Share className="stroke-[2.5]" size={22} />
               </div>
-              <h3 className="text-sm font-black text-slate-100">结业海报已成功分享</h3>
+              <h3 className="text-sm font-black text-slate-100">Achievement Poster Shared</h3>
               <p className="text-xs text-slate-400 mt-1 font-bold">SHARE COMPLETED</p>
 
               <p className="text-[11px] text-slate-400 leading-relaxed mt-4 mb-5 font-bold">
-                您的周末串烧成果海报已在微信成功传达！已额外为您获赠发卡站 <strong className="text-yellow-400">1 次开大奖红包机会</strong>。
+                Your Weekend Medley poster was shared on WeChat. You earned <strong className="text-yellow-400">one extra cash card draw</strong>.
               </p>
 
               <button
@@ -1485,7 +1485,7 @@ export default function WeekendMedleyView({
                 }}
                 className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-slate-50 font-black rounded-xl text-xs transition-all border border-purple-500/40"
               >
-                立即前往时空翻牌抽奖 ✨
+                Go to the Cash Card Draw ✨
               </button>
             </motion.div>
           </motion.div>
@@ -1503,7 +1503,7 @@ export default function WeekendMedleyView({
           >
             {/* Header section of poster modal */}
             <div className="flex justify-between items-center py-2 border-b border-white/5 shrink-0">
-              <span className="text-xs font-black text-slate-300">🖼️ 串烧结业荣耀海报</span>
+              <span className="text-xs font-black text-slate-300">🖼️ Medley Achievement Poster</span>
               <button 
                 onClick={() => setShowSharePosterModal(false)}
                 className="p-1 hover:bg-white/10 rounded-full text-slate-400"
@@ -1517,20 +1517,20 @@ export default function WeekendMedleyView({
               {isPosterGenerating ? (
                 <div className="text-center p-6 space-y-3">
                   <div className="w-10 h-10 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-xs text-slate-400 font-bold">金墨浸染海报渲染中...</p>
+                  <p className="text-xs text-slate-400 font-bold">Creating your poster...</p>
                 </div>
               ) : (
                 <div className="relative max-w-[280px] w-full max-h-[80vh] bg-gradient-to-b from-[#090F1B] to-[#020305] rounded-2xl border border-yellow-500/40 p-4 font-sans text-left overflow-y-auto hide-scrollbar shadow-inner shadow-2xl">
                   {/* Miniature Poster Simulation rendering identical output as canvas */}
                   <div className="text-center py-1">
                     <span className="text-[7.5px] text-slate-500 tracking-wider font-mono block">WEEKEND MEMORY</span>
-                    <h3 className="text-sm font-black text-[#f5d06e] mt-1 tracking-wider">城市记忆串烧・结业荣耀</h3>
+                    <h3 className="text-sm font-black text-[#f5d06e] mt-1 tracking-wider">City Memory Medley · Achievement</h3>
                     <div className="w-16 h-[1.5px] bg-yellow-500/30 mx-auto mt-2" />
                   </div>
 
                   {/* Stamp Graphic Simulation overlay */}
                   <div className="absolute top-14 right-4 w-12 h-12 border-2 border-red-500/80 rounded-full flex items-center justify-center transform rotate-12 scale-90 select-none pointer-events-none">
-                    <span className="text-[7.5px] text-red-500 font-serif font-black text-center leading-tight">周末历史<br />连携印赏</span>
+                    <span className="text-[7.5px] text-red-500 font-serif font-black text-center leading-tight">WEEKEND<br />HISTORY RUN</span>
                   </div>
 
                   {/* Body textuals */}
@@ -1541,33 +1541,33 @@ export default function WeekendMedleyView({
                       className="w-10 h-10 rounded-full border border-yellow-500/40 object-cover shadow-md mb-1"
                       referrerPolicy="no-referrer"
                     />
-                    <span className="text-[9px] text-slate-400">华夏之美 • 记忆旅脉勋授</span>
-                    <h4 className="text-sm font-black text-white">{`木小六`}</h4>
-                    <p className="text-[8.5px] text-slate-500 leading-normal max-w-[200px] mx-auto mt-1">在古寺、皇城、旧河岸间奔跑，您已在这座城市完成了汗点结业探索。</p>
+                    <span className="text-[9px] text-slate-400">Discover China · One Memory at a Time</span>
+                    <h4 className="text-sm font-black text-white">{`Mia Liu`}</h4>
+                    <p className="text-[8.5px] text-slate-500 leading-normal max-w-[200px] mx-auto mt-1">You ran through ancient temples, imperial landmarks, and old riverfronts to complete this city adventure.</p>
                   </div>
 
                   {/* Highlights statistics row */}
                   <div className="my-3.5 bg-[#0f172a] p-2 rounded-xl grid grid-cols-2 text-center border border-white/5 select-none">
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block font-bold">累计公里</span>
+                      <span className="text-[8.5px] text-slate-400 block font-bold">Total Distance</span>
                       <strong className="text-xs text-cyan-400 font-mono">{totalMedleyDistance} KM</strong>
                     </div>
                     <div>
-                      <span className="text-[8.5px] text-slate-400 block font-bold">连携路线</span>
+                      <span className="text-[8.5px] text-slate-400 block font-bold">Routes Completed</span>
                       <strong className="text-xs text-emerald-400">{completedCount} / 3</strong>
                     </div>
                   </div>
 
                   {/* Mini cards for 3 roads */}
                   <div className="space-y-2 select-none">
-                    <span className="text-[8px] text-slate-400 font-bold block">🗺️ 连携藏品印迹:</span>
+                    <span className="text-[8px] text-slate-400 font-bold block">🗺️ Route Collection:</span>
                     {selectedItems.map((item, id) => {
                       const isDone = completedRouteIds.includes(item.id);
                       return (
                         <div key={item.id} className="bg-black/30 p-2 rounded-xl border border-white/5 flex items-center justify-between text-[8.5px]">
-                          <span className="text-slate-200 truncate pr-2 font-bold">跑道 {id+1}: {item.cityName}·{item.routeName}</span>
+                          <span className="text-slate-200 truncate pr-2 font-bold">Route {id+1}: {item.cityName} · {item.routeName}</span>
                           <span className={isDone ? 'text-emerald-400 font-black' : 'text-slate-500'}>
-                            {isDone ? '● 已达成' : '进行中'}
+                            {isDone ? '● Complete' : 'In Progress'}
                           </span>
                         </div>
                       );
@@ -1577,8 +1577,8 @@ export default function WeekendMedleyView({
                   {/* QR code footer sim */}
                   <div className="mt-4 pt-3.5 border-t border-white/10 flex justify-between items-center">
                     <div>
-                      <span className="text-[8.5px] text-slate-400 font-bold block">微信运动·周末串道</span>
-                      <span className="text-[7.5px] text-slate-500 block leading-normal mt-0.5">扫码一同踏上历史探索印记</span>
+                      <span className="text-[8.5px] text-slate-400 font-bold block">WeChat Sports · Weekend Medley</span>
+                      <span className="text-[7.5px] text-slate-500 block leading-normal mt-0.5">Scan to explore history together</span>
                     </div>
                     {/* Simulated white pixel QR block */}
                     <div className="w-8 h-8 bg-white p-0.5 flex flex-wrap gap-0.5">
@@ -1594,7 +1594,7 @@ export default function WeekendMedleyView({
 
             {/* Poster bottom toolbar with interactive actions */}
             <div className="bg-[#0b0c10] border-t border-white/5 p-4 rounded-t-3xl space-y-3 shrink-0 text-left">
-              <span className="text-[10px] text-slate-400 font-black block tracking-widest uppercase">选择海报输出路径</span>
+              <span className="text-[10px] text-slate-400 font-black block tracking-widest uppercase">Share or Save Your Poster</span>
               
               <div className="grid grid-cols-2 gap-3">
                 {/* 1. DOWNLOAD OR SAVING LOCAL BUTTON */}
@@ -1603,13 +1603,13 @@ export default function WeekendMedleyView({
                     href={posterDownloadUrl}
                     download="weekend_memory_poster.png"
                     onClick={() => {
-                      setShareToastText('恭喜！荣誉海报PNG已成功下载到您设备的下载目录中。');
+                      setShareToastText('Your poster has been saved to your Downloads folder.');
                       setTimeout(() => setShareToastText(null), 3000);
                     }}
                     className="flex items-center justify-center gap-1.5 bg-[#152e46] hover:bg-[#1f4568] text-cyan-300 font-bold py-3 px-4 rounded-xl text-xs transition-colors"
                   >
                     <Download size={14} />
-                    <span>保存海报到本地</span>
+                    <span>Save Poster</span>
                   </a>
                 ) : (
                   <button 
@@ -1618,7 +1618,7 @@ export default function WeekendMedleyView({
                     disabled={isPosterGenerating}
                   >
                     <Download size={14} className="animate-bounce" />
-                    <span>生成中...</span>
+                    <span>Creating...</span>
                   </button>
                 )}
 
@@ -1629,7 +1629,7 @@ export default function WeekendMedleyView({
                   className="flex items-center justify-center gap-1.5 bg-[#26b180] hover:bg-[#1f936a] text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-colors"
                 >
                   <Send size={13} />
-                  <span>微信好友分享</span>
+                  <span>Share on WeChat</span>
                 </button>
               </div>
 
@@ -1639,7 +1639,7 @@ export default function WeekendMedleyView({
                 disabled={isSharingToWechat}
                 className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 border border-white/5 text-[10.5px] text-slate-300 font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors"
               >
-                <span>🌐 分享到微信朋友圈</span>
+                <span>🌐 Share to WeChat Moments</span>
               </button>
             </div>
 
@@ -1674,18 +1674,18 @@ export default function WeekendMedleyView({
                 <Trophy size={28} className="text-[#0a001a] stroke-[2.5]" />
               </div>
 
-              <h3 className="text-base font-black text-white px-2 tracking-wide">🏆 周末城市记忆串烧已完成！</h3>
+              <h3 className="text-base font-black text-white px-2 tracking-wide">🏆 Weekend City Memory Medley Complete!</h3>
               <p className="text-[10px] text-yellow-400/80 font-black mt-1 font-mono tracking-widest uppercase">COMBO RUN COMPLETED SUCCESS</p>
 
               <div className="my-5 space-y-2 text-left bg-black/40 border border-white/5 p-4 rounded-2xl">
                 <p className="text-xs text-slate-200 leading-relaxed font-bold">
-                  恭喜探索家 <strong className="text-yellow-400">木小六</strong>！
+                  Congratulations, <strong className="text-yellow-400">Mia Liu</strong>!
                 </p>
                 <p className="text-[11px] text-slate-300 leading-relaxed font-semibold">
-                  您在这个周末自选并挑战的全部完成点亮了 3 / 3 条华夏历史文化路线！
+                  You completed all 3 of your selected history and culture routes this weekend.
                 </p>
                 <p className="text-[11px] text-slate-400 leading-relaxed font-bold">
-                  🏅 您的专属汗水结业荣誉勋章已淬炼铸造，1次大奖独立页翻卡机会已为您解锁，快去夺取现金大红包吧！
+                  🏅 Your achievement badge is ready, and one cash card draw has been unlocked. Reveal your reward now!
                 </p>
               </div>
 
@@ -1699,7 +1699,7 @@ export default function WeekendMedleyView({
                   className="w-full py-3.5 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md"
                 >
                   <Gift size={14} className="stroke-[2.5]" />
-                  <span>🎁 立即前往翻卡领奖</span>
+                  <span>🎁 Reveal My Reward</span>
                 </button>
 
                 {/* Secondary Button: dismiss and stay on main screen */}
@@ -1707,7 +1707,7 @@ export default function WeekendMedleyView({
                   onClick={() => setShowCompletionModal(false)}
                   className="w-full py-2.5 bg-slate-900/80 hover:bg-slate-800 border border-white/5 text-[10.5px] text-slate-400 font-bold rounded-xl transition-colors"
                 >
-                  返回主页查看
+                  Back to Event
                 </button>
               </div>
             </motion.div>

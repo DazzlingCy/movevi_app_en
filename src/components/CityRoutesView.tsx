@@ -111,7 +111,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
           const canOpenRoute = isSubscribed && isSequentiallyUnlocked;
 
           const routeData = getRouteData(city.id, routeId);
-          const numSpots = routeData.spots.split('—').length || 3;
+          const numSpots = routeData.spots.split(/\s+-\s+/).length || 3;
           const runners = 1890 - i * 300;
 
           return (

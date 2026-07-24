@@ -284,7 +284,7 @@ export default function TimeSpaceWheelView({
         </div>
       </div>
 
-      {/* 4. Bottom Disclosure list (奖池与概率 / 公开展示) */}
+      {/* 4. Bottom disclosure list: prize pool, odds, and published details. */}
       <div className="w-full max-w-[348px] mx-auto bg-[#12141c]/50 border border-white/5 rounded-3xl p-4.5 shrink-0">
         <div className="flex items-center justify-between pb-3 border-b border-white/5">
           <div className="flex items-center gap-1.5">
@@ -313,7 +313,7 @@ export default function TimeSpaceWheelView({
         </div>
       </div>
 
-      {/* 我的模拟抽中历史（仅本地保存） */}
+      {/* Simulated personal draw history, stored locally only. */}
       {drawnPrizes.length > 0 && (
         <div className="w-full max-w-[348px] mx-auto mt-4 bg-[#12141c]/50 border border-white/5 rounded-3xl p-4.5 shrink-0">
           <h4 className="text-[11px] font-black text-amber-400 tracking-widest flex items-center gap-1.5 pb-2.5 border-b border-white/5 uppercase">

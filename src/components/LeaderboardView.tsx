@@ -6,14 +6,14 @@ interface LeaderboardViewProps {
 }
 
 const leaderboardData = [
-  { id: 1, name: '极光闪电', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100', score: 18450 },
-  { id: 2, name: '城市探险家', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100', score: 16200 },
-  { id: 3, name: '追光者·星', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100', score: 14500 },
-  { id: 4, name: '夜行猎手', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100', score: 12100 },
-  { id: 5, name: '风行无阻', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100', score: 11800 },
-  { id: 6, name: '地球狂奔', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100', score: 9500 },
-  { id: 7, name: '阿兹特克', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100', score: 8200 },
-  { id: 8, name: '超越极限', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100&h=100', score: 7100 },
+  { id: 1, name: 'Aurora Flash', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100', score: 18450 },
+  { id: 2, name: 'Urban Explorer', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100', score: 16200 },
+  { id: 3, name: 'Starlight Chaser', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100', score: 14500 },
+  { id: 4, name: 'Night Runner', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100', score: 12100 },
+  { id: 5, name: 'Windstrider', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100', score: 11800 },
+  { id: 6, name: 'Globe Runner', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100', score: 9500 },
+  { id: 7, name: 'Aztec Spirit', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100', score: 8200 },
+  { id: 8, name: 'Beyond Limits', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100&h=100', score: 7100 },
 ];
 
 export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
@@ -26,7 +26,7 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
         >
           <ChevronRight className="rotate-180" size={20} />
         </button>
-        <h1 className="flex-1 text-center font-bold tracking-widest text-slate-100 pr-8">全球点亮榜</h1>
+        <h1 className="flex-1 text-center font-bold tracking-widest text-slate-100 pr-8">Global Leaderboard</h1>
       </div>
 
       {/* Top 3 Podium */}
@@ -115,7 +115,7 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
                <div className="w-10 h-10 rounded-full bg-slate-800 border hover:bg-white/10 flex items-center justify-center border-slate-700">
                  <span className="text-sm font-bold">ME</span>
                </div>
-               <div className="font-bold text-sm text-cyan-400">当前排名</div>
+               <div className="font-bold text-sm text-cyan-400">Your Rank</div>
             </div>
             <div className="flex items-center text-cyan-400 font-mono text-xs font-bold">
                <Zap size={14} className="mr-1" /> 120

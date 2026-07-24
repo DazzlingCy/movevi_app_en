@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="900" viewBox="0 0 430 900">
+  <rect width="430" height="900" fill="#05070A"/>
+  <rect x="14" y="14" width="402" height="872" rx="38" fill="#05070A" stroke="#1E293B" stroke-width="3"/>
+  <text x="46" y="70" fill="#F8FAFC" font-size="34" font-family="Segoe UI,Arial" font-weight="700">‹</text>
+  <text x="94" y="52" fill="#64748B" font-size="11" font-family="Segoe UI,Arial" font-weight="800" letter-spacing="2">MEMBERSHIP</text>
+  <text x="94" y="78" fill="#F8FAFC" font-size="19" font-family="Segoe UI,Arial" font-weight="800">MOVEVI Premium</text>
+  <line x1="24" y1="104" x2="406" y2="104" stroke="#172033"/>
+
+  <rect x="36" y="130" width="358" height="205" rx="28" fill="#111827" stroke="#253044"/>
+  <text x="62" y="180" fill="#F8FAFC" font-size="34" font-family="Segoe UI,Arial" font-weight="900">Unlock every</text>
+  <text x="62" y="222" fill="#F8FAFC" font-size="34" font-family="Segoe UI,Arial" font-weight="900">route.</text>
+  <text x="62" y="260" fill="#94A3B8" font-size="14" font-family="Segoe UI,Arial">Get all Premium routes. First month $0.99,</text>
+  <text x="62" y="282" fill="#94A3B8" font-size="14" font-family="Segoe UI,Arial">then $4.99/month. Cancel before renewal.</text>
+  <rect x="320" y="158" width="52" height="52" rx="16" fill="#FBBF24"/>
+  <text x="337" y="193" fill="#05070A" font-size="26" font-family="Segoe UI Symbol,Arial" font-weight="800">★</text>
+
+  <rect x="36" y="360" width="358" height="94" rx="18" fill="#17130A" stroke="#B45309"/>
+  <text x="62" y="395" fill="#F8FAFC" font-size="16" font-family="Segoe UI,Arial" font-weight="800">Premium Monthly</text>
+  <text x="62" y="422" fill="#64748B" font-size="12" font-family="Segoe UI,Arial">First month offer. All global routes.</text>
+  <text x="292" y="398" fill="#F8FAFC" font-size="28" font-family="Segoe UI,Arial" font-weight="900">$0.99</text>
+  <text x="305" y="428" fill="#64748B" font-size="12" font-family="Segoe UI,Arial">first month</text>
+
+  <rect x="36" y="480" width="358" height="150" rx="18" fill="#0B1018" stroke="#223044"/>
+  <text x="62" y="514" fill="#F8FAFC" font-size="16" font-family="Segoe UI,Arial" font-weight="800">Included</text>
+  <text x="62" y="552" fill="#34D399" font-size="14" font-family="Segoe UI,Arial" font-weight="800">✓</text>
+  <text x="88" y="552" fill="#CBD5E1" font-size="14" font-family="Segoe UI,Arial">All global routes</text>
+  <text x="62" y="584" fill="#34D399" font-size="14" font-family="Segoe UI,Arial" font-weight="800">✓</text>
+  <text x="88" y="584" fill="#CBD5E1" font-size="14" font-family="Segoe UI,Arial">New route drops included</text>
+  <text x="62" y="616" fill="#34D399" font-size="14" font-family="Segoe UI,Arial" font-weight="800">✓</text>
+  <text x="88" y="616" fill="#CBD5E1" font-size="14" font-family="Segoe UI,Arial">Cancel anytime before renewal</text>
+
+  <rect x="36" y="666" width="358" height="56" rx="28" fill="#FBBF24"/>
+  <text x="124" y="702" fill="#05070A" font-size="16" font-family="Segoe UI,Arial" font-weight="900">Subscribe for $0.99</text>
+</svg>

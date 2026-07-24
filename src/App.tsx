@@ -14,6 +14,7 @@ import LeaderboardView from './components/LeaderboardView';
 import WeekendMedleyView from './components/WeekendMedleyView';
 import SubscriptionPage from './components/SubscriptionPage';
 import MedalDrawView from './components/MedalDrawView';
+import CheckInRedPacketView from './components/CheckInRedPacketView';
 import {
   SubscriptionPlan,
   SubscriptionState,
@@ -21,20 +22,23 @@ import {
   formatBillingDate,
   hasPremiumAccess as getHasPremiumAccess,
   markSubscriptionForCancellation,
-  readSubscriptionState,
+  resetSubscriptionState,
   resumeSubscription,
   saveSubscriptionState,
   updatePaymentMethod,
 } from './lib/subscription';
 
+const DEFAULT_LIT_CITY_IDS = ['2', '1'];
+const DEFAULT_IN_PROGRESS_CITY_ID = '15';
+const DEFAULT_IN_PROGRESS_COMPLETED_ROUTE_INDICES = [1];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [showIntro, setShowIntro] = useState(true);
-  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'subscription', data?: any} | null>(null);
+  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription', data?: any} | null>(null);
 
-  // Overseas subscription state. This is a front-end demo model that mirrors
-  // the Stripe-style lifecycle: active, canceled at period end, and expired.
-  const [subscription, setSubscription] = useState<SubscriptionState>(() => readSubscriptionState());
+  // Demo subscription state starts as a never-subscribed user on every reload.
+  const [subscription, setSubscription] = useState<SubscriptionState>(() => resetSubscriptionState());
   const hasPremiumAccess = getHasPremiumAccess(subscription);
   const premiumAccessLabel = subscription.status === 'canceled_at_period_end' && hasPremiumAccess
     ? `Until ${formatBillingDate(subscription.currentPeriodEnd)}`
@@ -77,19 +81,56 @@ export default function App() {
       c.completedRouteTimestamps = {};
       c.justLit = false;
     });
-    return [];
+    DEFAULT_LIT_CITY_IDS.forEach(cityId => {
+      const city = CITIES.find(c => c.id === cityId);
+      if (!city) return;
+      city.status = 'lit';
+      city.completedRouteIndices = Array.from({ length: city.routes }, (_, index) => index + 1);
+      city.completedRouteTimestamps = city.completedRouteIndices.reduce((acc, routeId, index) => {
+        acc[routeId] = Date.now() - (DEFAULT_LIT_CITY_IDS.length - index) * 86400000;
+        return acc;
+      }, {} as Record<number, number>);
+      city.completed = city.routes;
+    });
+
+    const inProgressCity = CITIES.find(c => c.id === DEFAULT_IN_PROGRESS_CITY_ID);
+    if (inProgressCity) {
+      inProgressCity.status = 'in-progress';
+      inProgressCity.completedRouteIndices = DEFAULT_IN_PROGRESS_COMPLETED_ROUTE_INDICES;
+      inProgressCity.completedRouteTimestamps = { 1: Date.now() - 3600000 };
+      inProgressCity.completed = DEFAULT_IN_PROGRESS_COMPLETED_ROUTE_INDICES.length;
+    }
+
+    return [...DEFAULT_LIT_CITY_IDS, DEFAULT_IN_PROGRESS_CITY_ID];
   });
 
   const [completedChapters, setCompletedChapters] = useState<number[]>([]);
   const [targetFlight, setTargetFlight] = useState<{fromCityId: string, toCityId: string} | null>(null);
   const [pendingSelectionFrom, setPendingSelectionFrom] = useState<string | null>(null);
-  const [showMedalPrompt, setShowMedalPrompt] = useState(false);
   const [userStats, setUserStats] = useState({
-    completedCities: 0,
-    completedRoutes: 0,
-    totalDistance: 0.0,
-    totalTimeHours: 0.0,
-    lightValue: 120
+    completedCities: 2,
+    completedRoutes: 7,
+    totalDistance: 62.0,
+    totalTimeHours: 12.0,
+    lightValue: 120,
+    lifetimeLightValue: 120,
+    dailyCheckedIn: false,
+    dailyDistance: 0,
+    dailyTreadmillStarted: false,
+    dailyCompletedRoutes: 0,
+    weeklyCompletedCities: 0,
+    claimedDailyTaskIds: [] as string[],
+    claimedWeeklyTaskIds: [] as string[],
+    medalMysteryTickets: 0,
+    medalLotteryDrawHistory: [] as Array<{ id: string; nickname: string; amount: string; createdAt: string }>,
+    checkInPlanStarted: false,
+    checkInCompletedDays: [] as number[],
+    checkInRewardDays: [] as number[],
+    checkInOpenedRewardDays: [] as number[],
+    checkInRewardHistory: [] as Array<{ day: number; amount: string; openedAt: string }>,
+    checkInActivationClaimed: false,
+    checkInFirstRouteClaimed: false,
+    redPacketBalance: 0
   });
 
   const tabs = [
@@ -142,10 +183,21 @@ export default function App() {
         }} />;
       case 'events':
         return (
-          <MedalDrawView
+          <CheckInRedPacketView
             showHeader={false}
-            onBack={() => setActiveTab('home')}
-            onGoToRunning={() => setActiveTab('cities')}
+            onGoRun={() => setActiveTab('cities')}
+            onNavigateToRouteDetail={(cityId, routeIndex, image, day) => {
+              setFullScreenPage({
+                type: 'routeDetail',
+                data: {
+                  cityId,
+                  routeIndex,
+                  image,
+                  isCheckInRoute: true,
+                  checkInDay: day,
+                },
+              });
+            }}
             userStats={userStats}
             setUserStats={setUserStats}
           />
@@ -250,7 +302,9 @@ export default function App() {
                 <RouteDetailView 
                   {...fullScreenPage.data}
                   onBack={() => {
-                    if (fullScreenPage.data.isActivityRoute) {
+                    if (fullScreenPage.data.isCheckInRoute) {
+                      setFullScreenPage({ type: 'checkInRedPacket' });
+                    } else if (fullScreenPage.data.isActivityRoute) {
                       setFullScreenPage({ type: 'weekendMedley' });
                     } else {
                       setFullScreenPage({ type: 'cityRoutes', data: fullScreenPage.data.previousCityData });
@@ -274,6 +328,25 @@ export default function App() {
                      totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
                      lightValue: (prev.lightValue || 0) + (stats.calories || Math.floor(stats.distance * 65))
                    }));
+
+                   if (fullScreenPage.data.isCheckInRoute) {
+                      const checkInDay = fullScreenPage.data.checkInDay || 1;
+                      setUserStats(prev => {
+                        const completedDays = prev.checkInCompletedDays || [];
+                        const rewardDays = prev.checkInRewardDays || [];
+                        const alreadyCompleted = completedDays.includes(checkInDay);
+                        if (alreadyCompleted) return prev;
+                        return {
+                          ...prev,
+                          completedRoutes: prev.completedRoutes + 1,
+                          dailyCompletedRoutes: (prev.dailyCompletedRoutes || 0) + 1,
+                          checkInCompletedDays: [...completedDays, checkInDay],
+                          checkInRewardDays: rewardDays.includes(checkInDay) ? rewardDays : [...rewardDays, checkInDay],
+                        };
+                      });
+                      setFullScreenPage({ type: 'checkInRedPacket' });
+                      return;
+                    }
 
                    if (fullScreenPage.data.isActivityRoute) {
                       const activityKey = `${fullScreenPage.data.cityId}-${fullScreenPage.data.routeIndex}`;
@@ -337,10 +410,6 @@ export default function App() {
                    // Navigate back to cityRoutes with the updated data
                    setFullScreenPage({ type: 'cityRoutes', data: realCityData });
 
-                   // Show the reward prompt after each newly completed route.
-                   if (isNewlyCompleted) {
-                     setShowMedalPrompt(true);
-                   }
                  }}
                />
             )}
@@ -391,6 +460,30 @@ export default function App() {
                 setUserStats={setUserStats}
               />
             )}
+            {fullScreenPage.type === 'checkInRedPacket' && (
+              <CheckInRedPacketView
+                showHeader
+                onBack={() => setFullScreenPage(null)}
+                onGoRun={() => {
+                  setFullScreenPage(null);
+                  setActiveTab('cities');
+                }}
+                onNavigateToRouteDetail={(cityId, routeIndex, image, day) => {
+                  setFullScreenPage({
+                    type: 'routeDetail',
+                    data: {
+                      cityId,
+                      routeIndex,
+                      image,
+                      isCheckInRoute: true,
+                      checkInDay: day,
+                    },
+                  });
+                }}
+                userStats={userStats}
+                setUserStats={setUserStats}
+              />
+            )}
             {fullScreenPage.type === 'subscription' && (
               <SubscriptionPage
                 subscription={subscription}
@@ -406,77 +499,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Route completion reward prompt */}
-      <AnimatePresence>
-        {showMedalPrompt && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/75 z-[150] flex items-center justify-center p-6 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-[360px] overflow-visible rounded-[34px] border border-orange-200/80 bg-[linear-gradient(180deg,#fffdf6_0%,#fff8ec_100%)] px-7 pb-7 pt-10 text-slate-800 shadow-[0_24px_80px_rgba(0,0,0,0.32),0_2px_0_rgba(255,255,255,0.7)_inset] relative"
-            >
-              {/* Top Banner Accent */}
-              <div className="absolute -top-12 left-1/2 flex h-24 w-24 -translate-x-1/2 items-center justify-center rounded-full bg-[#fffdf6] shadow-[0_14px_35px_rgba(234,88,12,0.24)]">
-                <div className="flex h-[78px] w-[78px] items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-orange-400 to-orange-600 text-4xl shadow-[0_8px_18px_rgba(249,115,22,0.32)_inset]">
-                  🎁
-                </div>
-              </div>
-
-              <div className="mt-10 text-center">
-                <span className="inline-flex rounded-full bg-red-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-red-500 ring-1 ring-red-100">
-                  Reward added
-                </span>
-                <h3 className="mt-3 text-[22px] font-black leading-tight tracking-tight text-slate-950">
-                  Route complete!
-                </h3>
-
-                <div className="mt-5 flex items-center justify-center rounded-2xl border border-orange-100 bg-white/65 px-4 py-3 shadow-[0_8px_22px_rgba(251,146,60,0.08)]">
-                  <div className="flex-1">
-                    <strong className="block text-2xl font-black leading-none text-orange-600">3</strong>
-                    <span className="mt-1 block text-[11px] font-bold text-slate-600">Route medals</span>
-                  </div>
-                  <div className="mx-4 h-9 w-px bg-orange-100" />
-                  <div className="flex-1">
-                    <strong className="block text-2xl font-black leading-none text-orange-600">3</strong>
-                    <span className="mt-1 block text-[11px] font-bold text-slate-600">Draw chances</span>
-                  </div>
-                </div>
-
-                {/* Subtitle explaining unsubscribed status perk */}
-                <div className="mt-5 rounded-2xl border border-amber-200/60 bg-amber-50/70 px-4 py-3">
-                  <p className="text-center text-[11px] font-semibold leading-relaxed text-amber-800">
-                    Complete more routes to earn more draw chances.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-7 flex flex-col gap-3">
-                <button
-                  onClick={() => {
-                    setShowMedalPrompt(false);
-                    setFullScreenPage({ type: 'medalDraw' });
-                  }}
-                  className="flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 py-4 text-sm font-black tracking-wide text-white shadow-[0_16px_34px_rgba(249,115,22,0.28)] transition-all hover:brightness-105 active:scale-[0.98]"
-                >
-                  <span>Go to draw</span>
-                </button>
-                <button
-                  onClick={() => setShowMedalPrompt(false)}
-                  className="w-full rounded-xl py-2.5 text-sm font-bold text-slate-500 transition-colors hover:bg-slate-900/5 hover:text-slate-700"
-                >
-                  Later
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

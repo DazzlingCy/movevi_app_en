@@ -339,7 +339,7 @@ export default function RunPlaybackView({ cityId, routeIndex, image, onExit, onC
                          {todayDateStr}
                        </div>
                        
-                       {/* Unique Dynamic Lore Custom Text (在参考图的基础上加一句剧情文案) */}
+                       {/* Unique dynamic story copy added to the reference layout. */}
                        <div className="border-l-2 border-[#80d0b8] pl-3 py-1">
                          <p className="text-[11px] text-[#1e5445] leading-relaxed italic font-medium select-text break-all">
                            {getCityStoryText(cityName, routeIndex)}
@@ -351,7 +351,7 @@ export default function RunPlaybackView({ cityId, routeIndex, image, onExit, onC
 
               {/* Action Buttons Row */}
               <div className="w-full max-w-sm flex items-center gap-4 px-1">
-                 {/* Left Button of Screenshot: Red font button (结束训练) */}
+                 {/* Left screenshot action: end workout. */}
                  <button 
                    onClick={() => onComplete({ distance, duration: time, calories: Math.floor(distance * 65) })}
                    className="flex-1 py-3.5 px-6 rounded-2xl bg-[#cb2027] hover:bg-[#b0161c] text-white text-base font-extrabold tracking-wide transition-all shadow-[0_4px_15px_rgba(203,32,39,0.3)] active:scale-95"
@@ -359,7 +359,7 @@ export default function RunPlaybackView({ cityId, routeIndex, image, onExit, onC
                    End Workout
                  </button>
                  
-                 {/* Right Button of Screenshot: Teal/Green button (继续下一路线) */}
+                 {/* Right screenshot action: continue to the next route. */}
                  <button 
                    onClick={() => onComplete({ distance, duration: time, calories: Math.floor(distance * 65) })}
                    className="flex-1 py-3.5 px-6 rounded-2xl bg-[#26b180] hover:bg-[#1f936a] text-white text-base font-extrabold tracking-wide transition-all shadow-[0_4px_15px_rgba(38,177,128,0.3)] active:scale-95"

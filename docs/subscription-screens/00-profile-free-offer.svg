@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="900" viewBox="0 0 430 900">
+  <rect width="430" height="900" fill="#05070A"/>
+  <rect x="14" y="14" width="402" height="872" rx="38" fill="#05070A" stroke="#1E293B" stroke-width="3"/>
+  <text x="62" y="95" fill="#F8FAFC" font-size="22" font-family="Segoe UI,Arial" font-weight="800">Chenyuan</text>
+  <text x="62" y="122" fill="#FBBF24" font-size="13" font-family="Segoe UI,Arial" font-weight="700">LV.3  Gold</text>
+  <text x="62" y="178" fill="#F8FAFC" font-size="28" font-family="Segoe UI,Arial" font-weight="800">0</text>
+  <text x="50" y="202" fill="#94A3B8" font-size="11" font-family="Segoe UI,Arial">Cities Completed</text>
+  <text x="190" y="178" fill="#F8FAFC" font-size="28" font-family="Segoe UI,Arial" font-weight="800">0</text>
+  <text x="166" y="202" fill="#94A3B8" font-size="11" font-family="Segoe UI,Arial">Routes Completed</text>
+  <text x="304" y="178" fill="#F8FAFC" font-size="28" font-family="Segoe UI,Arial" font-weight="800">0.0</text>
+  <text x="296" y="202" fill="#94A3B8" font-size="11" font-family="Segoe UI,Arial">Distance</text>
+
+  <rect x="36" y="250" width="358" height="150" rx="26" fill="#241A0A" stroke="#92400E"/>
+  <text x="62" y="286" fill="#FBBF24" font-size="11" font-family="Segoe UI,Arial" font-weight="800" letter-spacing="1.5">FREE PLAN</text>
+  <text x="62" y="322" fill="#F8FAFC" font-size="22" font-family="Segoe UI,Arial" font-weight="800">Unlock All 36+ Scenic Routes</text>
+  <text x="62" y="352" fill="#CBD5E1" font-size="13" font-family="Segoe UI,Arial">Start for $0.99 today. Then $4.99/month.</text>
+  <rect x="62" y="366" width="290" height="40" rx="14" fill="#FBBF24"/>
+  <text x="147" y="391" fill="#05070A" font-size="14" font-family="Segoe UI,Arial" font-weight="800">View Premium</text>
+
+  <rect x="36" y="430" width="160" height="116" rx="18" fill="#13161F" stroke="#4B3108"/>
+  <text x="62" y="475" fill="#FBBF24" font-size="18" font-family="Segoe UI,Arial" font-weight="800">My Badges</text>
+  <text x="62" y="502" fill="#94A3B8" font-size="11" font-family="Segoe UI,Arial">A full harvest of honors</text>
+  <rect x="214" y="430" width="160" height="116" rx="18" fill="#101826" stroke="#164E63"/>
+  <text x="240" y="475" fill="#22D3EE" font-size="18" font-family="Segoe UI,Arial" font-weight="800">City Cards</text>
+  <text x="240" y="502" fill="#94A3B8" font-size="11" font-family="Segoe UI,Arial">Stories across the town</text>
+
+  <rect x="36" y="576" width="358" height="250" rx="22" fill="#111318" stroke="#1E293B"/>
+  <text x="70" y="622" fill="#CBD5E1" font-size="15" font-family="Segoe UI,Arial">Workout Records</text>
+  <line x1="54" y1="646" x2="376" y2="646" stroke="#1F2937"/>
+  <text x="70" y="686" fill="#CBD5E1" font-size="15" font-family="Segoe UI,Arial">My Devices</text>
+  <line x1="54" y1="710" x2="376" y2="710" stroke="#1F2937"/>
+  <text x="70" y="750" fill="#CBD5E1" font-size="15" font-family="Segoe UI,Arial">My Wallet</text>
+  <line x1="54" y1="774" x2="376" y2="774" stroke="#1F2937"/>
+  <text x="70" y="814" fill="#CBD5E1" font-size="15" font-family="Segoe UI,Arial">Customer Support</text>
+</svg>

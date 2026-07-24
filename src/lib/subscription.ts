@@ -253,6 +253,13 @@ export const readSubscriptionState = (): SubscriptionState => {
   return freeSubscription;
 };
 
+export const resetSubscriptionState = (): SubscriptionState => {
+  const freeSubscription = createFreeSubscription();
+  localStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(freeSubscription));
+  localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+  return freeSubscription;
+};
+
 export const formatBillingDate = (isoDate: string | null) => {
   if (!isoDate) return 'Not scheduled';
 
