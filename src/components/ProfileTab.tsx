@@ -13,14 +13,12 @@ import {
   BookOpen,
   ClipboardList,
   Crown,
-  RefreshCcw,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   SubscriptionState,
   formatBillingDate,
-  getIntroOfferPrice,
   getPlanName,
   getPlanPrice,
 } from '../lib/subscription';
@@ -59,38 +57,12 @@ export default function ProfileTab({
   const isExpired = subscription.status === 'expired';
   const hasBillingIssue = isGracePeriod || isBillingRetry;
   const isInactiveMembership = isExpired;
-  const shouldShowMembershipStatus = isSubscribed || hasBillingIssue || isInactiveMembership;
-  const introOfferPrice = getIntroOfferPrice(subscription.plan);
-  const showIntroOffer = !subscription.hasUsedIntroOffer;
   const billingDate = formatBillingDate(subscription.currentPeriodEnd);
-  const membershipToneClass = hasBillingIssue
-    ? 'from-red-950/35 to-amber-950/20 border-red-500/25'
-    : isInactiveMembership
-      ? 'from-slate-900/70 to-slate-800/35 border-slate-600/25'
-      : isCancellationPending
-        ? 'from-amber-950/40 to-amber-900/20 border-amber-500/25'
-        : 'from-emerald-950/40 to-emerald-900/30 border-emerald-500/20';
-  const membershipAccentClass = hasBillingIssue
-    ? 'text-red-400'
-    : isInactiveMembership
-      ? 'text-slate-400'
-      : isCancellationPending
-        ? 'text-amber-400'
-        : 'text-emerald-400';
-  const membershipIconClass = hasBillingIssue
-    ? 'bg-red-500/10 border-red-500/30 text-red-400'
-    : isInactiveMembership
-      ? 'bg-slate-500/10 border-slate-500/30 text-slate-300'
-      : isCancellationPending
-        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
-  const membershipLabelClass = hasBillingIssue
-    ? 'text-red-300'
-    : isInactiveMembership
-      ? 'text-slate-300'
-      : isCancellationPending
-        ? 'text-amber-400'
-        : 'text-emerald-400';
+  const membershipAccentClass = isSubscribed ? 'text-emerald-400' : 'text-slate-500';
+  const membershipButtonClass = isSubscribed
+    ? 'border-emerald-400/35 bg-emerald-500/12 text-emerald-300 shadow-[0_0_22px_rgba(52,211,153,0.16)]'
+    : 'border-slate-500/30 bg-slate-500/10 text-slate-400';
+  const membershipDotClass = isSubscribed ? 'bg-emerald-300' : 'bg-slate-500';
   const membershipLabel = isBillingRetry
     ? 'Premium paused'
     : isGracePeriod
@@ -99,25 +71,9 @@ export default function ProfileTab({
         ? 'Membership ended'
         : isCancellationPending
           ? 'Ending soon'
-          : 'Active';
-  const membershipDescription = isGracePeriod
-    ? 'Update your payment method to keep Premium active.'
-    : isBillingRetry
-      ? 'Premium is paused until your payment method is updated.'
-      : isExpired
-        ? 'Your membership has ended. Restart Premium to unlock all global routes.'
-        : isCancellationPending
-          ? `Premium stays available until ${billingDate}.`
-          : 'All global routes are unlocked.';
-  const membershipFooterLabel = isGracePeriod
-    ? 'Action needed'
-    : isBillingRetry
-      ? 'Access paused'
-      : isExpired
-        ? 'Premium inactive'
-        : isCancellationPending
-          ? 'Access remains active'
-          : 'Premium enabled';
+          : isSubscribed
+            ? 'Active'
+            : 'Free plan';
 
   const stats = [
     { label: 'Cities Completed', value: userStats.completedCities.toString() },
@@ -149,7 +105,17 @@ export default function ProfileTab({
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none blur-3xl" />
         
         {/* Top bar with icons */}
-        <div className="flex justify-end gap-5 mb-2 relative z-10">
+        <div className="flex justify-end gap-4 mb-2 relative z-10">
+          <button
+            type="button"
+            onClick={onOpenSubscription}
+            title={membershipLabel}
+            aria-label={`Membership status: ${membershipLabel}. Open membership page.`}
+            className={`relative flex h-9 w-9 items-center justify-center rounded-xl border backdrop-blur-xl transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${membershipButtonClass}`}
+          >
+            <Crown size={18} className={`${membershipAccentClass} fill-current`} />
+            <span className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-[#05070A] ${membershipDotClass}`} />
+          </button>
           <button className="text-slate-300 hover:text-cyan-400 transition-colors">
             <Mail size={22} />
           </button>
@@ -197,105 +163,6 @@ export default function ProfileTab({
       </div>
 
       <div className="px-5 space-y-4 -mt-6 relative z-20">
-        {/* Premium Banner Section */}
-        {shouldShowMembershipStatus ? (
-          <div className={`bg-gradient-to-r ${membershipToneClass} border rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]`}>
-            <button
-              type="button"
-              onClick={onOpenSubscription}
-              aria-label="Open membership details"
-              className="absolute inset-0 z-10 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-inset"
-            />
-            <div className="absolute right-[-10px] top-[-10px] opacity-10 pointer-events-none">
-              <Crown size={110} className={`${membershipAccentClass} rotate-12`} />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-2xl ${membershipIconClass} border flex items-center justify-center`}>
-                <Crown size={20} className={`${membershipAccentClass} fill-current`} />
-              </div>
-              <div>
-                <span className={`text-[10px] uppercase font-mono tracking-widest font-extrabold ${membershipLabelClass}`}>
-                  {membershipLabel}
-                </span>
-                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">{getPlanName(subscription.plan)}</h3>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              {membershipDescription}
-            </p>
-            <div className="flex justify-between items-center mt-4 pt-3 border-t border-white/5">
-              <span className={`text-[10px] font-bold font-mono ${membershipLabelClass}`}>
-                {membershipFooterLabel}
-              </span>
-              {isCancellationPending ? (
-                <button 
-                  onClick={onResumeSubscription}
-                  className="relative z-20 text-emerald-300 hover:text-emerald-200 text-xs font-semibold transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl border border-emerald-500/20 flex items-center gap-1.5"
-                >
-                  <RefreshCcw size={12} />
-                  Restart membership
-                </button>
-              ) : hasBillingIssue ? (
-                <button
-                  onClick={onOpenSubscription}
-                  className="relative z-20 text-red-200 hover:text-white text-xs font-semibold transition-colors bg-red-500/15 hover:bg-red-500/25 px-3 py-1.5 rounded-xl border border-red-500/20"
-                >
-                  Update payment
-                </button>
-              ) : isInactiveMembership ? (
-                <button
-                  onClick={onOpenSubscription}
-                  className="relative z-20 text-slate-200 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/10"
-                >
-                  Restart Premium
-                </button>
-              ) : (
-                <button 
-                  onClick={onOpenSubscription}
-                  className="relative z-20 text-slate-300 hover:text-white text-xs font-semibold transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/5"
-                >
-                  Membership
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gradient-to-r from-amber-500/10 via-amber-600/5 to-transparent border border-amber-500/20 rounded-3xl p-5 relative overflow-hidden backdrop-blur-xl shadow-lg transition-transform active:scale-[0.99]">
-            <button
-              type="button"
-              onClick={onOpenSubscription}
-              aria-label="View MOVEVI Premium"
-              className="absolute inset-0 z-10 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-inset"
-            />
-            <div className="absolute right-[-10px] top-[-15px] opacity-10 pointer-events-none">
-              <Crown size={120} className="text-amber-400 rotate-12" />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                <Crown size={20} className="fill-amber-400 text-amber-400 animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-bold">Free plan</span>
-                <h3 className="text-slate-100 font-extrabold text-base leading-tight mt-0.5">Unlock All Global Routes</h3>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-              {showIntroOffer
-                ? `Start for ${introOfferPrice} today. Then ${getPlanPrice(subscription.plan)}.`
-                : 'Subscribe to unlock every route worldwide.'}
-            </p>
-            <div className="mt-4 pt-2">
-              <button 
-                onClick={onOpenSubscription}
-                className="relative z-20 w-full py-3 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs rounded-xl tracking-wide shadow-[0_4px_15px_rgba(245,158,11,0.15)] flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Crown size={14} className="fill-slate-950" />
-                <span>View Premium</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Action Cards */}
         <div className="grid grid-cols-2 gap-4">
           <motion.div 
@@ -414,7 +281,7 @@ export default function ProfileTab({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Payment method</span>
-                      <p className="text-slate-100 font-bold mt-1">{subscription.paymentMethodLabel || 'Card on file'}</p>
+                      <p className="text-slate-100 font-bold mt-1">{subscription.paymentMethodLabel || 'Apple / Google Pay'}</p>
                     </div>
                     <button
                       onClick={onUpdatePaymentMethod}

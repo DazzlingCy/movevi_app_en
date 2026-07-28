@@ -32,6 +32,7 @@ interface CheckInRedPacketViewProps {
 }
 
 const PLAN_DAYS = 30;
+const PLAN_START_DATE = new Date(2026, 6, 21);
 const REWARD_AMOUNTS: Record<number, string> = {
   1: '$0.20',
   7: '$0.35',
@@ -44,6 +45,13 @@ const allDays = Array.from({ length: PLAN_DAYS }, (_, index) => index + 1);
 const getRewardAmount = (day: number) => REWARD_AMOUNTS[day] || '$0.10';
 
 const parseAmount = (amount: string) => Number(amount.replace(/[^0-9.]/g, ''));
+const formatPlanDate = (day: number, format: 'short' | 'long' = 'short') => {
+  const date = new Date(PLAN_START_DATE);
+  date.setDate(PLAN_START_DATE.getDate() + day - 1);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(date.getDate()).padStart(2, '0');
+  return format === 'long' ? `${date.getFullYear()}.${month}.${dayOfMonth}` : `${month}/${dayOfMonth}`;
+};
 
 export default function CheckInRedPacketView({
   showHeader = false,
@@ -343,11 +351,11 @@ export default function CheckInRedPacketView({
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="rounded-2xl border border-emerald-200/12 bg-emerald-200/[0.055] p-3">
                   <p className="text-[10px] font-bold text-emerald-100/55">开始时间</p>
-                  <p className="mt-1 font-mono text-sm font-black tabular-nums text-emerald-100">{started ? '2026.07.21' : '--'}</p>
+                  <p className="mt-1 font-mono text-sm font-black tabular-nums text-emerald-100">{started ? formatPlanDate(1, 'long') : '--'}</p>
                 </div>
                 <div className="rounded-2xl border border-amber-200/12 bg-amber-200/[0.055] p-3">
                   <p className="text-[10px] font-bold text-amber-100/55">结束时间</p>
-                  <p className="mt-1 font-mono text-sm font-black tabular-nums text-amber-100">{started ? '2026.08.19' : '--'}</p>
+                  <p className="mt-1 font-mono text-sm font-black tabular-nums text-amber-100">{started ? formatPlanDate(PLAN_DAYS, 'long') : '--'}</p>
                 </div>
               </div>
 
@@ -487,7 +495,7 @@ export default function CheckInRedPacketView({
                           : 'border-white/10 bg-white/[0.035] opacity-65'
                     }`}
                   >
-                    <span className="text-[10px] font-black text-slate-400">第{day}天</span>
+                    <span className="text-[10px] font-black text-slate-400">{formatPlanDate(day)}</span>
                     <span className="mt-2 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg">
                       {opened ? <CheckCircle2 size={17} /> : earned ? <Gift size={16} /> : <Lock size={14} />}
                     </span>

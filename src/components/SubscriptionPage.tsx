@@ -3,7 +3,6 @@ import {
   AlertCircle,
   Check,
   ChevronLeft,
-  CreditCard,
   Crown,
   Lock,
   RefreshCcw,
@@ -30,13 +29,8 @@ interface SubscriptionPageProps {
   onUpdatePaymentMethod: (paymentMethodLabel?: string) => void;
 }
 
-type PaymentMethod = 'card' | 'wallet';
 type ViewMode = 'overview' | 'checkout';
 type PaymentErrors = {
-  cardName?: string;
-  cardNumber?: string;
-  expiry?: string;
-  cvc?: string;
   wallet?: string;
 };
 
@@ -48,50 +42,6 @@ const benefits = [
   'Cancel anytime before renewal',
 ];
 
-const cleanDigits = (value: string) => value.replace(/\D/g, '');
-
-const formatCardNumber = (value: string) =>
-  cleanDigits(value).slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
-
-const formatExpiry = (value: string) => {
-  const digits = cleanDigits(value).slice(0, 4);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-};
-
-const passesLuhnCheck = (value: string) => {
-  let sum = 0;
-  let shouldDouble = false;
-
-  for (let index = value.length - 1; index >= 0; index -= 1) {
-    let digit = Number(value[index]);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-
-  return sum % 10 === 0;
-};
-
-const getCardBrand = (cardNumber: string) => {
-  const value = cleanDigits(cardNumber);
-  if (value.startsWith('4')) return 'Visa';
-  if (/^5[1-5]/.test(value) || /^2[2-7]/.test(value)) return 'Mastercard';
-  if (/^3[47]/.test(value)) return 'Amex';
-  if (value.startsWith('6')) return 'Discover';
-  return 'Card';
-};
-
-const isExpiryValid = (expiry: string) => {
-  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiry)) return false;
-  const [monthText, yearText] = expiry.split('/');
-  const month = Number(monthText);
-  const year = 2000 + Number(yearText);
-  return new Date(year, month, 0, 23, 59, 59, 999).getTime() >= Date.now();
-};
-
 export default function SubscriptionPage({
   subscription,
   isSubscribed,
@@ -102,11 +52,6 @@ export default function SubscriptionPage({
   onUpdatePaymentMethod,
 }: SubscriptionPageProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
-  const [cardName, setCardName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
   const [walletVerified, setWalletVerified] = useState(false);
   const [errors, setErrors] = useState<PaymentErrors>({});
   const [isProcessing, setIsProcessing] = useState(false);
@@ -166,30 +111,17 @@ export default function SubscriptionPage({
           ? 'border-slate-500/30 bg-slate-500/10 text-slate-200'
           : 'border-slate-500/30 bg-slate-500/10 text-slate-300';
 
-  const paymentMethodLabel = useMemo(() => {
-    if (paymentMethod === 'wallet') return 'Apple Pay / Google Pay';
-    const digits = cleanDigits(cardNumber);
-    return `${getCardBrand(cardNumber)} ending in ${digits.slice(-4) || '4242'}`;
-  }, [cardNumber, paymentMethod]);
+  const paymentMethodLabel = 'Apple Pay / Google Pay';
 
   const checkoutActionLabel = useMemo(() => {
     if (isProcessing) return processingStep || 'Processing...';
     if (isSubscribed || hasBillingIssue) return 'Save payment method';
-    return paymentMethod === 'wallet' ? 'Pay with wallet' : 'Pay with card';
-  }, [hasBillingIssue, isProcessing, isSubscribed, paymentMethod, processingStep]);
+    return 'Pay with Apple / Google Pay';
+  }, [hasBillingIssue, isProcessing, isSubscribed, processingStep]);
 
   const validatePayment = () => {
     const nextErrors: PaymentErrors = {};
-
-    if (paymentMethod === 'wallet') {
-      if (!walletVerified) nextErrors.wallet = 'Verify your wallet first.';
-    } else {
-      const digits = cleanDigits(cardNumber);
-      if (cardName.trim().length < 2) nextErrors.cardName = 'Enter the cardholder name.';
-      if (digits.length < 13 || digits.length > 16 || !passesLuhnCheck(digits)) nextErrors.cardNumber = 'Enter a valid card number.';
-      if (!isExpiryValid(expiry)) nextErrors.expiry = 'Use a valid future date.';
-      if (!/^\d{3,4}$/.test(cvc)) nextErrors.cvc = 'Enter a valid security code.';
-    }
+    if (!walletVerified) nextErrors.wallet = 'Verify Apple / Google Pay first.';
 
     return nextErrors;
   };
@@ -201,8 +133,8 @@ export default function SubscriptionPage({
     if (Object.keys(validationErrors).length > 0) return;
 
     setIsProcessing(true);
-    setProcessingStep(paymentMethod === 'wallet' ? 'Opening wallet...' : 'Checking card...');
-    window.setTimeout(() => setProcessingStep(paymentMethod === 'wallet' ? 'Confirming wallet...' : `Authorizing ${checkoutAmount}...`), 700);
+    setProcessingStep('Opening Apple / Google Pay...');
+    window.setTimeout(() => setProcessingStep('Confirming wallet...'), 700);
     window.setTimeout(() => setProcessingStep('Activating Premium...'), 1400);
     window.setTimeout(() => {
       if (isSubscribed || hasBillingIssue) {
@@ -307,7 +239,7 @@ export default function SubscriptionPage({
                 </div>
                 <div className="rounded-xl border border-white/5 bg-black/20 p-3">
                   <span className="block text-slate-500">Payment</span>
-                  <strong className="mt-1 block text-slate-100">{subscription.paymentMethodLabel || 'Card on file'}</strong>
+                  <strong className="mt-1 block text-slate-100">{subscription.paymentMethodLabel || 'Apple / Google Pay'}</strong>
                 </div>
               </div>
             </section>
@@ -377,145 +309,44 @@ export default function SubscriptionPage({
           <section className="rounded-[24px] border border-white/10 bg-[#0B1018] p-4">
             <h3 className="text-sm font-black text-slate-100">Payment method</h3>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentMethod('card');
-                  setWalletVerified(false);
-                  setErrors({});
-                }}
-                className={`rounded-xl border px-3 py-3 text-left transition-colors ${
-                  paymentMethod === 'card'
-                    ? 'border-amber-400 bg-amber-500/10 text-amber-100'
-                    : 'border-white/10 bg-white/5 text-slate-300'
-                }`}
-              >
-                <CreditCard size={16} />
-                <span className="mt-2 block text-xs font-black">Credit Card</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPaymentMethod('wallet');
-                  setErrors({});
-                }}
-                className={`rounded-xl border px-3 py-3 text-left transition-colors ${
-                  paymentMethod === 'wallet'
-                    ? 'border-amber-400 bg-amber-500/10 text-amber-100'
-                    : 'border-white/10 bg-white/5 text-slate-300'
-                }`}
-              >
-                <Wallet size={16} />
-                <span className="mt-2 block text-xs font-black">Apple / Google Pay</span>
-              </button>
+            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-amber-100">
+              <Wallet size={18} />
+              <span className="mt-2 block text-sm font-black">Apple / Google Pay</span>
+              <span className="mt-1 block text-xs text-amber-100/65">Fast checkout with your device wallet.</span>
             </div>
 
-            {paymentMethod === 'card' ? (
-              <div className="mt-4 space-y-3 rounded-2xl border border-white/10 bg-black/20 p-4">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  <span>Secure card form</span>
-                  {cleanDigits(cardNumber).length > 0 && (
-                    <span className="rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-cyan-300">
-                      {getCardBrand(cardNumber)}
-                    </span>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">Name on card</label>
-                  <input
-                    value={cardName}
-                    onChange={(event) => {
-                      setCardName(event.target.value);
-                      setErrors((previous) => ({ ...previous, cardName: undefined }));
-                    }}
-                    className="w-full rounded-xl border border-white/10 bg-[#05070A] px-3 py-3 text-sm text-slate-100 outline-none focus:border-amber-400"
-                    placeholder="Alex Chen"
-                  />
-                  {errors.cardName && <p className="mt-1.5 text-[11px] text-red-300">{errors.cardName}</p>}
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">Card number</label>
-                  <input
-                    value={cardNumber}
-                    onChange={(event) => {
-                      setCardNumber(formatCardNumber(event.target.value));
-                      setErrors((previous) => ({ ...previous, cardNumber: undefined }));
-                    }}
-                    inputMode="numeric"
-                    className="w-full rounded-xl border border-white/10 bg-[#05070A] px-3 py-3 text-sm text-slate-100 outline-none focus:border-amber-400"
-                    placeholder="4242 4242 4242 4242"
-                  />
-                  {errors.cardNumber && <p className="mt-1.5 text-[11px] text-red-300">{errors.cardNumber}</p>}
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">Expiry</label>
-                    <input
-                      value={expiry}
-                      onChange={(event) => {
-                        setExpiry(formatExpiry(event.target.value));
-                        setErrors((previous) => ({ ...previous, expiry: undefined }));
-                      }}
-                      inputMode="numeric"
-                      className="w-full rounded-xl border border-white/10 bg-[#05070A] px-3 py-3 text-sm text-slate-100 outline-none focus:border-amber-400"
-                      placeholder="MM/YY"
-                    />
-                    {errors.expiry && <p className="mt-1.5 text-[11px] text-red-300">{errors.expiry}</p>}
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">CVC</label>
-                    <input
-                      value={cvc}
-                      onChange={(event) => {
-                        setCvc(cleanDigits(event.target.value).slice(0, 4));
-                        setErrors((previous) => ({ ...previous, cvc: undefined }));
-                      }}
-                      inputMode="numeric"
-                      className="w-full rounded-xl border border-white/10 bg-[#05070A] px-3 py-3 text-sm text-slate-100 outline-none focus:border-amber-400"
-                      placeholder="123"
-                    />
-                    {errors.cvc && <p className="mt-1.5 text-[11px] text-red-300">{errors.cvc}</p>}
-                  </div>
-                </div>
+            <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
+              <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full border ${
+                walletVerified
+                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                  : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
+              }`}>
+                {walletVerified ? <Check size={24} className="stroke-[3]" /> : <Wallet size={24} />}
               </div>
-            ) : (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
-                <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full border ${
+              <h3 className="mt-4 text-sm font-black text-slate-100">
+                {walletVerified ? 'Wallet verified' : 'Verify wallet'}
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                {walletVerified
+                  ? 'Your wallet is ready for authorization.'
+                  : 'Confirm with Face ID, Touch ID, passcode, or Android screen lock.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setWalletVerified(true);
+                  setErrors((previous) => ({ ...previous, wallet: undefined }));
+                }}
+                className={`mt-4 w-full rounded-xl border px-4 py-3 text-xs font-black transition-colors ${
                   walletVerified
                     ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                    : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
-                }`}>
-                  {walletVerified ? <Check size={24} className="stroke-[3]" /> : <Wallet size={24} />}
-                </div>
-                <h3 className="mt-4 text-sm font-black text-slate-100">
-                  {walletVerified ? 'Wallet verified' : 'Verify wallet'}
-                </h3>
-                <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                  {walletVerified
-                    ? 'Your wallet is ready for authorization.'
-                    : 'Confirm with Face ID, Touch ID, passcode, or Android screen lock.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWalletVerified(true);
-                    setErrors((previous) => ({ ...previous, wallet: undefined }));
-                  }}
-                  className={`mt-4 w-full rounded-xl border px-4 py-3 text-xs font-black transition-colors ${
-                    walletVerified
-                      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                      : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20'
-                  }`}
-                >
-                  {walletVerified ? 'Ready to pay' : 'Verify wallet'}
-                </button>
-                {errors.wallet && <p className="mt-2 text-[11px] text-red-300">{errors.wallet}</p>}
-              </div>
-            )}
+                    : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20'
+                }`}
+              >
+                {walletVerified ? 'Ready to pay' : 'Verify wallet'}
+              </button>
+              {errors.wallet && <p className="mt-2 text-[11px] text-red-300">{errors.wallet}</p>}
+            </div>
 
           </section>
 
