@@ -15,7 +15,7 @@ interface CityRoutesViewProps {
   onOpenSubscription: () => void;
 }
 
-export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNext, isSubscribed, premiumAccessLabel, onOpenSubscription }: CityRoutesViewProps) {
+export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNext, isSubscribed, onOpenSubscription }: CityRoutesViewProps) {
   const [showLitModal, setShowLitModal] = useState(false);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isLightingUp, setIsLightingUp] = useState(false);
@@ -154,26 +154,6 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
               <div className="flex-1 overflow-hidden flex flex-col justify-between py-1">
                 <h3 className="text-[15px] font-bold text-slate-800 flex flex-wrap items-center gap-1.5 leading-snug">
                   <span>Route {routeId}: {routeData.title}</span>
-                  <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-extrabold uppercase rounded shrink-0 tracking-wider ${
-                    !isSubscribed
-                      ? 'bg-amber-100 text-amber-800'
-                      : isSequentiallyUnlocked
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {isSubscribed && !isSequentiallyUnlocked ? (
-                      <Lock size={8} className="text-slate-500" />
-                    ) : (
-                      <Crown size={8} className={isSubscribed ? 'text-emerald-800' : 'text-amber-800 fill-amber-800'} />
-                    )}
-                    <span>
-                      {!isSubscribed
-                        ? 'Premium'
-                        : isSequentiallyUnlocked
-                          ? (premiumAccessLabel || 'Member')
-                          : 'Locked'}
-                    </span>
-                  </span>
                 </h3>
                 
                 <div className="bg-[#fff9f0] rounded px-3 py-2 my-2 border border-[#fef0dd]">
