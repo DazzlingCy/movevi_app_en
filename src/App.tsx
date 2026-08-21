@@ -260,7 +260,7 @@ export default function App() {
   };
 
   return (
-    <div className="iphone-viewport mx-auto flex flex-col bg-[#05070A] text-slate-100 overflow-hidden relative font-sans">
+    <div className="flex flex-col h-screen w-full max-w-md mx-auto bg-[#05070A] text-slate-100 overflow-hidden relative font-sans shadow-2xl sm:h-[800px] sm:mt-10 sm:rounded-[40px] sm:border-[8px] sm:border-slate-800">
       <main className="flex-1 relative overflow-hidden bg-[#05070A]">
         <AnimatePresence mode="wait">
           <motion.div
