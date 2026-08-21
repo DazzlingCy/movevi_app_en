@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Camera, Check, Loader2, Orbit, UserRound } from 'lucide-react';
+import { Camera, Check, Loader2, UserRound } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AuthUser, updateAuthProfile } from '../lib/auth';
 
@@ -65,7 +65,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
 
   return (
     <motion.div
-      className="absolute inset-0 z-[155] flex flex-col overflow-y-auto bg-[#05070A] px-7 pb-8 pt-12 text-slate-100 hide-scrollbar"
+      className="absolute inset-0 z-[155] flex flex-col overflow-y-auto bg-[#05070A] px-7 pb-8 pt-10 text-slate-100 hide-scrollbar"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -76,11 +76,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
       </div>
 
       <form onSubmit={handleSubmit} className="relative z-10 flex min-h-full flex-col">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 text-cyan-300">
-          <Orbit size={30} strokeWidth={2.6} />
-        </div>
-
-        <p className="mt-10 text-[11px] font-black uppercase tracking-[0.34em] text-cyan-300">Profile setup</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.34em] text-cyan-300">Profile setup</p>
         <h1 className="mt-4 text-[38px] font-black leading-[1.05] tracking-[-0.04em] text-white">
           Set up your runner profile
         </h1>
@@ -88,7 +84,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
           Add a photo and name before entering MOVEVI.
         </p>
 
-        <div className="mt-10 flex flex-col items-center">
+        <div className="mt-8 flex flex-col items-center">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -139,7 +135,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
           </div>
         </div>
 
-        <label className="mt-10 block">
+        <label className="mt-8 block">
           <span className="mb-3 block text-[11px] font-black uppercase tracking-[0.26em] text-slate-500">Name</span>
           <input
             value={nickname}
