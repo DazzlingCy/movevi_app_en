@@ -89,12 +89,12 @@ export default function ProfileTab({
   ];
 
   const menuItems = [
-    { icon: ClipboardList, label: 'Workout Records' },
+    { icon: ClipboardList, label: 'Workout History' },
     { icon: MonitorSmartphone, label: 'My Devices' },
     { icon: Wallet, label: 'My Wallet' },
-    { icon: HeadphonesIcon, label: 'Customer Support' },
+    { icon: HeadphonesIcon, label: 'Help & Support' },
     { icon: FileText, label: 'Feedback' },
-    { icon: BookOpen, label: 'User Instructions' },
+    { icon: BookOpen, label: 'App Guide' },
     { icon: Settings, label: 'Settings', onClick: onOpenSettings },
   ];
 
@@ -186,7 +186,7 @@ export default function ProfileTab({
               <Medal size={28} className="drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
             </div>
             <h3 className="text-slate-100 font-bold mb-1 mt-3">My Badges</h3>
-            <p className="text-[10px] text-amber-200/60 break-words whitespace-pre-wrap">A full harvest of honors & achievements</p>
+            <p className="text-[10px] text-amber-200/60 break-words whitespace-pre-wrap">Your route honors and achievements</p>
           </motion.div>
 
           <motion.div 
@@ -200,7 +200,7 @@ export default function ProfileTab({
               <MapIcon size={28} className="drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
             </div>
             <h3 className="text-slate-100 font-bold mb-1 mt-3">City Cards</h3>
-            <p className="text-[10px] text-cyan-200/60 break-words whitespace-pre-wrap">Serendipitous stories across the town</p>
+            <p className="text-[10px] text-cyan-200/60 break-words whitespace-pre-wrap">Stories from the cities you unlock</p>
           </motion.div>
         </div>
 

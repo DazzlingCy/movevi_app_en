@@ -5,11 +5,11 @@ import { getRouteData, CITIES } from '../data/cities';
 
 const MEDALS = [
   { id: 'm1', name: 'Maiden Voyage: Interstellar Start', color: 'from-amber-400 via-amber-200 to-yellow-600', text: '🏯' },
-  { id: 'm2', name: 'River Wave: Ancient Awakening', color: 'from-emerald-400 via-teal-200 to-cyan-600', text: '⛩️' },
+  { id: 'm2', name: 'River Wave: Ancient Echo', color: 'from-emerald-400 via-teal-200 to-cyan-600', text: '⛩️' },
   { id: 'm3', name: 'Central Axis: Imperial Peak', color: 'from-rose-500 via-orange-300 to-red-700', text: '🏰' },
   { id: 'm4', name: 'Spark of Light: Energy Renewal', color: 'from-sky-400 via-indigo-200 to-purple-600', text: '🗼' },
   { id: 'm5', name: 'Beyond Gravity: Space Jump', color: 'from-fuchsia-500 via-pink-300 to-purple-700', text: '🛸' },
-  { id: 'm6', name: 'Eternal Reflection: Mother Earth', color: 'from-cyan-400 via-blue-200 to-teal-600', text: '🌍' },
+  { id: 'm6', name: 'Eternal Reflection: Blue Planet', color: 'from-cyan-400 via-blue-200 to-teal-600', text: '🌍' },
 ];
 
 const getCityStoryText = (cityName: string, routeIndex: number) => {
@@ -30,7 +30,7 @@ const getCityStoryText = (cityName: string, routeIndex: number) => {
       "As your glowtrail crosses Xujiahui, Shanghai's digital brain emits joyful echoes. From the deep stars, we feel the warmth of this glorious port once more."
     ],
     'Nanjing': [
-      "The ancient stone bricks of the City Wall glisten in the sensors. Your runs under the shade of sycamore trees awaken the deep history of King Jinling's court.",
+      "The ancient stone bricks of the City Wall glow in the sensors. Your run under the sycamore trees brings Nanjing's old capital story back into view.",
       "A soft breeze ripples across Xuanwu Lake. Your steps on the stone stairs activate ancient azure forces, sending waves of glowing light through the Qinhuai River.",
       "The Purple Mountain observatory locks onto your kinetic momentum. The sycamore leaves by Zhongshan Gate instantly grow into a beautiful digital canvas."
     ],
@@ -46,8 +46,8 @@ const getCityStoryText = (cityName: string, routeIndex: number) => {
     ],
     'Paris': [
       "A pale gold suspension bridge rises along the Seine. The Eiffel Tower transmitter streams romantic symphonies across the galaxy upon receiving your run energy.",
-      "The brilliant verses of the Champs-Élysées are awakened by your steps. The Louvre's glass pyramid refracts glorious light, safeguarding the cultural core.",
-      "The Arc de Triomphe awakens fully in the galaxy's tide. The Seine waters dance under quantum aurora, assembling the ultimate symphony of romantic arts."
+      "Your steps light up the Champs-Elysees. The Louvre's glass pyramid catches the glow as the route moves through the city's cultural heart.",
+      "The Arc de Triomphe shines ahead as the Seine reflects the city lights. Paris turns this run into a smooth, memorable route."
     ],
     'London': [
       "The deep clock face of Big Ben emits a low-frequency resonance, announcing that London's foggy nights have successfully rejoined the galactic network.",
@@ -56,7 +56,7 @@ const getCityStoryText = (cityName: string, routeIndex: number) => {
     ],
     'New York': [
       "The skyscrapers of Manhattan shimmer with gorgeous holographic billboards. Cyber-ginkgoes in Central Park spread their golden leaves at your feet.",
-      "Broadway's neon scrolls are fully awakened by your morning run. You pierce the steel-framed avenues like a beam of light, restarting the world-wide server hub.",
+      "Broadway's neon signs flash as your pace picks up. Manhattan's avenues turn into a bright, high-energy route.",
       "The gravity spire of the Empire State Building syncs with your pace, firing a bright crimson beam that illuminates the orbital tracks of the Western Hemisphere."
     ],
     'Sydney': [
@@ -74,8 +74,8 @@ const getCityStoryText = (cityName: string, routeIndex: number) => {
   };
 
   const cityStories = stories[cityName] || [
-    "Every drop of sweat is a heartfelt call to Mother Earth. While the stars remain silent, we hear her heart beat again in your stride.",
-    "You are not just running; you are weaving gravitational threads to return to the blue star. Mother Earth's awakening is happening under your feet!"
+    "Every mile brings this city route into sharper focus. Keep your pace steady and watch the map light up.",
+    "You are not just logging distance. You are unlocking another piece of the global route map."
   ];
   
   return cityStories[routeIndex % cityStories.length];
@@ -270,13 +270,13 @@ export default function RunPlaybackView({ cityId, routeIndex, image, onExit, onC
                          </div>
                        </div>
                        
-                       {/* Stat 2: Duration */}
+                       {/* Stat 2: Time */}
                        <div className="bg-white/80 border border-[#b2e8da] rounded-2xl p-2.5 text-center shadow-sm flex flex-col justify-center">
                          <div className="text-2xl font-black font-mono text-[#0b3329]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.7)' }}>
                            {formatTime(time)}
                          </div>
                          <div className="text-[9.5px] text-[#206956] font-bold mt-1 tracking-tight">
-                           Duration
+                           Time
                          </div>
                        </div>
                        

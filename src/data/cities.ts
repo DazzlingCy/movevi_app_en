@@ -23,7 +23,7 @@ export interface CityData {
 }
 
 export const CITIES: CityData[] = [
-  { id: '1', name: 'Hangzhou', englishName: 'Hangzhou', continent: 'China', x: 83.5, y: 33.8, lat: 30.2741, lng: 120.1551, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg/1280px-%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg', routes: 3, spots: 24, completed: 0, status: 'unlit', completedRouteIndices: [], labelPosition: 'bottom', description: 'The starting point of awakening memories. From the poetic West Lake to the modern Qianjiang New Town, feel the blend of ancient culture and future tech.' },
+  { id: '1', name: 'Hangzhou', englishName: 'Hangzhou', continent: 'China', x: 83.5, y: 33.8, lat: 30.2741, lng: 120.1551, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg/1280px-%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg', routes: 3, spots: 24, completed: 0, status: 'unlit', completedRouteIndices: [], labelPosition: 'bottom', description: 'Begin at West Lake, then move into the modern skyline of Qianjiang New Town. This city blends classic scenery with future-facing energy.' },
   { id: '2', name: 'Beijing', englishName: 'Beijing', continent: 'China', x: 82.33, y: 27.83, lat: 39.9042, lng: 116.4074, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Skyline_of_Beijing_CBD_with_B-5906_approaching_%2820211016171955%29_%281%29.jpg/1280px-Skyline_of_Beijing_CBD_with_B-5906_approaching_%2820211016171955%29_%281%29.jpg', routes: 3, spots: 15, completed: 0, status: 'unlit', completedRouteIndices: [], labelPosition: 'top', description: 'Ancient imperial majesty runs in sync with a modern metropolis. Traverse the historic central axis and light up the heart of Chinese civilization.' },
   { id: '3', name: 'Shanghai', englishName: 'Shanghai', continent: 'China', x: 84.8, y: 32.5, lat: 31.2304, lng: 121.4737, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Huangpu_Park_20124-Shanghai_%2832208802494%29.jpg/1280px-Huangpu_Park_20124-Shanghai_%2832208802494%29.jpg', routes: 3, spots: 83, completed: 0, status: 'unlit', completedRouteIndices: [], labelPosition: 'right', description: 'Where neon lights gleam by the Huangpu River. The historic architecture and the futuristic Lujiazui skyline capture the timeless passage of eras.' },
   { id: '4', name: 'Nanjing', englishName: 'Nanjing', continent: 'China', x: 82.5, y: 31.8, lat: 32.0603, lng: 118.7969, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Nanjing_CBD_from_City_Wall.jpg/1280px-Nanjing_CBD_from_City_Wall.jpg', routes: 3, spots: 71, completed: 0, status: 'unlit', completedRouteIndices: [], labelPosition: 'left', description: 'A dream of Jinling, capital of six ancient dynasties. Poetic river lantern ripples, towering mountain mausoleums, and majestic historical landscapes.' },
@@ -95,7 +95,7 @@ export const getRouteData = (cityId: string, routeIndex: number): RouteDetailCon
     ],
     '8': [ // London
       { title: 'West End Musical Theatre Walk', distance: '2.0', duration: '15:36', calories: '169', rating: '5.0', spots: 'Royal Opera House  - Covent Garden  - Shaftesbury Avenue', intro: 'A trip to the West End is the local way of living. Set off from the Lyceum Theatre into the musical heart of London. Let music and art carry your stride.' },
-      { title: 'Thames River Bank Wander', distance: '5.5', duration: '38:00', calories: '340', rating: '4.8', spots: 'Big Ben  - London Eye  - Tate Modern', intro: 'Run alongside the South Bank of the Thames, bridging the gap between classical wonders and vanguard design.' }
+      { title: 'Thames River Bank Wander', distance: '5.5', duration: '38:00', calories: '340', rating: '4.8', spots: 'Big Ben  - London Eye  - Tate Modern', intro: 'Run along the South Bank of the Thames, passing classic landmarks and modern design icons.' }
     ],
     '9': [ // New York
       { title: 'Liberty Island Memory Line', distance: '4.5', duration: '30:00', calories: '290', rating: '4.8', spots: 'Battery Park  - Ellis Island  - Statue of Liberty', intro: 'Face the brisk Hudson River wind with the Statue of Liberty raising her torch before you. This route honors centuries of global journeys.' }
@@ -118,6 +118,6 @@ export const getRouteData = (cityId: string, routeIndex: number): RouteDetailCon
     calories: `${150 + (routeIndex % 5) * 60}`,
     rating: '4.5',
     spots: `${cityName} Landmark A  - ${cityName} Landmark B  - ${cityName} Landmark C`,
-    intro: `Dive deep into the secret corners of ${cityName} on this scenic path, grasping its unique local customs and breathtaking views.`
+    intro: `Explore a scenic side of ${cityName}, with local landmarks, city views, and a route built for an engaging indoor run.`
   };
 };

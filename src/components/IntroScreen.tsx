@@ -25,7 +25,7 @@ const introSteps = [
     id: 'step3',
     title: 'Glowtrail Explorer',
     subtitle: 'GLOWTRAIL EXPLORER',
-    text: 'You are no ordinary runner; you are a "Glowtrail Explorer" of the Earth Restoration Bureau. Your mission is to reconnect the Earth network and awaken cosmic memories with every single stride.',
+    text: 'You are a MOVEVI Explorer. Every run helps reconnect the global route map and bring another city story back to life.',
     image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=90&w=1200&auto=format&fit=crop', // Runner / dark
   }
 ];

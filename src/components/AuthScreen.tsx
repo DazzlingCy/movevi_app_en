@@ -194,7 +194,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 />
                 <AuthChoiceButton
                   icon={<Mail size={30} />}
-                  label="Continue with email"
+                  label="Continue with Email"
                   disabled={isBusy}
                   onClick={openEmailFlow}
                 />
@@ -301,7 +301,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             ) : (
               <form onSubmit={submitCode} className="flex flex-1 flex-col">
                 <h2 className="mb-5 text-center text-[34px] font-black tracking-[-0.035em] text-[#11170f]">
-                  Enter verification code
+                  Enter your code
                 </h2>
                 <p className="mb-14 text-center text-base font-semibold leading-relaxed text-neutral-500">
                   We sent a 6-digit code to {email}.
@@ -332,7 +332,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   disabled={isBusy}
                   className="mt-5 self-center text-sm font-black text-[#11170f] underline decoration-2 underline-offset-4 disabled:text-neutral-300"
                 >
-                  Send a new code
+                  Resend code
                 </button>
 
                 <AuthFeedback message={feedback} isError={Boolean(error)} />

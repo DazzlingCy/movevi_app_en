@@ -343,9 +343,9 @@ export default function CheckInRedPacketView({
                 <Sparkles size={12} />
                 One route a day
               </div>
-              <h2 className="mt-3 text-[28px] font-black leading-none tracking-[-0.04em] text-white">Complete 30 check-ins</h2>
+              <h2 className="mt-3 text-[28px] font-black leading-none tracking-[-0.04em] text-white">Complete 30 daily check-ins</h2>
               <p className="mt-2 max-w-[300px] text-sm font-semibold leading-5 text-slate-400">
-                Finish the recommended route each day to unlock a fixed cash bonus.
+                Finish one recommended route each day to unlock a fixed cash bonus.
               </p>
 
               <div className="mt-4 grid grid-cols-2 gap-2">

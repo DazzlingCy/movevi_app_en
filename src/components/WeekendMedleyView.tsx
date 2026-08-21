@@ -371,7 +371,7 @@ export default function WeekendMedleyView({
         // Sub description
         ctx.font = '13px sans-serif';
         ctx.fillStyle = '#64748B';
-        ctx.fillText('Across ancient temples, palaces, old streets & rivers, your steps awaken city legacy.', 300, 268);
+        ctx.fillText('Across temples, palaces, old streets, and rivers, your steps bring each city story to life.', 300, 268);
 
         // 5. Drawing stats grids (Distance / completed nodes)
         ctx.fillStyle = '#0F172A';

@@ -99,7 +99,7 @@ export default function HomeTab({
   const broadcastMessages = [
     { type: 'route', text: 'Mia completed Singapore Bay Loop and earned route medals.' },
     { type: 'prize', text: 'Alex redeemed medals and won a cash reward.' },
-    { type: 'route', text: 'London and Tokyo route signals are ready to unlock.' },
+    { type: 'route', text: 'New London and Tokyo routes are ready to unlock.' },
     { type: 'prize', text: 'Check-in rewards are live. Finish your daily route to claim a reward.' },
   ];
   const activeBroadcast = broadcastMessages[broadcastIndex % broadcastMessages.length];
@@ -267,7 +267,7 @@ export default function HomeTab({
           <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-slate-950/34 text-cyan-200 shadow-[0_12px_34px_rgba(0,0,0,0.26)] backdrop-blur-md transition group-hover:border-cyan-200/50 group-hover:bg-cyan-300/12">
             <Award size={18} />
           </span>
-          Ranking
+          Leaderboard
         </button>
         <button
           type="button"
@@ -295,9 +295,8 @@ export default function HomeTab({
                 <span className="flex h-4 w-4 items-center justify-center rounded-full border border-white/12 text-[10px] text-slate-400">i</span>
               </div>
               <p className="mt-4 flex items-end gap-1 leading-none text-cyan-100">
-                <span className="pb-1 text-base font-black">Lit</span>
                 <span className="font-mono text-[44px] font-black tracking-[-0.07em] tabular-nums">{litCount}</span>
-                <span className="pb-1 text-base font-black">cities</span>
+                <span className="pb-1 text-base font-black">cities lit</span>
               </p>
               <div className="mt-auto text-[11px] font-bold leading-5 text-slate-400">
                 <p>
@@ -358,7 +357,7 @@ export default function HomeTab({
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-0.5 flex items-center gap-1.5">
-              <span className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/70">Signal Broadcast</span>
+              <span className="text-[9px] font-black uppercase tracking-[0.18em] text-amber-100/70">Activity Update</span>
               <span className="h-1 w-1 rounded-full bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.7)]" />
             </div>
             <div className="relative h-4 overflow-hidden">
@@ -633,7 +632,7 @@ export default function HomeTab({
                   <X size={18} />
                 </button>
               </div>
-              <p className="text-sm text-slate-400">Choose the next city signal to awaken.</p>
+              <p className="text-sm text-slate-400">Choose the next city to unlock.</p>
             </div>
 
             <div className="hide-scrollbar flex-1 space-y-4 overflow-y-auto">
@@ -672,7 +671,7 @@ export default function HomeTab({
             </div>
 
             <button type="button" onClick={handleShuffleCities} className="mt-4 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-slate-200">
-              Shuffle cities
+              Show other cities
             </button>
           </motion.div>
         )}
@@ -693,7 +692,7 @@ export default function HomeTab({
               className="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl"
             >
               <Flame size={32} className="mx-auto mb-3 text-cyan-300" />
-              <h3 className="mb-2 text-lg font-black text-white">Switch city?</h3>
+              <h3 className="mb-2 text-lg font-black text-white">Switch cities?</h3>
               <p className="mb-6 text-sm leading-relaxed text-slate-400">
                 Choose another available city. Your current route progress stays saved.
               </p>
@@ -710,7 +709,7 @@ export default function HomeTab({
                   onClick={handleConfirmSwitch}
                   className="flex-1 rounded-xl bg-cyan-500 py-3 text-sm font-black text-slate-950"
                 >
-                  Confirm
+                  Switch
                 </button>
               </div>
             </motion.div>

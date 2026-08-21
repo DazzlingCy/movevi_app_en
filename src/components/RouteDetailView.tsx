@@ -36,7 +36,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
         <div className="absolute bottom-16 left-6 right-6 text-white drop-shadow-md">
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2 ${isSubscribed ? 'bg-emerald-500/25 border border-emerald-500/40 text-emerald-300' : 'bg-amber-500/25 border border-amber-500/40 text-amber-300'}`}>
             <Crown size={12} className={isSubscribed ? 'text-emerald-300' : 'text-amber-300 fill-amber-300'} />
-            <span>{isSubscribed ? (premiumAccessLabel || 'Premium Unlocked') : 'Premium Route'}</span>
+            <span>{isSubscribed ? (premiumAccessLabel || 'Premium active') : 'Premium route'}</span>
           </div>
           <h1 className="text-2xl font-bold mb-3 tracking-wide drop-shadow-lg">Route {routeIndex}: {routeData.title}</h1>
           <div className="flex items-center text-sm font-medium">
@@ -50,7 +50,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
                 />
               ))}
             </div>
-            <span className="text-slate-100 text-xs drop-shadow">29 Runners</span>
+            <span className="text-slate-100 text-xs drop-shadow">29 runners</span>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
           <div className="flex flex-col items-center">
             <span className="text-2xl font-bold text-slate-900 mb-1">{routeData.duration}</span>
             <span className="text-[10px] text-slate-500 flex flex-col items-center">
-              <span>Duration</span>
+              <span>Time</span>
               <span>(min)</span>
             </span>
           </div>
@@ -121,7 +121,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
           {/* Route spots */}
           <div>
              <div className="inline-block bg-gradient-to-r from-emerald-100 to-emerald-50 px-4 py-1.5 rounded-r-full -ml-6 mb-4 border-l-4 border-emerald-500">
-               <span className="text-sm font-bold text-emerald-800">Route Attractions</span>
+               <span className="text-sm font-bold text-emerald-800">Stops</span>
              </div>
              <p className="text-sm text-slate-600 font-medium leading-relaxed">
                {routeData.spots}
@@ -131,7 +131,7 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
           {/* Route Intro */}
           <div>
              <div className="inline-block bg-gradient-to-r from-emerald-100 to-emerald-50 px-4 py-1.5 rounded-r-full -ml-6 mb-4 border-l-4 border-emerald-500">
-               <span className="text-sm font-bold text-emerald-800">Route Introduction</span>
+               <span className="text-sm font-bold text-emerald-800">About this route</span>
              </div>
              <p className="text-sm text-slate-500 leading-relaxed">
                {routeData.intro}
@@ -154,12 +154,12 @@ export default function RouteDetailView({ cityId, routeIndex, image, onBack, onS
              className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 px-4 py-3.5 rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-amber-500/20 tracking-wider transition-all active:scale-95 whitespace-nowrap uppercase gap-1"
            >
              <Crown className="fill-slate-950 shrink-0" size={14} />
-             <span>Unlock with Premium</span>
+             <span>Unlock Premium</span>
            </button>
          ) : (
            <button onClick={onStart} className="bg-[#2ecc71] hover:bg-[#27ae60] text-white w-48 py-3.5 rounded-full flex items-center justify-center text-lg font-bold shadow-lg shadow-[#2ecc71]/30 transition-transform active:scale-95">
               <Play className="fill-white mr-2" size={20} />
-              Start Run
+              Start
            </button>
          )}
       </div>

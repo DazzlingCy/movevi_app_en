@@ -73,7 +73,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
           </div>
           
           <button className="px-8 py-2.5 rounded-full bg-gradient-to-b from-[#ff8c5a] to-[#f45c2c] text-white font-bold tracking-widest border-2 border-white/40 shadow-[0_5px_15px_rgba(244,92,44,0.4)] text-lg">
-            Route Overview Map
+            Route Map
           </button>
         </div>
       </div>
@@ -162,10 +162,10 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
 
                 <div className="grid grid-cols-2 gap-y-2 mt-auto">
                    <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                     Total Spots <span className="font-semibold text-slate-700 text-xs">{numSpots}</span>
+                     Stops <span className="font-semibold text-slate-700 text-xs">{numSpots}</span>
                    </div>
                    <div className="text-[11px] text-slate-500 flex items-center justify-end gap-1">
-                     Duration <span className="font-semibold text-slate-700 text-xs font-mono">{routeData.duration}</span>
+                     Time <span className="font-semibold text-slate-700 text-xs font-mono">{routeData.duration}</span>
                    </div>
                    <div className="text-[11px] text-slate-500 flex items-center gap-1">
                      Rating <span className="font-bold text-[#f45c2c] text-xs">{routeData.rating}</span>
@@ -176,7 +176,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
                         <img src={`https://i.pravatar.cc/100?img=${(i * 3 + 2) % 70}`} alt="avatar" className="w-[14px] h-[14px] rounded-full border border-white" />
                         <img src={`https://i.pravatar.cc/100?img=${(i * 3 + 3) % 70}`} alt="avatar" className="w-[14px] h-[14px] rounded-full border border-white" />
                       </div>
-                      <span className="text-[10px] text-slate-400 scale-90 origin-right">{runners} Ran</span>
+                      <span className="text-[10px] text-slate-400 scale-90 origin-right">{runners} runners</span>
                    </div>
                 </div>
               </div>
@@ -201,8 +201,8 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
                 className="w-full max-w-sm flex flex-col items-center"
              >
                 <div className="w-full text-center mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2 tracking-widest">{isCardFlipped ? "City Card Acquired" : "City Illuminated!"}</h2>
-                  <p className="text-cyan-400 text-sm">{isCardFlipped ? "CITY CARD ACQUIRED" : "Tap card to flip and claim reward"}</p>
+                  <h2 className="text-2xl font-bold text-white mb-2 tracking-widest">{isCardFlipped ? "City card unlocked" : "City lit!"}</h2>
+                  <p className="text-cyan-400 text-sm">{isCardFlipped ? "CITY CARD UNLOCKED" : "Tap to reveal your city card"}</p>
                 </div>
 
                 <motion.div 
