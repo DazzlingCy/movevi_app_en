@@ -8,7 +8,7 @@ export type SubscriptionStatus =
   | 'expired';
 export type LegacySubscriptionStatus = SubscriptionStatus | 'canceled' | 'refunded';
 export type SubscriptionPlan = 'premium_monthly';
-export type SubscriptionProvider = 'mock_netflix' | 'mock_stripe' | 'app_store' | 'google_play' | 'stripe';
+export type SubscriptionProvider = 'device_wallet' | 'app_store' | 'google_play' | 'stripe' | 'legacy';
 
 export interface BillingHistoryItem {
   id: string;
@@ -34,6 +34,7 @@ export interface SubscriptionState {
 
 const SUBSCRIPTION_STORAGE_KEY = 'movevi_subscription_state';
 const LEGACY_SUBSCRIPTION_STORAGE_KEY = 'movevi_is_subscribed';
+const PREVIEW_STARTS_AS_NEW_USER = true;
 const subscriptionStatuses: SubscriptionStatus[] = [
   'free',
   'trialing',
@@ -50,7 +51,7 @@ const defaultSubscription: SubscriptionState = {
   currentPeriodEnd: null,
   cancelAtPeriodEnd: false,
   hasUsedIntroOffer: false,
-  provider: 'mock_netflix',
+  provider: 'device_wallet',
   paymentMethodLabel: null,
   startedAt: null,
   trialEndsAt: null,
@@ -66,6 +67,11 @@ const addDays = (days: number) => {
 
 const getPlanPeriodDays = (_plan: SubscriptionPlan) => 30;
 
+const isPastDate = (isoDate: string | null, now = Date.now()) => {
+  if (!isoDate) return false;
+  return new Date(isoDate).getTime() <= now;
+};
+
 export const getPlanName = (_plan: SubscriptionPlan) => 'Premium Monthly';
 
 export const getPlanPrice = (_plan: SubscriptionPlan) => '$4.99/month';
@@ -75,6 +81,12 @@ export const getPlanMonthlyAmount = (_plan: SubscriptionPlan) => '$4.99';
 export const getIntroOfferPrice = (_plan: SubscriptionPlan) => '$0.99';
 
 export const getNextBillingDate = (plan: SubscriptionPlan = 'premium_monthly') => addDays(getPlanPeriodDays(plan));
+
+const resolveProvider = (provider?: string | null): SubscriptionProvider => {
+  if (provider === 'app_store' || provider === 'google_play' || provider === 'stripe') return provider;
+  if (provider === 'legacy') return 'legacy';
+  return 'device_wallet';
+};
 
 const createBillingItem = (
   description: string,
@@ -99,7 +111,7 @@ export const createActiveSubscription = (
   currentPeriodEnd: getNextBillingDate(plan),
   cancelAtPeriodEnd: false,
   hasUsedIntroOffer: true,
-  provider: 'mock_netflix',
+  provider: 'device_wallet',
   paymentMethodLabel,
   startedAt: new Date().toISOString(),
   trialEndsAt: null,
@@ -107,7 +119,7 @@ export const createActiveSubscription = (
   billingHistory: [
     createBillingItem(
       useIntroOffer ? `${getPlanName(plan)} - First month` : getPlanName(plan),
-      useIntroOffer ? getIntroOfferPrice(plan) : getPlanPrice(plan),
+      useIntroOffer ? getIntroOfferPrice(plan) : getPlanMonthlyAmount(plan),
     ),
   ],
 });
@@ -129,16 +141,23 @@ export const hasPremiumAccess = (subscription: SubscriptionState, now = Date.now
 export const resumeSubscription = (subscription: SubscriptionState): SubscriptionState => ({
   ...subscription,
   status: 'active',
+  currentPeriodEnd: isPastDate(subscription.currentPeriodEnd)
+    ? getNextBillingDate(subscription.plan)
+    : subscription.currentPeriodEnd,
   cancelAtPeriodEnd: false,
   billingIssueMessage: null,
 });
 
-export const markSubscriptionForCancellation = (subscription: SubscriptionState): SubscriptionState => ({
-  ...subscription,
-  status: 'canceled_at_period_end',
-  cancelAtPeriodEnd: true,
-  billingIssueMessage: null,
-});
+export const markSubscriptionForCancellation = (subscription: SubscriptionState): SubscriptionState => {
+  if (!hasPremiumAccess(subscription)) return expireSubscription(subscription);
+
+  return {
+    ...subscription,
+    status: 'canceled_at_period_end',
+    cancelAtPeriodEnd: true,
+    billingIssueMessage: null,
+  };
+};
 
 export const createBillingRetrySubscription = (subscription: SubscriptionState): SubscriptionState => ({
   ...subscription,
@@ -146,7 +165,35 @@ export const createBillingRetrySubscription = (subscription: SubscriptionState):
   cancelAtPeriodEnd: false,
   billingIssueMessage: 'We could not renew your membership. Update your payment method to keep Premium active.',
   billingHistory: [
-    createBillingItem(getPlanName(subscription.plan), getPlanPrice(subscription.plan), 'failed'),
+    createBillingItem(getPlanName(subscription.plan), getPlanMonthlyAmount(subscription.plan), 'failed'),
+    ...subscription.billingHistory,
+  ],
+});
+
+export const moveSubscriptionToBillingRetry = (subscription: SubscriptionState): SubscriptionState => ({
+  ...subscription,
+  status: 'billing_retry',
+  cancelAtPeriodEnd: false,
+  billingIssueMessage: 'Premium is paused. Update your payment method to restart access.',
+});
+
+export const expireSubscription = (subscription: SubscriptionState): SubscriptionState => ({
+  ...subscription,
+  status: 'expired',
+  currentPeriodEnd: subscription.currentPeriodEnd || new Date().toISOString(),
+  cancelAtPeriodEnd: false,
+  billingIssueMessage: null,
+});
+
+export const renewSubscription = (subscription: SubscriptionState): SubscriptionState => ({
+  ...subscription,
+  status: 'active',
+  currentPeriodEnd: getNextBillingDate(subscription.plan),
+  cancelAtPeriodEnd: false,
+  hasUsedIntroOffer: true,
+  billingIssueMessage: null,
+  billingHistory: [
+    createBillingItem(getPlanName(subscription.plan), getPlanMonthlyAmount(subscription.plan)),
     ...subscription.billingHistory,
   ],
 });
@@ -155,8 +202,18 @@ export const updatePaymentMethod = (subscription: SubscriptionState, paymentMeth
   ...subscription,
   status: 'active',
   cancelAtPeriodEnd: false,
+  currentPeriodEnd: isPastDate(subscription.currentPeriodEnd) || !subscription.currentPeriodEnd
+    ? getNextBillingDate(subscription.plan)
+    : subscription.currentPeriodEnd,
+  hasUsedIntroOffer: true,
   paymentMethodLabel,
   billingIssueMessage: null,
+  billingHistory: subscription.status === 'billing_retry' || isPastDate(subscription.currentPeriodEnd) || !subscription.currentPeriodEnd
+    ? [
+        createBillingItem(getPlanName(subscription.plan), getPlanMonthlyAmount(subscription.plan)),
+        ...subscription.billingHistory,
+      ]
+    : subscription.billingHistory,
 });
 
 type StoredSubscriptionState = Partial<Omit<SubscriptionState, 'status'>> & {
@@ -184,7 +241,7 @@ export const normalizeSubscription = (subscription: StoredSubscriptionState | nu
       subscription.startedAt ||
       (Array.isArray(subscription.billingHistory) && subscription.billingHistory.length > 0)
     ),
-    provider: subscription.provider || 'mock_netflix',
+    provider: resolveProvider(subscription.provider),
     paymentMethodLabel: subscription.paymentMethodLabel || null,
     startedAt: subscription.startedAt || null,
     trialEndsAt: subscription.trialEndsAt || null,
@@ -195,17 +252,28 @@ export const normalizeSubscription = (subscription: StoredSubscriptionState | nu
   if (
     (normalized.status === 'trialing' ||
       normalized.status === 'active' ||
-      normalized.status === 'canceled_at_period_end' ||
-      normalized.status === 'grace_period' ||
-      normalized.status === 'billing_retry') &&
+      normalized.status === 'canceled_at_period_end') &&
     normalized.currentPeriodEnd &&
-    new Date(normalized.currentPeriodEnd).getTime() <= Date.now()
+    isPastDate(normalized.currentPeriodEnd)
   ) {
     return {
       ...normalized,
       status: 'expired',
       cancelAtPeriodEnd: false,
       billingIssueMessage: null,
+    };
+  }
+
+  if (
+    normalized.status === 'grace_period' &&
+    normalized.currentPeriodEnd &&
+    isPastDate(normalized.currentPeriodEnd)
+  ) {
+    return {
+      ...normalized,
+      status: 'billing_retry',
+      cancelAtPeriodEnd: false,
+      billingIssueMessage: 'Premium is paused. Update your payment method to restart access.',
     };
   }
 
@@ -225,6 +293,13 @@ export const saveSubscriptionState = (subscription: SubscriptionState) => {
 };
 
 export const readSubscriptionState = (): SubscriptionState => {
+  if (PREVIEW_STARTS_AS_NEW_USER) {
+    const freeSubscription = createFreeSubscription();
+    saveSubscriptionState(freeSubscription);
+    localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
+    return freeSubscription;
+  }
+
   try {
     const storedSubscription = localStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
     if (storedSubscription) {
@@ -236,7 +311,10 @@ export const readSubscriptionState = (): SubscriptionState => {
 
     const legacySubscription = localStorage.getItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
     if (legacySubscription === 'true') {
-      const migrated = createActiveSubscription('Legacy subscription');
+      const migrated = {
+        ...createActiveSubscription('Legacy subscription'),
+        provider: 'legacy' as SubscriptionProvider,
+      };
       saveSubscriptionState(migrated);
       localStorage.removeItem(LEGACY_SUBSCRIPTION_STORAGE_KEY);
       return migrated;

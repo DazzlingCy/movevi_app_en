@@ -41,8 +41,8 @@ type GlobeHtmlElement = CityPoint | FlightMarker;
 
 const GLOBE_TEXTURE_URL = globeTextureUrl;
 const COUNTRIES_TOPOLOGY_URL = countriesTopologyUrl;
-const CAMERA_ALTITUDE = 1.78;
-const REDUCED_CAMERA_ALTITUDE = 1.95;
+const CAMERA_ALTITUDE = 3.35;
+const REDUCED_CAMERA_ALTITUDE = 3.55;
 
 type CountryPolygon = {
   type: string;
@@ -405,8 +405,8 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
     controls.dampingFactor = 0.08;
     controls.rotateSpeed = 0.52;
     controls.zoomSpeed = 0.72;
-    controls.minDistance = 190;
-    controls.maxDistance = 520;
+    controls.minDistance = 215;
+    controls.maxDistance = 560;
     const handleControlStart = () => {
       setAutoRotate(false);
       clearIdleTimer();

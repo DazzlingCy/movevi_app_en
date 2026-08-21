@@ -8,13 +8,16 @@ import ProfileTab from './components/ProfileTab';
 import CityRoutesView from './components/CityRoutesView';
 import RouteDetailView from './components/RouteDetailView';
 import RunPlaybackView from './components/RunPlaybackView';
-import IntroScreen from './components/IntroScreen';
+import AuthScreen from './components/AuthScreen';
+import ProfileSetupScreen from './components/ProfileSetupScreen';
+import EditProfilePage from './components/EditProfilePage';
 import LitRecordsView from './components/LitRecordsView';
 import LeaderboardView from './components/LeaderboardView';
 import WeekendMedleyView from './components/WeekendMedleyView';
 import SubscriptionPage from './components/SubscriptionPage';
 import MedalDrawView from './components/MedalDrawView';
 import CheckInRedPacketView from './components/CheckInRedPacketView';
+import SettingsPage from './components/SettingsPage';
 import {
   SubscriptionPlan,
   SubscriptionState,
@@ -22,11 +25,13 @@ import {
   formatBillingDate,
   hasPremiumAccess as getHasPremiumAccess,
   markSubscriptionForCancellation,
-  resetSubscriptionState,
+  normalizeSubscription,
+  readSubscriptionState,
   resumeSubscription,
   saveSubscriptionState,
   updatePaymentMethod,
 } from './lib/subscription';
+import { AuthUser, clearAuthSession, loadAuthSession, saveAuthSession } from './lib/auth';
 
 const DEFAULT_LIT_CITY_IDS = ['2', '1'];
 const DEFAULT_IN_PROGRESS_CITY_ID = '15';
@@ -34,11 +39,10 @@ const DEFAULT_IN_PROGRESS_COMPLETED_ROUTE_INDICES = [1];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
-  const [showIntro, setShowIntro] = useState(true);
-  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription', data?: any} | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => loadAuthSession());
+  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription' | 'settings' | 'editProfile', data?: any} | null>(null);
 
-  // Demo subscription state starts as a never-subscribed user on every reload.
-  const [subscription, setSubscription] = useState<SubscriptionState>(() => resetSubscriptionState());
+  const [subscription, setSubscription] = useState<SubscriptionState>(() => readSubscriptionState());
   const hasPremiumAccess = getHasPremiumAccess(subscription);
   const premiumAccessLabel = subscription.status === 'canceled_at_period_end' && hasPremiumAccess
     ? `Until ${formatBillingDate(subscription.currentPeriodEnd)}`
@@ -50,7 +54,14 @@ export default function App() {
   };
 
   const handleSubscribeSuccess = (paymentMethodLabel: string, plan: SubscriptionPlan, _mode: 'trial' | 'paid') => {
-    updateSubscription(createActiveSubscription(paymentMethodLabel, plan, !subscription.hasUsedIntroOffer));
+    const activated = createActiveSubscription(paymentMethodLabel, plan, !subscription.hasUsedIntroOffer);
+    updateSubscription({
+      ...activated,
+      billingHistory: [
+        ...activated.billingHistory,
+        ...subscription.billingHistory,
+      ],
+    });
   };
 
   const handleCancelSubscription = () => {
@@ -61,9 +72,34 @@ export default function App() {
     updateSubscription(resumeSubscription(subscription));
   };
 
-  const handleUpdatePaymentMethod = (paymentMethodLabel = 'Visa ending in 4242') => {
+  const handleUpdatePaymentMethod = (paymentMethodLabel = 'Apple Pay / Google Pay') => {
     updateSubscription(updatePaymentMethod(subscription, paymentMethodLabel));
   };
+
+  const handleAuthenticated = (user: AuthUser) => {
+    setAuthUser(user);
+    saveAuthSession(user);
+  };
+
+  const handleProfileComplete = (user: AuthUser) => {
+    setAuthUser(user);
+    saveAuthSession(user);
+    setActiveTab('home');
+  };
+
+  const handleSignOut = () => {
+    clearAuthSession();
+    setFullScreenPage(null);
+    setActiveTab('home');
+    setAuthUser(null);
+  };
+
+  useEffect(() => {
+    const normalizedSubscription = normalizeSubscription(subscription);
+    if (JSON.stringify(normalizedSubscription) !== JSON.stringify(subscription)) {
+      updateSubscription(normalizedSubscription);
+    }
+  }, [subscription]);
 
   // Weekend City Memory Medley Activity states
   const [medleySelectedRouteIds, setMedleySelectedRouteIds] = useState<string[]>([]);
@@ -112,8 +148,6 @@ export default function App() {
     completedRoutes: 7,
     totalDistance: 62.0,
     totalTimeHours: 12.0,
-    lightValue: 120,
-    lifetimeLightValue: 120,
     dailyCheckedIn: false,
     dailyDistance: 0,
     dailyTreadmillStarted: false,
@@ -143,7 +177,8 @@ export default function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <HomeTab 
+        return <HomeTab
+          user={authUser}
           userStats={userStats}
           setUserStats={setUserStats}
           onNavigate={(type, data) => setFullScreenPage({ type: type as any, data })} 
@@ -206,14 +241,17 @@ export default function App() {
         return <CitiesTab onCityClick={(city) => setFullScreenPage({ type: 'cityRoutes', data: city })} />;
       case 'profile':
         return (
-          <ProfileTab 
-            userStats={userStats} 
+          <ProfileTab
+            user={authUser}
+            userStats={userStats}
             isSubscribed={hasPremiumAccess}
             subscription={subscription}
             onOpenSubscription={() => setFullScreenPage({ type: 'subscription' })}
             onCancelSubscription={handleCancelSubscription}
             onResumeSubscription={handleResumeSubscription}
             onUpdatePaymentMethod={handleUpdatePaymentMethod}
+            onOpenSettings={() => setFullScreenPage({ type: 'settings' })}
+            onOpenEditProfile={() => setFullScreenPage({ type: 'editProfile' })}
           />
         );
       default:
@@ -223,31 +261,29 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen w-full max-w-md mx-auto bg-[#05070A] text-slate-100 overflow-hidden relative font-sans shadow-2xl sm:h-[800px] sm:mt-10 sm:rounded-[40px] sm:border-[8px] sm:border-slate-800">
-      <AnimatePresence>
-        {showIntro && (
-          <IntroScreen 
-            onComplete={() => {
-              setShowIntro(false);
-            }} 
-          />
-        )}
-      </AnimatePresence>
       <main className="flex-1 relative overflow-hidden bg-[#05070A]">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeTab}
+            key={authUser ? activeTab : 'auth'}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="w-full h-full"
           >
-            {renderContent()}
+            {!authUser ? (
+              <AuthScreen onAuthenticated={handleAuthenticated} />
+            ) : !authUser.profileCompleted ? (
+              <ProfileSetupScreen user={authUser} onComplete={handleProfileComplete} />
+            ) : (
+              renderContent()
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
-      
+
       {/* Bottom Navigation */}
+      {authUser && authUser.profileCompleted && (
       <nav className="px-6 py-3 shrink-0 bg-black/80 backdrop-blur-2xl border-t border-white/10 pb-3 sm:pb-3 z-50">
         <div className="flex justify-between items-center max-w-3xl mx-auto">
           {tabs.map((tab) => {
@@ -270,10 +306,11 @@ export default function App() {
           })}
         </div>
       </nav>
+      )}
 
       {/* Full Screen Pages overlays on top of everything including bottom nav */}
       <AnimatePresence>
-        {fullScreenPage && (
+        {authUser && authUser.profileCompleted && fullScreenPage && (
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -321,8 +358,6 @@ export default function App() {
                  {...fullScreenPage.data}
                  onExit={() => setFullScreenPage({ type: 'routeDetail', data: fullScreenPage.data })}
                  onComplete={(stats) => {
-                   const earnedGlow = stats.calories || Math.floor(stats.distance * 65);
-
                    if (fullScreenPage.data.isCheckInRoute) {
                       const checkInDay = fullScreenPage.data.checkInDay || 1;
                       setUserStats(prev => {
@@ -333,8 +368,6 @@ export default function App() {
                           ...prev,
                           totalDistance: prev.totalDistance + stats.distance,
                           totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
-                          lightValue: (prev.lightValue || 0) + earnedGlow,
-                          lifetimeLightValue: (prev.lifetimeLightValue ?? prev.lightValue ?? 0) + earnedGlow,
                           dailyDistance: (prev.dailyDistance || 0) + stats.distance,
                           dailyTreadmillStarted: true,
                           completedRoutes: alreadyCompleted ? prev.completedRoutes : prev.completedRoutes + 1,
@@ -352,8 +385,6 @@ export default function App() {
                      ...prev,
                      totalDistance: prev.totalDistance + stats.distance,
                      totalTimeHours: prev.totalTimeHours + (stats.duration / 3600),
-                     lightValue: (prev.lightValue || 0) + earnedGlow,
-                     lifetimeLightValue: (prev.lifetimeLightValue ?? prev.lightValue ?? 0) + earnedGlow,
                      dailyDistance: (prev.dailyDistance || 0) + stats.distance,
                      dailyTreadmillStarted: true,
                    }));
@@ -427,7 +458,7 @@ export default function App() {
               <LitRecordsView onBack={() => setFullScreenPage(null)} />
             )}
             {fullScreenPage.type === 'leaderboard' && (
-              <LeaderboardView onBack={() => setFullScreenPage(null)} />
+              <LeaderboardView userStats={userStats} onBack={() => setFullScreenPage(null)} />
             )}
             {fullScreenPage.type === 'weekendMedley' && (
                <WeekendMedleyView 
@@ -503,6 +534,24 @@ export default function App() {
                 onCancelSubscription={handleCancelSubscription}
                 onResumeSubscription={handleResumeSubscription}
                 onUpdatePaymentMethod={handleUpdatePaymentMethod}
+              />
+            )}
+            {fullScreenPage.type === 'settings' && (
+              <SettingsPage
+                user={authUser}
+                onBack={() => setFullScreenPage(null)}
+                onSignOut={handleSignOut}
+              />
+            )}
+            {fullScreenPage.type === 'editProfile' && authUser && (
+              <EditProfilePage
+                user={authUser}
+                onBack={() => setFullScreenPage(null)}
+                onSave={(updatedUser) => {
+                  setAuthUser(updatedUser);
+                  saveAuthSession(updatedUser);
+                  setFullScreenPage(null);
+                }}
               />
             )}
           </motion.div>

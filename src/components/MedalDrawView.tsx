@@ -20,14 +20,12 @@ interface MedalDrawViewProps {
     completedRoutes: number;
     totalDistance: number;
     totalTimeHours: number;
-    lightValue: number;
   };
   setUserStats: React.Dispatch<React.SetStateAction<{
     completedCities: number;
     completedRoutes: number;
     totalDistance: number;
     totalTimeHours: number;
-    lightValue: number;
   }>>;
 }
 

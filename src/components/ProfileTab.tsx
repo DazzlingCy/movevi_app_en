@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Settings,
   ChevronRight,
-  Mail,
   SquarePen,
   Medal,
   Map as MapIcon,
@@ -16,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { AuthUser } from '../lib/auth';
 import {
   SubscriptionState,
   formatBillingDate,
@@ -31,6 +31,7 @@ interface UserStats {
 }
 
 interface ProfileTabProps {
+  user: AuthUser | null;
   userStats: UserStats;
   isSubscribed: boolean;
   subscription: SubscriptionState;
@@ -38,9 +39,12 @@ interface ProfileTabProps {
   onCancelSubscription: () => void;
   onResumeSubscription: () => void;
   onUpdatePaymentMethod: () => void;
+  onOpenSettings: () => void;
+  onOpenEditProfile: () => void;
 }
 
 export default function ProfileTab({
+  user,
   userStats,
   isSubscribed,
   subscription,
@@ -48,6 +52,8 @@ export default function ProfileTab({
   onCancelSubscription,
   onResumeSubscription,
   onUpdatePaymentMethod,
+  onOpenSettings,
+  onOpenEditProfile,
 }: ProfileTabProps) {
   const [showManageModal, setShowManageModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -76,7 +82,7 @@ export default function ProfileTab({
             : 'Free plan';
 
   const stats = [
-    { label: 'Cities Completed', value: userStats.completedCities.toString() },
+    { label: 'Cities Lit', value: userStats.completedCities.toString() },
     { label: 'Routes Completed', value: userStats.completedRoutes.toString() },
     { label: 'Distance', value: userStats.totalDistance.toFixed(1), unit: 'km' },
     { label: 'Active Time', value: userStats.totalTimeHours.toFixed(1), unit: 'h' },
@@ -89,8 +95,17 @@ export default function ProfileTab({
     { icon: HeadphonesIcon, label: 'Customer Support' },
     { icon: FileText, label: 'Feedback' },
     { icon: BookOpen, label: 'User Instructions' },
-    { icon: Settings, label: 'Settings' },
+    { icon: Settings, label: 'Settings', onClick: onOpenSettings },
   ];
+
+  const membershipProviderLabel =
+    subscription.provider === 'app_store'
+      ? 'App Store'
+      : subscription.provider === 'google_play'
+        ? 'Google Play'
+        : subscription.provider === 'stripe'
+          ? 'MOVEVI Web'
+          : 'Device wallet';
 
   const confirmCancelSubscription = () => {
     onCancelSubscription();
@@ -116,10 +131,12 @@ export default function ProfileTab({
             <Crown size={18} className={`${membershipAccentClass} fill-current`} />
             <span className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-[#05070A] ${membershipDotClass}`} />
           </button>
-          <button className="text-slate-300 hover:text-cyan-400 transition-colors">
-            <Mail size={22} />
-          </button>
-          <button className="text-slate-300 hover:text-cyan-400 transition-colors">
+          <button
+            type="button"
+            onClick={onOpenEditProfile}
+            className="text-slate-300 hover:text-cyan-400 transition-colors"
+            aria-label="Edit profile"
+          >
             <SquarePen size={22} />
           </button>
         </div>
@@ -127,23 +144,16 @@ export default function ProfileTab({
         <div className="flex flex-col items-start gap-4 relative z-10 border-b border-white/5 pb-5">
           <div className="flex items-center gap-4 w-full">
             <div className="w-20 h-20 rounded-full border-2 border-cyan-400/50 p-1 relative shadow-[0_0_20px_rgba(34,211,238,0.2)] bg-[#05070A] shrink-0">
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200" 
-                alt="Avatar" 
+              <img
+                src={user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200'}
+                alt="Avatar"
                 className="w-full h-full rounded-full object-cover"
               />
             </div>
             
             <div className="flex-1 flex flex-col justify-center">
-              <h1 className="text-xl font-bold text-slate-100 tracking-wide mb-2">Chenyuan</h1>
-              <div className="flex items-center gap-2">
-                <span className="bg-amber-400 text-amber-950 text-xs font-bold px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)]">
-                  LV.3
-                </span>
-                <span className="text-amber-400 text-sm font-semibold tracking-widest drop-shadow-[0_0_5px_rgba(251,191,36,0.4)]">
-                  Gold
-                </span>
-              </div>
+              <h1 className="text-xl font-bold text-slate-100 tracking-wide mb-1">{user?.name || 'MOVEVI Runner'}</h1>
+              <p className="max-w-[210px] truncate text-xs font-semibold text-slate-500">{user?.email || 'Signed in'}</p>
             </div>
           </div>
 
@@ -201,6 +211,7 @@ export default function ProfileTab({
             return (
               <motion.button
                 key={idx}
+                onClick={item.onClick}
                 whileTap={{ backgroundColor: "rgba(255,255,255,0.1)" }}
                 className={`w-full flex items-center justify-between p-5 transition-colors ${idx !== menuItems.length - 1 ? 'border-b border-white/5' : ''}`}
               >
@@ -213,6 +224,7 @@ export default function ProfileTab({
             );
           })}
         </div>
+
       </div>
 
       <AnimatePresence>
@@ -271,7 +283,7 @@ export default function ProfileTab({
                     <div className="bg-black/20 border border-white/5 rounded-xl p-3">
                       <span className="block text-slate-500">Managed by</span>
                       <strong className="block text-slate-100 mt-1">
-                        {subscription.provider === 'mock_netflix' ? 'MOVEVI Account' : subscription.provider}
+                        {membershipProviderLabel}
                       </strong>
                     </div>
                   </div>

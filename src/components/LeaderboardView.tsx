@@ -1,22 +1,51 @@
-import { ChevronRight, Trophy, Zap, MapPin } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { ChevronRight, MapPin, Trophy } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface LeaderboardViewProps {
+  userStats: {
+    completedCities: number;
+  };
   onBack: () => void;
 }
 
 const leaderboardData = [
-  { id: 1, name: 'Aurora Flash', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100', score: 18450 },
-  { id: 2, name: 'Urban Explorer', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100', score: 16200 },
-  { id: 3, name: 'Starlight Chaser', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100', score: 14500 },
-  { id: 4, name: 'Night Runner', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100', score: 12100 },
-  { id: 5, name: 'Windstrider', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100', score: 11800 },
-  { id: 6, name: 'Globe Runner', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100', score: 9500 },
-  { id: 7, name: 'Aztec Spirit', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100', score: 8200 },
-  { id: 8, name: 'Beyond Limits', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100&h=100', score: 7100 },
+  { id: 1, name: 'Aurora Flash', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 18 },
+  { id: 2, name: 'Urban Explorer', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 16 },
+  { id: 3, name: 'Starlight Chaser', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 14 },
+  { id: 4, name: 'Night Runner', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 12 },
+  { id: 5, name: 'Windstrider', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 11 },
+  { id: 6, name: 'Globe Runner', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 9 },
+  { id: 7, name: 'Aztec Spirit', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 7 },
+  { id: 8, name: 'Beyond Limits', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100&h=100', citiesLit: 5 },
 ];
 
-export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
+const formatCitiesLit = (count: number) => `${count} ${count === 1 ? 'city lit' : 'cities lit'}`;
+
+function LeaderboardAvatar({ src, label, className }: { src?: string; label: string; className: string }) {
+  if (src) {
+    return <img src={src} alt={label} className={className} />;
+  }
+
+  return (
+    <div className={`${className} flex items-center justify-center bg-slate-800 text-sm font-black text-cyan-200`}>
+      ME
+    </div>
+  );
+}
+
+export default function LeaderboardView({ userStats, onBack }: LeaderboardViewProps) {
+  const currentUser = {
+    id: 999,
+    name: 'You',
+    avatar: '',
+    citiesLit: userStats.completedCities,
+    isCurrentUser: true,
+  };
+  const rankedUsers = [...leaderboardData, currentUser].sort((a, b) => b.citiesLit - a.citiesLit);
+  const currentUserRank = rankedUsers.findIndex(user => user.id === currentUser.id) + 1;
+  const podium = rankedUsers.slice(0, 3);
+  const listUsers = rankedUsers.slice(3).filter(user => !('isCurrentUser' in user));
+
   return (
     <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
       <div className="sticky top-0 z-20 bg-black/40 backdrop-blur-md pt-safeb flex items-center px-4 py-4 border-b border-white/10">
@@ -40,12 +69,12 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
         >
           <div className="relative mb-3">
              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-400 p-0.5">
-               <img src={leaderboardData[1].avatar} className="w-full h-full rounded-full object-cover" />
+               <LeaderboardAvatar src={podium[1].avatar} label={podium[1].name} className="w-full h-full rounded-full object-cover" />
              </div>
              <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-slate-400 rounded-full flex items-center justify-center text-xs font-bold text-slate-900">2</div>
           </div>
-          <div className="text-xs font-bold text-slate-200 mb-1">{leaderboardData[1].name}</div>
-          <div className="text-[10px] text-cyan-400 flex items-center"><Zap size={10} className="mr-0.5" />{leaderboardData[1].score.toLocaleString()}</div>
+          <div className="text-xs font-bold text-slate-200 mb-1">{podium[1].name}</div>
+          <div className="text-[10px] text-cyan-400 flex items-center"><MapPin size={10} className="mr-0.5" />{formatCitiesLit(podium[1].citiesLit)}</div>
         </motion.div>
 
         {/* 1st Place */}
@@ -59,12 +88,12 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
           </div>
           <div className="relative mb-3">
              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-amber-400 p-0.5 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-               <img src={leaderboardData[0].avatar} className="w-full h-full rounded-full object-cover" />
+               <LeaderboardAvatar src={podium[0].avatar} label={podium[0].name} className="w-full h-full rounded-full object-cover" />
              </div>
              <div className="absolute -bottom-2 -left-2 w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center text-sm font-bold text-slate-900 shadow-lg">1</div>
           </div>
-          <div className="text-sm font-bold text-amber-400 mb-1">{leaderboardData[0].name}</div>
-          <div className="text-xs text-cyan-400 flex items-center font-bold"><Zap size={12} className="mr-0.5" />{leaderboardData[0].score.toLocaleString()}</div>
+          <div className="text-sm font-bold text-amber-400 mb-1">{podium[0].name}</div>
+          <div className="text-xs text-cyan-400 flex items-center font-bold"><MapPin size={12} className="mr-0.5" />{formatCitiesLit(podium[0].citiesLit)}</div>
         </motion.div>
 
         {/* 3rd Place */}
@@ -76,18 +105,20 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
         >
           <div className="relative mb-3">
              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-400 p-0.5">
-               <img src={leaderboardData[2].avatar} className="w-full h-full rounded-full object-cover" />
+               <LeaderboardAvatar src={podium[2].avatar} label={podium[2].name} className="w-full h-full rounded-full object-cover" />
              </div>
              <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-orange-400 rounded-full flex items-center justify-center text-xs font-bold text-slate-900">3</div>
           </div>
-          <div className="text-xs font-bold text-slate-200 mb-1">{leaderboardData[2].name}</div>
-          <div className="text-[10px] text-cyan-400 flex items-center"><Zap size={10} className="mr-0.5" />{leaderboardData[2].score.toLocaleString()}</div>
+          <div className="text-xs font-bold text-slate-200 mb-1">{podium[2].name}</div>
+          <div className="text-[10px] text-cyan-400 flex items-center"><MapPin size={10} className="mr-0.5" />{formatCitiesLit(podium[2].citiesLit)}</div>
         </motion.div>
       </div>
 
       {/* List */}
       <div className="px-4 py-6 space-y-3">
-        {leaderboardData.slice(3).map((user, index) => (
+        {listUsers.map((user, index) => {
+          const rank = rankedUsers.findIndex(item => item.id === user.id) + 1;
+          return (
            <motion.div 
              key={user.id}
              initial={{ opacity: 0, x: -20 }}
@@ -96,29 +127,30 @@ export default function LeaderboardView({ onBack }: LeaderboardViewProps) {
              className="flex items-center justify-between bg-white/5 border border-white/5 p-3 rounded-2xl hover:bg-white/10 transition-colors"
            >
               <div className="flex items-center gap-4">
-                 <div className="w-6 text-center text-slate-500 font-bold font-mono">{index + 4}</div>
-                 <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" />
+                 <div className="w-6 text-center text-slate-500 font-bold font-mono">{rank}</div>
+                 <LeaderboardAvatar src={user.avatar} label={user.name} className="w-10 h-10 rounded-full object-cover" />
                  <div className="font-bold text-sm text-slate-200">{user.name}</div>
               </div>
               <div className="flex items-center text-cyan-400 font-mono text-xs">
-                 <Zap size={12} className="mr-1" /> {user.score.toLocaleString()}
+                 <MapPin size={12} className="mr-1" /> {formatCitiesLit(user.citiesLit)}
               </div>
            </motion.div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Current User */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent pb-safeb pt-12">
          <div className="flex items-center justify-between bg-cyan-950/40 border border-cyan-500/30 p-4 rounded-2xl backdrop-blur-md shadow-[0_0_20px_rgba(34,211,238,0.1)] mb-4">
             <div className="flex items-center gap-4">
-               <div className="w-6 text-center text-cyan-500 font-bold font-mono">142</div>
+               <div className="w-6 text-center text-cyan-500 font-bold font-mono">{currentUserRank}</div>
                <div className="w-10 h-10 rounded-full bg-slate-800 border hover:bg-white/10 flex items-center justify-center border-slate-700">
                  <span className="text-sm font-bold">ME</span>
                </div>
                <div className="font-bold text-sm text-cyan-400">Your Rank</div>
             </div>
             <div className="flex items-center text-cyan-400 font-mono text-xs font-bold">
-               <Zap size={14} className="mr-1" /> 120
+               <MapPin size={14} className="mr-1" /> {formatCitiesLit(currentUser.citiesLit)}
             </div>
          </div>
       </div>

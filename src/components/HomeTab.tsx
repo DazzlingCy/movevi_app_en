@@ -15,14 +15,13 @@ import {
   Zap,
 } from 'lucide-react';
 import { CITIES, CityData } from '../data/cities';
+import { AuthUser } from '../lib/auth';
 import { cn } from '../lib/utils';
-import { getGlowRank } from '../lib/glow';
 import WorldGlobe from './WorldGlobe';
 import CityImage from './CityImage';
 
-const SWITCH_CITY_COST = 30;
-
 interface HomeTabProps {
+  user?: AuthUser | null;
   onNavigate?: (type: string, data: any) => void;
   completedChapters?: number[];
   targetFlight?: { fromCityId: string; toCityId: string } | null;
@@ -59,6 +58,7 @@ const numberWords = [
 const getCityPreviewImage = (city?: CityData | null) => city?.image || '';
 
 export default function HomeTab({
+  user,
   onNavigate,
   targetFlight,
   onFlightComplete,
@@ -95,8 +95,6 @@ export default function HomeTab({
     (total, city) => total + (city.status === 'lit' || city.status === 'in-progress' ? city.routes : 0),
     0
   );
-  const glowRank = getGlowRank(userStats?.lifetimeLightValue ?? userStats?.lightValue ?? 0);
-  const lightValue = userStats?.lightValue ?? 0;
 
   const broadcastMessages = [
     { type: 'route', text: 'Mia completed Singapore Bay Loop and earned route medals.' },
@@ -182,16 +180,6 @@ export default function HomeTab({
   };
 
   const handleConfirmSwitch = () => {
-    if (lightValue < SWITCH_CITY_COST) {
-      showToast(`You need ${SWITCH_CITY_COST} Glow to switch cities.`);
-      setShowSwitchConfirm(false);
-      return;
-    }
-
-    setUserStats?.((prev: any) => ({
-      ...prev,
-      lightValue: Math.max(0, (prev.lightValue || 0) - SWITCH_CITY_COST),
-    }));
     setShowSwitchConfirm(false);
     openCitySelection(inProgressCity?.id);
   };
@@ -206,6 +194,8 @@ export default function HomeTab({
     : litCount > 0
       ? 'Choose the next city'
       : 'Start your first city';
+  const profileName = user?.name || 'MOVEVI Runner';
+  const profileAvatarUrl = user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100';
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[#081827]">
@@ -224,34 +214,20 @@ export default function HomeTab({
       />
 
       <div className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-[#081827]/70 to-transparent px-5 pt-5">
-        <button
-          type="button"
-          onClick={() => onNavigate?.('litRecords', null)}
-          className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/12 bg-slate-950/28 p-1.5 pr-4 text-left shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur-md transition-colors hover:border-cyan-200/35 hover:bg-white/[0.075]"
-        >
-          <div className={`h-12 w-12 rounded-full bg-gradient-to-br ${glowRank.current.color} p-[2px] shadow-[0_0_18px_rgba(34,211,238,0.28)]`}>
+        <div className="pointer-events-none flex items-center gap-3 rounded-full border border-white/12 bg-slate-950/28 p-1.5 pr-4 text-left shadow-[0_18px_44px_rgba(0,0,0,0.24)] backdrop-blur-md">
+          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-300 to-emerald-300 p-[2px] shadow-[0_0_18px_rgba(34,211,238,0.28)]">
             <div className="h-full w-full overflow-hidden rounded-full bg-slate-950 p-[2px]">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100&h=100"
-                alt="Mia Liu avatar"
+                src={profileAvatarUrl}
+                alt={`${profileName} avatar`}
                 className="h-full w-full rounded-full object-cover"
               />
             </div>
           </div>
           <div>
-            <div className="text-sm font-black tracking-wide text-slate-50">Mia Liu</div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-bold text-slate-300">
-              <span>{glowRank.current.name}</span>
-              <span className="text-slate-500">LV.{glowRank.current.level}</span>
-            </div>
-            <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-200 to-amber-200"
-                style={{ width: `${glowRank.progress}%` }}
-              />
-            </div>
+            <div className="max-w-[116px] truncate text-sm font-black tracking-wide text-slate-50">{profileName}</div>
           </div>
-        </button>
+        </div>
 
         <button
           type="button"
@@ -301,7 +277,7 @@ export default function HomeTab({
           <span className="flex h-11 w-11 items-center justify-center rounded-full border border-orange-200/24 bg-orange-300/12 text-orange-200 shadow-[0_12px_34px_rgba(0,0,0,0.26)] backdrop-blur-md transition group-hover:border-orange-200/50 group-hover:bg-orange-300/18">
             <Gift size={18} />
           </span>
-          打卡领红包
+          Rewards
         </button>
       </div>
 
@@ -524,7 +500,7 @@ export default function HomeTab({
                   Your runs recover those city signals, one scenic route at a time.
                 </p>
                 <p className="text-xs font-medium leading-relaxed text-slate-300">
-                  You are a <span className="mx-1 font-bold text-cyan-400">Glowtrail Explorer</span>. Finish routes, light cities, and rebuild the global map.
+                  You are a <span className="mx-1 font-bold text-cyan-400">MOVEVI Explorer</span>. Finish routes, light cities, and rebuild the global map.
                 </p>
               </div>
 
@@ -719,7 +695,7 @@ export default function HomeTab({
               <Flame size={32} className="mx-auto mb-3 text-cyan-300" />
               <h3 className="mb-2 text-lg font-black text-white">Switch city?</h3>
               <p className="mb-6 text-sm leading-relaxed text-slate-400">
-                Switching cities costs {SWITCH_CITY_COST} Glow. Your current route progress stays saved.
+                Choose another available city. Your current route progress stays saved.
               </p>
               <div className="flex gap-3">
                 <button

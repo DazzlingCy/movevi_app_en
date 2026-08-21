@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   AlertCircle,
+  Apple,
   Check,
   ChevronLeft,
   Crown,
+  CreditCard,
   Lock,
   RefreshCcw,
-  Wallet,
+  X,
 } from 'lucide-react';
 import {
   SubscriptionPlan,
@@ -29,17 +31,14 @@ interface SubscriptionPageProps {
   onUpdatePaymentMethod: (paymentMethodLabel?: string) => void;
 }
 
-type ViewMode = 'overview' | 'checkout';
-type PaymentErrors = {
-  wallet?: string;
-};
+type WalletProvider = 'apple' | 'google';
 
 const plan: SubscriptionPlan = 'premium_monthly';
 
 const benefits = [
-  'All global routes',
+  'Unlock every global route',
   'New route drops included',
-  'Cancel anytime before renewal',
+  'Cancel anytime before the next renewal',
 ];
 
 export default function SubscriptionPage({
@@ -51,11 +50,13 @@ export default function SubscriptionPage({
   onResumeSubscription,
   onUpdatePaymentMethod,
 }: SubscriptionPageProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('overview');
-  const [walletVerified, setWalletVerified] = useState(false);
-  const [errors, setErrors] = useState<PaymentErrors>({});
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
+  const [walletProvider, setWalletProvider] = useState<WalletProvider>(() => (
+    typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent) ? 'google' : 'apple'
+  ));
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
+  const [showSystemSubscriptionManager, setShowSystemSubscriptionManager] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
 
@@ -99,8 +100,8 @@ export default function SubscriptionPage({
           : isSubscribed
             ? 'All global routes are unlocked while your membership is active.'
             : isIntroOfferEligible
-              ? `Start for ${introOfferPrice} today, then ${planPrice}. Cancel before renewal anytime.`
-              : `Get every global route for ${planPrice}. Cancel before renewal anytime.`;
+              ? `Start for ${introOfferPrice} today, then ${planPrice}. Cancel anytime before the next renewal.`
+              : `Get every global route for ${planPrice}. Cancel anytime before the next renewal.`;
   const statusClassName = hasBillingIssue
     ? 'border-red-500/30 bg-red-500/10 text-red-200'
     : isCancellationPending
@@ -111,30 +112,25 @@ export default function SubscriptionPage({
           ? 'border-slate-500/30 bg-slate-500/10 text-slate-200'
           : 'border-slate-500/30 bg-slate-500/10 text-slate-300';
 
-  const paymentMethodLabel = 'Apple Pay / Google Pay';
+  const paymentMethodLabel = walletProvider === 'apple' ? 'Apple Pay' : 'Google Pay';
+  const paymentSheetTitle = walletProvider === 'apple' ? 'Apple Pay' : 'Google Pay';
+  const paymentSheetDomain = walletProvider === 'apple' ? 'apple.com' : 'pay.google.com';
+  const paymentSheetConfirmLabel = walletProvider === 'apple' ? 'Confirm with Face ID' : 'Confirm payment';
+  const systemProvider: WalletProvider = subscription.provider === 'google_play' ||
+    subscription.paymentMethodLabel?.toLowerCase().includes('google')
+    ? 'google'
+    : 'apple';
+  const systemManagerTitle = systemProvider === 'apple' ? 'Subscriptions' : 'Subscriptions';
+  const systemManagerLabel = systemProvider === 'apple' ? 'Apple Account' : 'Google Play';
+  const systemManagerDomain = systemProvider === 'apple' ? 'apps.apple.com' : 'play.google.com';
+  const systemCancelLabel = systemProvider === 'apple' ? 'Cancel Subscription' : 'Cancel subscription';
 
-  const checkoutActionLabel = useMemo(() => {
-    if (isProcessing) return processingStep || 'Processing...';
-    if (isSubscribed || hasBillingIssue) return 'Save payment method';
-    return 'Pay with Apple / Google Pay';
-  }, [hasBillingIssue, isProcessing, isSubscribed, processingStep]);
-
-  const validatePayment = () => {
-    const nextErrors: PaymentErrors = {};
-    if (!walletVerified) nextErrors.wallet = 'Verify Apple / Google Pay first.';
-
-    return nextErrors;
-  };
-
-  const completeCheckout = () => {
-    const validationErrors = validatePayment();
-    setErrors(validationErrors);
+  const completeWalletPayment = () => {
     setLastAction(null);
-    if (Object.keys(validationErrors).length > 0) return;
 
     setIsProcessing(true);
-    setProcessingStep('Opening Apple / Google Pay...');
-    window.setTimeout(() => setProcessingStep('Confirming wallet...'), 700);
+    setProcessingStep(`Opening ${paymentSheetTitle}...`);
+    window.setTimeout(() => setProcessingStep('Confirming payment...'), 700);
     window.setTimeout(() => setProcessingStep('Activating Premium...'), 1400);
     window.setTimeout(() => {
       if (isSubscribed || hasBillingIssue) {
@@ -142,27 +138,38 @@ export default function SubscriptionPage({
         setLastAction('Payment method updated.');
       } else {
         onSubscribe(paymentMethodLabel, plan, 'paid');
-        setLastAction('Premium is active. All global routes are unlocked.');
+        setLastAction(
+          isIntroOfferEligible
+            ? `Premium is active. Your first month is ${introOfferPrice}; after that it renews at ${planPrice}.`
+            : 'Premium is active. All global routes are unlocked.'
+        );
       }
 
       setIsProcessing(false);
       setProcessingStep('');
-      setViewMode('overview');
+      setShowPaymentSheet(false);
     }, 2200);
   };
 
-  const startCheckout = () => {
-    setErrors({});
+  const openPaymentSheet = () => {
     setLastAction(null);
     setShowCancelConfirm(false);
-    setViewMode('checkout');
+    setShowSystemSubscriptionManager(false);
+    setShowPaymentSheet(true);
+  };
+
+  const openSystemSubscriptionManager = () => {
+    setLastAction(null);
+    setShowPaymentSheet(false);
+    setShowCancelConfirm(false);
+    setShowSystemSubscriptionManager(true);
   };
 
   return (
     <div className="relative w-full h-full bg-[#05070A] text-slate-100 font-sans overflow-y-auto hide-scrollbar pb-10">
       <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-white/10 bg-[#05070A]/95 px-4 py-4 backdrop-blur-2xl">
         <button
-          onClick={viewMode === 'checkout' ? () => setViewMode('overview') : onBack}
+          onClick={onBack}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-colors hover:bg-white/10"
           aria-label="Back"
         >
@@ -171,13 +178,12 @@ export default function SubscriptionPage({
         <div>
           <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Membership</span>
           <h1 className="text-lg font-black leading-tight text-slate-100">
-            {viewMode === 'checkout' ? 'Checkout' : 'MOVEVI Premium'}
+            MOVEVI Premium
           </h1>
         </div>
       </div>
 
-      {viewMode === 'overview' ? (
-        <div className="px-5 py-6 space-y-5">
+      <div className="px-5 py-6 space-y-5">
           <section className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/[0.08] via-white/[0.03] to-amber-950/20 p-5 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -205,7 +211,7 @@ export default function SubscriptionPage({
               <div>
                 <h3 className="text-sm font-black text-slate-100">{planName}</h3>
                 <p className="mt-1 text-xs text-slate-500">
-                  {isIntroOfferEligible ? `First month ${introOfferPrice}, then ${planPrice}.` : 'One monthly plan. All global routes.'}
+                  {isIntroOfferEligible ? `First month ${introOfferPrice}, then ${planPrice}.` : 'One monthly plan. Unlock every global route.'}
                 </p>
               </div>
               <div className="text-right">
@@ -265,146 +271,241 @@ export default function SubscriptionPage({
               </button>
             ) : (
               <button
-                onClick={startCheckout}
+                onClick={hasBillingIssue || !isSubscribed ? openPaymentSheet : openSystemSubscriptionManager}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 py-4 text-sm font-black text-slate-950 transition-colors hover:bg-amber-300"
               >
                 <Lock size={17} />
-                {hasBillingIssue ? 'Update payment method' : isSubscribed ? 'Manage payment' : `Subscribe for ${checkoutPriceLabel}`}
-              </button>
-            )}
-
-            {isSubscribed && !isCancellationPending && (
-              <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-3 text-xs font-bold text-slate-400 transition-colors hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-200"
-              >
-                Cancel membership
+                {hasBillingIssue ? 'Update payment method' : isSubscribed ? 'Manage subscription' : `Subscribe for ${checkoutPriceLabel}`}
               </button>
             )}
 
           </section>
         </div>
-      ) : (
-        <div className="px-5 py-6 space-y-5">
-          <section className="rounded-[24px] border border-white/10 bg-[#0B1018] p-4 shadow-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Order summary</span>
-                <h2 className="mt-1 text-lg font-black text-slate-100">{isPaymentUpdate ? 'Update payment' : planName}</h2>
-                <p className="mt-1 text-xs text-slate-500">
-                  {isPaymentUpdate
-                    ? 'No charge today in this demo.'
-                    : isIntroOfferEligible
-                      ? `First month ${introOfferPrice}, then ${planPrice} until canceled.`
-                      : 'Billed today, then monthly until canceled.'}
-                </p>
-              </div>
-              <div className="text-right">
-                <strong className="block text-xl font-black text-white">{isPaymentUpdate ? '$0.00' : checkoutAmount}</strong>
-                <span className="text-xs text-slate-500">USD</span>
-              </div>
-            </div>
-          </section>
 
-          <section className="rounded-[24px] border border-white/10 bg-[#0B1018] p-4">
-            <h3 className="text-sm font-black text-slate-100">Payment method</h3>
-
-            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-amber-100">
-              <Wallet size={18} />
-              <span className="mt-2 block text-sm font-black">Apple / Google Pay</span>
-              <span className="mt-1 block text-xs text-amber-100/65">Fast checkout with your device wallet.</span>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
-              <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full border ${
-                walletVerified
-                  ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                  : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300'
-              }`}>
-                {walletVerified ? <Check size={24} className="stroke-[3]" /> : <Wallet size={24} />}
-              </div>
-              <h3 className="mt-4 text-sm font-black text-slate-100">
-                {walletVerified ? 'Wallet verified' : 'Verify wallet'}
-              </h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                {walletVerified
-                  ? 'Your wallet is ready for authorization.'
-                  : 'Confirm with Face ID, Touch ID, passcode, or Android screen lock.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setWalletVerified(true);
-                  setErrors((previous) => ({ ...previous, wallet: undefined }));
-                }}
-                className={`mt-4 w-full rounded-xl border px-4 py-3 text-xs font-black transition-colors ${
-                  walletVerified
-                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-                    : 'border-cyan-500/20 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20'
-                }`}
-              >
-                {walletVerified ? 'Ready to pay' : 'Verify wallet'}
-              </button>
-              {errors.wallet && <p className="mt-2 text-[11px] text-red-300">{errors.wallet}</p>}
-            </div>
-
-          </section>
-
-          <section className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs">
-              <span className="text-slate-400">{isPaymentUpdate ? 'Charge today' : 'Due today'}</span>
-              <strong className="text-slate-100">{isPaymentUpdate ? '$0.00 USD' : `${checkoutAmount} USD`}</strong>
-            </div>
-
-            <button
-              onClick={completeCheckout}
-              disabled={isProcessing}
-              className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-400 py-4 text-sm font-black text-slate-950 transition-colors hover:bg-amber-300 disabled:bg-white/5 disabled:text-slate-500"
-            >
-              {isProcessing ? (
-                <span className="h-4 w-4 rounded-full border-2 border-slate-950/25 border-t-slate-950 animate-spin" />
-              ) : (
-                <Lock size={17} />
-              )}
-              {checkoutActionLabel}
-            </button>
-          </section>
-        </div>
-      )}
-
-      {showCancelConfirm && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 px-5 backdrop-blur-sm">
+      {showPaymentSheet && (
+        <div className="absolute inset-0 z-50 flex items-end bg-black/70 backdrop-blur-sm">
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="cancel-premium-title"
-            className="w-full max-w-sm rounded-[28px] border border-red-500/25 bg-[#16070B] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.48)]"
+            aria-labelledby="wallet-payment-title"
+            className="w-full rounded-t-[32px] bg-[#F7F8FA] px-5 pb-6 pt-5 text-slate-950 shadow-[0_-24px_70px_rgba(0,0,0,0.45)]"
           >
-            <h3 id="cancel-premium-title" className="text-lg font-black text-red-50">
-              Cancel Premium?
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed text-red-50/70">
-              Premium stays active until {billingDate}. You will not be charged again.
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300" />
+            <div className="flex items-center justify-between gap-3">
               <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="rounded-2xl border border-white/10 bg-white/5 py-3.5 text-sm font-black text-slate-100 transition-colors hover:bg-white/10"
+                type="button"
+                onClick={() => setShowPaymentSheet(false)}
+                disabled={isProcessing}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
+                aria-label="Close payment sheet"
               >
-                Keep Premium
+                <X size={22} />
+              </button>
+              <div className="text-center">
+                <p className="text-[11px] font-bold text-slate-500">{paymentSheetDomain}</p>
+                <h2 id="wallet-payment-title" className="text-lg font-black">{paymentSheetTitle}</h2>
+              </div>
+              <div className="h-11 w-11" />
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setWalletProvider('apple')}
+                disabled={isProcessing}
+                className={`flex items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition ${
+                  walletProvider === 'apple'
+                    ? 'border-slate-950 bg-slate-950 text-white'
+                    : 'border-slate-200 bg-white text-slate-700'
+                }`}
+              >
+                <Apple size={18} className="fill-current" />
+                Apple Pay
               </button>
               <button
-                onClick={() => {
-                  onCancelSubscription();
-                  setShowCancelConfirm(false);
-                  setLastAction('Premium will end after the current billing period.');
-                }}
-                className="rounded-2xl border border-red-500/35 bg-red-500/20 py-3.5 text-sm font-black text-red-50 transition-colors hover:bg-red-500/30"
+                type="button"
+                onClick={() => setWalletProvider('google')}
+                disabled={isProcessing}
+                className={`flex items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-black transition ${
+                  walletProvider === 'google'
+                    ? 'border-slate-950 bg-slate-950 text-white'
+                    : 'border-slate-200 bg-white text-slate-700'
+                }`}
               >
-                Confirm cancel
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[13px] font-black text-[#4285F4]">G</span>
+                Google Pay
               </button>
             </div>
+
+            <div className="mt-5 rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold text-slate-500">MOVEVI Premium</p>
+                  <h3 className="mt-1 text-xl font-black">{isPaymentUpdate ? 'Update payment method' : planName}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {isPaymentUpdate
+                      ? 'No charge today.'
+                      : isIntroOfferEligible
+                        ? `First month ${introOfferPrice}, then ${planPrice}.`
+                        : `Renews monthly at ${planPrice}.`}
+                  </p>
+                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
+                  <Crown size={24} className="fill-current" />
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3 border-t border-slate-100 pt-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">{isPaymentUpdate ? 'Charge today' : 'Due today'}</span>
+                  <strong>{isPaymentUpdate ? '$0.00 USD' : `${checkoutAmount} USD`}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Renews</span>
+                  <strong>{planPrice}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Payment</span>
+                  <strong>{paymentSheetTitle}</strong>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={completeWalletPayment}
+              disabled={isProcessing}
+              className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-slate-950 text-base font-black text-white transition hover:bg-black disabled:bg-slate-300"
+            >
+              {isProcessing ? (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+              ) : walletProvider === 'apple' ? (
+                <Apple size={20} className="fill-current" />
+              ) : (
+                <CreditCard size={20} />
+              )}
+              {isProcessing ? processingStep || 'Processing...' : paymentSheetConfirmLabel}
+            </button>
+
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-slate-500">
+              This is a demo payment sheet. No real charge will be made.
+            </p>
           </div>
+        </div>
+      )}
+
+      {showSystemSubscriptionManager && (
+        <div className="absolute inset-0 z-50 flex flex-col overflow-y-auto bg-[#F4F5F7] text-slate-950">
+          <div className="sticky top-0 z-10 border-b border-slate-200 bg-[#F4F5F7]/95 px-4 pb-4 pt-5 backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSystemSubscriptionManager(false);
+                  setShowCancelConfirm(false);
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm"
+                aria-label="Back to MOVEVI"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <div className="text-center">
+                <p className="text-[11px] font-semibold text-slate-500">{systemManagerDomain}</p>
+                <h2 className="text-lg font-black">{systemManagerTitle}</h2>
+              </div>
+              <div className="h-10 w-10" />
+            </div>
+          </div>
+
+          <div className="px-5 py-5">
+            <div className="mb-4 rounded-2xl bg-white px-4 py-3 text-center text-xs font-semibold text-slate-500 shadow-sm">
+              Simulated {systemManagerLabel} subscription management
+            </div>
+
+            <section className="rounded-[28px] bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-amber-400 text-slate-950">
+                  <Crown size={32} className="fill-current" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-black">MOVEVI Premium</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{planName}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                    Unlock every global route. Managed by {systemManagerLabel}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 divide-y divide-slate-100 rounded-2xl border border-slate-100">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-sm text-slate-500">Price</span>
+                  <strong className="text-sm">{planPrice}</strong>
+                </div>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-sm text-slate-500">Renewal date</span>
+                  <strong className="text-sm">{billingDate}</strong>
+                </div>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-sm text-slate-500">Payment method</span>
+                  <strong className="text-sm">{subscription.paymentMethodLabel || systemManagerLabel}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-4 rounded-[24px] bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-black">What happens when you cancel</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                MOVEVI Premium stays active until {billingDate}. You will not be charged again after that date.
+              </p>
+            </section>
+
+            <button
+              type="button"
+              onClick={() => setShowCancelConfirm(true)}
+              className="mt-5 flex h-14 w-full items-center justify-center rounded-2xl bg-white text-sm font-black text-red-600 shadow-sm transition active:scale-[0.99]"
+            >
+              {systemCancelLabel}
+            </button>
+          </div>
+
+          {showCancelConfirm && (
+            <div className="absolute inset-0 z-20 flex items-end bg-black/35 px-4 pb-4 backdrop-blur-sm">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="system-cancel-title"
+                className="w-full rounded-[28px] bg-white p-5 text-slate-950 shadow-2xl"
+              >
+                <h3 id="system-cancel-title" className="text-xl font-black">
+                  Confirm cancellation?
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                  Your Premium access remains available until {billingDate}. After that, your membership will end.
+                </p>
+                <div className="mt-6 space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onCancelSubscription();
+                      setShowCancelConfirm(false);
+                      setShowSystemSubscriptionManager(false);
+                      setLastAction(`Subscription canceled in ${systemManagerLabel}. Premium remains active until ${billingDate}.`);
+                    }}
+                    className="flex h-14 w-full items-center justify-center rounded-2xl bg-red-600 text-sm font-black text-white"
+                  >
+                    Confirm cancellation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelConfirm(false)}
+                    className="flex h-14 w-full items-center justify-center rounded-2xl bg-slate-100 text-sm font-black text-slate-800"
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

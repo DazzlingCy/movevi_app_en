@@ -121,7 +121,7 @@ export default function CheckInRedPacketView({
       ...prev,
       checkInPlanStarted: true,
     }));
-    showToast('30天打卡已开启');
+    showToast('30-day challenge started.');
   };
 
   const completeToday = () => {
@@ -130,11 +130,11 @@ export default function CheckInRedPacketView({
       return;
     }
     if (planComplete) {
-      showToast('30天打卡已全部完成');
+      showToast('Challenge complete.');
       return;
     }
     if (completedDays.includes(nextDay)) {
-      showToast('今日已完成打卡');
+      showToast('Today is already complete.');
       return;
     }
 
@@ -144,7 +144,7 @@ export default function CheckInRedPacketView({
       checkInRewardDays: [...(prev.checkInRewardDays || []), nextDay],
       dailyCompletedRoutes: (prev.dailyCompletedRoutes || 0) + 1,
     }));
-    showToast(`第${nextDay}天打卡完成，红包已解锁`);
+    showToast(`Day ${nextDay} complete. Cash bonus unlocked.`);
   };
 
   const switchTodayRoute = (direction = 1) => {
@@ -152,7 +152,7 @@ export default function CheckInRedPacketView({
     const routeCount = Math.max(routeOptions.length, 1);
     setRouteDirection(direction);
     setRouteOffset(prev => (prev + direction + routeCount) % routeCount);
-    showToast('已切换今日路线');
+    showToast('Route updated.');
   };
 
   const handleRouteDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: { offset: { x: number } }) => {
@@ -166,11 +166,11 @@ export default function CheckInRedPacketView({
       return;
     }
     if (planComplete) {
-      showToast('30天打卡已全部完成');
+      showToast('Challenge complete.');
       return;
     }
     if (todayCompleted) {
-      showToast('今日已完成打卡');
+      showToast('Today is already complete.');
       return;
     }
     if (onNavigateToRouteDetail) {
@@ -182,11 +182,11 @@ export default function CheckInRedPacketView({
 
   const openReward = (day: number) => {
     if (!rewardDays.includes(day)) {
-      showToast('完成当天打卡后可领取红包');
+      showToast('Finish today\'s route to claim this bonus.');
       return;
     }
     if (openedRewardDays.includes(day)) {
-      showToast('该红包已领取');
+      showToast('Already claimed.');
       return;
     }
 
@@ -200,8 +200,8 @@ export default function CheckInRedPacketView({
       ],
       redPacketBalance: Number(((prev.redPacketBalance || 0) + parseAmount(amount)).toFixed(2)),
     }));
-    setResult({ amount, description: `第${day}天红包已转入余额` });
-    showToast(`获得红包 ${amount}`);
+    setResult({ amount, description: `Day ${day} cash bonus added to your balance.` });
+    showToast(`Cash bonus claimed: ${amount}`);
   };
 
   const claimActivation = () => {
@@ -211,7 +211,7 @@ export default function CheckInRedPacketView({
         ...prev,
         dailyTreadmillStarted: true,
       }));
-      showToast('跑步机已激活，可领取红包');
+      showToast('Treadmill activated. Bonus ready.');
       return;
     }
 
@@ -221,8 +221,8 @@ export default function CheckInRedPacketView({
     }));
     const amount = '$0.99';
     addBalance(amount);
-    setResult({ amount, description: '首次激活红包已转入余额' });
-    showToast('获得激活红包 $0.99');
+    setResult({ amount, description: 'First activation bonus added to your balance.' });
+    showToast('Activation bonus claimed: $0.99');
   };
 
   const claimFirstRoute = () => {
@@ -238,12 +238,12 @@ export default function CheckInRedPacketView({
     }));
     const amount = '$1.99';
     addBalance(amount);
-    setResult({ amount, description: '首条路线红包已转入余额' });
-    showToast('获得首条路线红包 $1.99');
+    setResult({ amount, description: 'First route bonus added to your balance.' });
+    showToast('First route bonus claimed: $1.99');
   };
 
   const completionPercent = Math.round((completedDays.length / PLAN_DAYS) * 100);
-  const planButtonLabel = planComplete ? '整期已完成' : started ? '打卡已开启' : '开启30天打卡';
+  const planButtonLabel = planComplete ? 'Challenge complete' : started ? 'Challenge active' : 'Start 30-day challenge';
   const planButtonDisabled = started || planComplete;
 
   return (
@@ -259,11 +259,11 @@ export default function CheckInRedPacketView({
                 type="button"
                 onClick={onBack}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.055] text-slate-200 backdrop-blur-md active:scale-95"
-                aria-label="返回"
+                aria-label="Back"
               >
                 <ChevronLeft size={22} />
               </button>
-              <h1 className="text-xl font-black tracking-tight text-white">打卡领红包</h1>
+              <h1 className="text-xl font-black tracking-tight text-white">Check-in Rewards</h1>
               <div className="w-10" />
             </div>
           </header>
@@ -274,7 +274,7 @@ export default function CheckInRedPacketView({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-200/75">NEW USER BONUS</p>
-                <h2 className="mt-1 text-lg font-black tracking-tight text-white">新手红包任务</h2>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-white">New user bonuses</h2>
               </div>
               <Gift size={18} className="text-amber-200" />
             </div>
@@ -296,13 +296,13 @@ export default function CheckInRedPacketView({
                   {activationClaimed ? <CheckCircle2 size={20} /> : <Flame size={19} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-black text-white">首次激活领红包</span>
-                  <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">首次连接并激活跑步机</span>
+                  <span className="block text-sm font-black text-white">First activation bonus</span>
+                  <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">Connect and activate your treadmill</span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block font-mono text-sm font-black text-amber-200">$0.99</span>
                   <span className="mt-1 inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-slate-950">
-                    {activationClaimed ? '已领取' : activationReady ? '领取' : '去激活'}
+                    {activationClaimed ? 'Claimed' : activationReady ? 'Claim' : 'Activate'}
                   </span>
                 </span>
               </button>
@@ -323,13 +323,13 @@ export default function CheckInRedPacketView({
                   {firstRouteClaimed ? <CheckCircle2 size={20} /> : <Route size={19} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-black text-white">首次完成路线领红包</span>
-                  <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">完成任意 1 条城市路线</span>
+                  <span className="block text-sm font-black text-white">First route bonus</span>
+                  <span className="mt-0.5 block truncate text-[11px] font-bold text-slate-500">Complete any city route</span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block font-mono text-sm font-black text-amber-200">$1.99</span>
                   <span className="mt-1 inline-flex rounded-full bg-amber-300 px-2 py-0.5 text-[10px] font-black text-slate-950">
-                    {firstRouteClaimed ? '已领取' : firstRouteReady ? '领取' : '去完成'}
+                    {firstRouteClaimed ? 'Claimed' : firstRouteReady ? 'Claim' : 'Run'}
                   </span>
                 </span>
               </button>
@@ -341,20 +341,20 @@ export default function CheckInRedPacketView({
             <div className="relative">
               <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/20 bg-emerald-200/10 px-2.5 py-1 text-[10px] font-black text-emerald-100">
                 <Sparkles size={12} />
-                每日一条路线
+                One route a day
               </div>
-              <h2 className="mt-3 text-[28px] font-black leading-none tracking-[-0.04em] text-white">完成30天打卡</h2>
+              <h2 className="mt-3 text-[28px] font-black leading-none tracking-[-0.04em] text-white">Complete 30 check-ins</h2>
               <p className="mt-2 max-w-[300px] text-sm font-semibold leading-5 text-slate-400">
-                每天完成对应推荐路线，即可领取 1 个固定金额红包。
+                Finish the recommended route each day to unlock a fixed cash bonus.
               </p>
 
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="rounded-2xl border border-emerald-200/12 bg-emerald-200/[0.055] p-3">
-                  <p className="text-[10px] font-bold text-emerald-100/55">开始时间</p>
+                  <p className="text-[10px] font-bold text-emerald-100/55">Start date</p>
                   <p className="mt-1 font-mono text-sm font-black tabular-nums text-emerald-100">{started ? formatPlanDate(1, 'long') : '--'}</p>
                 </div>
                 <div className="rounded-2xl border border-amber-200/12 bg-amber-200/[0.055] p-3">
-                  <p className="text-[10px] font-bold text-amber-100/55">结束时间</p>
+                  <p className="text-[10px] font-bold text-amber-100/55">End date</p>
                   <p className="mt-1 font-mono text-sm font-black tabular-nums text-amber-100">{started ? formatPlanDate(PLAN_DAYS, 'long') : '--'}</p>
                 </div>
               </div>
@@ -393,7 +393,7 @@ export default function CheckInRedPacketView({
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <h2 className="text-lg font-black tracking-tight text-white">
-                      {planComplete ? '整期打卡已完成' : '今日推荐路线'}
+                      {planComplete ? 'Challenge complete' : 'Today\'s route'}
                     </h2>
                     {!planComplete && (
                       <button
@@ -403,7 +403,7 @@ export default function CheckInRedPacketView({
                         className="inline-flex h-7 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 text-[10px] font-black text-emerald-100 active:scale-95 disabled:opacity-45"
                       >
                         <Shuffle size={12} />
-                        换一条
+                        Switch
                       </button>
                     )}
                   </div>
@@ -414,7 +414,7 @@ export default function CheckInRedPacketView({
               </div>
 
               {canSwitchRoute && (
-                <p className="mt-2 text-[11px] font-bold text-slate-500">左右滑动切换路线</p>
+                <p className="mt-2 text-[11px] font-bold text-slate-500">Swipe the card to switch routes</p>
               )}
 
               <AnimatePresence mode="wait" custom={routeDirection}>
@@ -440,15 +440,15 @@ export default function CheckInRedPacketView({
                 </div>
                 <div className="grid grid-cols-3 gap-2 p-3">
                   <div className="rounded-xl bg-white/[0.045] p-2">
-                    <p className="text-[10px] text-slate-500">距离</p>
+                    <p className="text-[10px] text-slate-500">Distance</p>
                     <p className="font-mono text-sm font-black text-white">{todayRoute.routeData.distance} km</p>
                   </div>
                   <div className="rounded-xl bg-white/[0.045] p-2">
-                    <p className="text-[10px] text-slate-500">预计时长</p>
+                    <p className="text-[10px] text-slate-500">Time</p>
                     <p className="font-mono text-sm font-black text-white">{todayRoute.routeData.duration}</p>
                   </div>
                   <div className="rounded-xl bg-white/[0.045] p-2">
-                    <p className="text-[10px] text-slate-500">消耗</p>
+                    <p className="text-[10px] text-slate-500">Calories</p>
                     <p className="font-mono text-sm font-black text-white">{todayRoute.routeData.calories}</p>
                   </div>
                 </div>
@@ -459,7 +459,7 @@ export default function CheckInRedPacketView({
                     className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-300 text-sm font-black text-slate-950 shadow-[0_12px_28px_rgba(52,211,153,0.20)] active:scale-[0.98]"
                   >
                     {todayCompleted ? <CheckCircle2 size={18} /> : <Play size={17} className="fill-slate-950" />}
-                    {todayCompleted ? '今日已完成' : '去打卡'}
+                    {todayCompleted ? 'Done today' : 'Start route'}
                   </button>
                 </div>
               </motion.div>
@@ -470,10 +470,10 @@ export default function CheckInRedPacketView({
           <section className="relative mt-4 shrink-0 overflow-hidden rounded-[26px] border border-orange-200/18 bg-gradient-to-br from-[#111816] via-[#19140d] to-[#21120d] p-4 text-slate-100 shadow-[0_20px_54px_rgba(0,0,0,0.34)]">
             <div className="relative flex items-center justify-between gap-3">
               <h2 className="text-lg font-black tracking-tight text-white">
-                30天累计可领 <span className="font-mono text-xl text-amber-300">$5.00</span>
+                Earn up to <span className="font-mono text-xl text-amber-300">$5.00</span> in 30 days
               </h2>
               <div className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-xs font-bold text-slate-300">
-                已完成{completedDays.length}天
+                {completedDays.length} days done
               </div>
             </div>
 
@@ -500,7 +500,7 @@ export default function CheckInRedPacketView({
                       {opened ? <CheckCircle2 size={17} /> : earned ? <Gift size={16} /> : <Lock size={14} />}
                     </span>
                     <span className="mt-2 font-mono text-xs font-black text-amber-200">{getRewardAmount(day)}</span>
-                    <span className="mt-1 text-[9px] font-bold text-slate-500">{opened ? '已领' : earned ? '可领' : '待完成'}</span>
+                    <span className="mt-1 text-[9px] font-bold text-slate-500">{opened ? 'Claimed' : earned ? 'Ready' : 'Locked'}</span>
                   </button>
                 );
               })}
@@ -510,14 +510,14 @@ export default function CheckInRedPacketView({
           <section className="mt-4 shrink-0 rounded-[22px] border border-white/10 bg-white/[0.035] p-4">
             <div className="flex items-center gap-2">
               <Wallet size={17} className="text-amber-200" />
-              <h3 className="text-sm font-black text-white">活动说明</h3>
+              <h3 className="text-sm font-black text-white">How it works</h3>
             </div>
             <div className="mt-3 space-y-1.5 text-xs font-medium leading-relaxed text-slate-400">
-              <p>1. 新用户首次激活跑步机可领取 $0.99 红包。</p>
-              <p>2. 新用户首次完成 1 条路线可领取 $1.99 红包。</p>
-              <p>3. 打卡活动总期限 30 天，每天按顺序完成 1 条推荐路线。</p>
-              <p>4. 每完成 1 天即可领取 1 个固定金额红包。</p>
-              <p>5. 红包余额可在 Profile 的钱包入口提现。</p>
+              <p>1. New users can claim $0.99 after first treadmill activation.</p>
+              <p>2. New users can claim $1.99 after completing their first route.</p>
+              <p>3. The challenge runs for 30 days with one recommended route per day.</p>
+              <p>4. Complete a daily route to unlock that day&apos;s fixed cash bonus.</p>
+              <p>5. Cash rewards can be withdrawn from Wallet in Profile.</p>
             </div>
           </section>
         </main>
@@ -555,7 +555,7 @@ export default function CheckInRedPacketView({
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-orange-500 text-white shadow-lg">
                 <Gift size={30} />
               </div>
-              <p className="mt-5 text-[10px] font-black tracking-[0.24em] text-orange-600">现金红包到账</p>
+              <p className="mt-5 text-[10px] font-black tracking-[0.24em] text-orange-600">CASH BONUS ADDED</p>
               <h3 className="mt-2 text-3xl font-black">{result.amount}</h3>
               <p className="mt-2 text-sm font-bold text-slate-600">{result.description}</p>
               <button
@@ -563,7 +563,7 @@ export default function CheckInRedPacketView({
                 onClick={() => setResult(null)}
                 className="mt-6 h-11 w-full rounded-full bg-slate-950 text-sm font-black text-white"
               >
-                收下红包
+                Done
               </button>
             </motion.div>
           </motion.div>
