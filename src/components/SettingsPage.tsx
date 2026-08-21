@@ -85,20 +85,20 @@ export default function SettingsPage({ user, onBack, onSignOut }: SettingsPagePr
     <div className="relative flex h-full w-full flex-col overflow-hidden bg-[#070D1C] text-slate-100">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(30,64,175,0.22),transparent_36%),linear-gradient(180deg,#172840_0%,#070D1C_30%,#050918_100%)]" />
 
-      <header className="relative z-10 flex h-[96px] shrink-0 items-end justify-center border-b border-white/10 bg-[#172840]/90 px-5 pb-5">
+      <header className="relative z-10 flex h-[82px] shrink-0 items-end justify-center border-b border-white/10 bg-[#0C1626]/85 px-5 pb-4 backdrop-blur">
         <button
           type="button"
           onClick={onBack}
           aria-label="Back"
-          className="absolute bottom-4 left-5 flex h-11 w-11 items-center justify-center rounded-full text-white transition active:scale-95"
+          className="absolute bottom-3 left-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-100 transition active:scale-95"
         >
-          <ChevronLeft size={34} strokeWidth={3} />
+          <ChevronLeft size={30} strokeWidth={2.7} />
         </button>
-        <h1 className="text-xl font-black tracking-tight text-white">Settings</h1>
+        <h1 className="text-lg font-black tracking-tight text-white">Settings</h1>
       </header>
 
-      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-5 pt-8">
-        <div className="space-y-4">
+      <main className="relative z-10 flex min-h-0 flex-1 flex-col px-5 pt-6">
+        <div className="overflow-hidden rounded-[22px] border border-white/8 bg-white/[0.045] shadow-[0_18px_38px_rgba(0,0,0,0.22)]">
           {rows.map((row) => {
             const Icon = row.icon;
             return (
@@ -106,17 +106,17 @@ export default function SettingsPage({ user, onBack, onSignOut }: SettingsPagePr
                 key={row.label}
                 type="button"
                 onClick={row.onClick}
-                className="flex h-[74px] w-full items-center justify-between gap-3 rounded-[22px] border border-white/[0.035] bg-[#18283E] px-5 text-left shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition hover:bg-[#1D304A] active:scale-[0.99]"
+                className="flex h-[62px] w-full items-center justify-between gap-3 border-b border-white/[0.06] bg-[#121A28]/72 px-4 text-left transition last:border-b-0 hover:bg-[#172235] active:bg-[#1B2A40]"
               >
                 <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.045] text-slate-300">
-                    <Icon size={18} />
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.055] text-slate-300">
+                    <Icon size={16} />
                   </span>
-                  <span className="truncate text-base font-black text-white">{row.label}</span>
+                  <span className="truncate text-[15px] font-extrabold text-slate-100">{row.label}</span>
                 </span>
-                <span className="flex min-w-0 shrink-0 items-center gap-3 text-right">
-                  {row.value && <span className="max-w-[150px] truncate text-base font-semibold text-slate-100/90">{row.value}</span>}
-                  {row.label !== 'Check for Updates' && <ChevronRight size={30} strokeWidth={3} className="text-slate-300/90" />}
+                <span className="flex min-w-0 shrink-0 items-center gap-2 text-right">
+                  {row.value && <span className="max-w-[150px] truncate text-[15px] font-semibold text-slate-300">{row.value}</span>}
+                  {row.label !== 'Check for Updates' && <ChevronRight size={22} strokeWidth={2.6} className="text-slate-400" />}
                 </span>
               </button>
             );
@@ -134,11 +134,11 @@ export default function SettingsPage({ user, onBack, onSignOut }: SettingsPagePr
           </motion.div>
         )}
 
-        <div className="mt-auto pb-9 pt-8">
+        <div className="mt-auto pb-8 pt-7">
           <button
             type="button"
             onClick={onSignOut}
-            className="h-[64px] w-full rounded-[20px] bg-[#2C4261] text-lg font-black text-white shadow-[0_14px_30px_rgba(0,0,0,0.22)] transition hover:bg-[#365173] active:scale-[0.99]"
+            className="h-[54px] w-full rounded-[18px] bg-[#263A57] text-base font-black text-white shadow-[0_12px_26px_rgba(0,0,0,0.22)] transition hover:bg-[#304765] active:scale-[0.99]"
           >
             Sign out
           </button>
@@ -158,15 +158,15 @@ export default function SettingsPage({ user, onBack, onSignOut }: SettingsPagePr
               initial={{ y: 32 }}
               animate={{ y: 0 }}
               exit={{ y: 32 }}
-              className="w-full rounded-[26px] border border-white/10 bg-[#10192A] p-5 shadow-2xl"
+              className="w-full rounded-[24px] border border-white/10 bg-[#10192A] p-5 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <h2 className="text-lg font-black text-white">{dialog.title}</h2>
+              <h2 className="text-base font-black text-white">{dialog.title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-slate-400">{dialog.body}</p>
               <button
                 type="button"
                 onClick={() => setDialog(null)}
-                className="mt-5 h-12 w-full rounded-2xl bg-cyan-400 text-sm font-black text-[#05070A]"
+                className="mt-5 h-11 w-full rounded-2xl bg-cyan-400 text-sm font-black text-[#05070A]"
               >
                 Done
               </button>

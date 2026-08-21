@@ -23,6 +23,7 @@ import {
   signInWithProvider,
   verifyEmailCodeAndSignIn,
 } from '../lib/auth';
+import moveviLogo from '../assets/movevi-logo.png';
 
 interface AuthScreenProps {
   onAuthenticated: (user: AuthUser) => void;
@@ -168,32 +169,32 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             transition={{ duration: 0.2 }}
           >
             <div className="flex flex-1 flex-col items-center">
-              <div className="mt-9 flex h-20 w-20 items-center justify-center rounded-[28px] bg-[#11170f] text-[#65F06D] shadow-[0_18px_34px_rgba(17,23,15,0.14)]">
-                <Orbit size={46} strokeWidth={3} />
+              <div className="mt-5 flex h-[86px] w-[86px] items-center justify-center overflow-hidden rounded-[26px] shadow-[0_18px_34px_rgba(255,90,64,0.18)]">
+                <img src={moveviLogo} alt="MOVEVI" className="h-full w-full object-cover" />
               </div>
 
-              <h1 className="mt-11 text-center text-[46px] font-black leading-none tracking-[-0.055em] text-[#11170f]">
+              <h1 className="mt-9 text-center text-[40px] font-black leading-none tracking-[-0.04em] text-[#11170f]">
                 MOVEVI
               </h1>
-              <p className="mt-5 max-w-[320px] text-center text-[25px] font-black leading-[1.12] tracking-[-0.035em] text-[#11170f]">
+              <p className="mt-4 max-w-[300px] text-center text-[21px] font-black leading-[1.16] tracking-[-0.025em] text-[#11170f]">
                 Put the world on your treadmill.
               </p>
 
-              <div className="mt-16 w-full space-y-4">
+              <div className="mt-12 w-full space-y-3.5">
                 <AuthChoiceButton
-                  icon={loadingProvider === 'apple' ? <Loader2 size={25} className="animate-spin" /> : <Apple size={34} className="fill-current" />}
+                  icon={loadingProvider === 'apple' ? <Loader2 size={22} className="animate-spin" /> : <Apple size={28} className="fill-current" />}
                   label="Continue with Apple"
                   disabled={isBusy}
                   onClick={() => openProviderFlow('apple')}
                 />
                 <AuthChoiceButton
-                  icon={loadingProvider === 'google' ? <Loader2 size={25} className="animate-spin" /> : <Chrome size={31} />}
+                  icon={loadingProvider === 'google' ? <Loader2 size={22} className="animate-spin" /> : <Chrome size={26} />}
                   label="Continue with Google"
                   disabled={isBusy}
                   onClick={() => openProviderFlow('google')}
                 />
                 <AuthChoiceButton
-                  icon={<Mail size={30} />}
+                  icon={<Mail size={25} />}
                   label="Continue with Email"
                   disabled={isBusy}
                   onClick={openEmailFlow}
@@ -368,9 +369,9 @@ function AuthChoiceButton({ icon, label, disabled, onClick }: AuthChoiceButtonPr
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="grid h-16 w-full grid-cols-[52px_1fr_52px] items-center rounded-full bg-[#F3F3F3] px-5 text-[22px] font-black tracking-[-0.025em] text-[#11170f] transition hover:bg-[#ececec] active:scale-[0.99] disabled:opacity-60"
+      className="grid h-14 w-full grid-cols-[46px_1fr_46px] items-center rounded-full bg-[#F3F3F3] px-4 text-[18px] font-black tracking-[-0.015em] text-[#11170f] transition hover:bg-[#ececec] active:scale-[0.99] disabled:opacity-60"
     >
-      <span className="flex h-10 w-10 items-center justify-center justify-self-start">{icon}</span>
+      <span className="flex h-9 w-9 items-center justify-center justify-self-start">{icon}</span>
       <span className="min-w-0 text-center leading-none">{label}</span>
       <span aria-hidden="true" />
     </button>
