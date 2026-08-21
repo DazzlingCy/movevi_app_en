@@ -31,7 +31,7 @@ import {
   saveSubscriptionState,
   updatePaymentMethod,
 } from './lib/subscription';
-import { AuthUser, clearAuthSession, loadAuthSession, saveAuthSession } from './lib/auth';
+import { AuthUser, clearAuthSession, saveAuthSession } from './lib/auth';
 
 const DEFAULT_LIT_CITY_IDS = ['2', '1'];
 const DEFAULT_IN_PROGRESS_CITY_ID = '15';
@@ -39,7 +39,10 @@ const DEFAULT_IN_PROGRESS_COMPLETED_ROUTE_INDICES = [1];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
-  const [authUser, setAuthUser] = useState<AuthUser | null>(() => loadAuthSession());
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    clearAuthSession();
+    return null;
+  });
   const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription' | 'settings' | 'editProfile', data?: any} | null>(null);
 
   const [subscription, setSubscription] = useState<SubscriptionState>(() => readSubscriptionState());
