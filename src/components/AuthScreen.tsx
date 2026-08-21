@@ -417,39 +417,39 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
       <div className="absolute inset-0 bg-white/45" />
 
       <motion.div
-        className="absolute inset-x-0 bottom-0 rounded-t-[34px] bg-white px-7 pb-8 pt-8 shadow-[0_-16px_42px_rgba(0,0,0,0.16)]"
+        className="absolute inset-x-0 bottom-0 rounded-t-[30px] bg-white px-6 pb-7 pt-7 shadow-[0_-16px_42px_rgba(0,0,0,0.16)]"
         initial={{ y: 120 }}
         animate={{ y: 0 }}
         transition={{ type: 'spring', damping: 24, stiffness: 260 }}
       >
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-[26px] font-black tracking-[-0.035em] text-black">Sign in with Apple</h2>
+        <div className="mb-7 flex items-center justify-between">
+          <h2 className="text-[22px] font-black tracking-[-0.025em] text-black">Sign in with Apple</h2>
           <button
             type="button"
             onClick={onBack}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f4f4f5] text-black transition active:scale-95"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4f4f5] text-black transition active:scale-95"
             aria-label="Close Apple sign-in"
           >
-            <X size={28} strokeWidth={2.4} />
+            <X size={24} strokeWidth={2.4} />
           </button>
         </div>
 
-        <div className="flex items-start gap-4">
-          <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl bg-[#11170f] text-[#65F06D] shadow-sm">
-            <Orbit size={44} strokeWidth={3} />
+        <div className="flex items-start gap-3.5">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#11170f] text-[#65F06D] shadow-sm">
+            <Orbit size={38} strokeWidth={3} />
           </div>
-          <p className="pt-1 text-[18px] font-medium leading-snug tracking-[-0.02em] text-[#1f1f1f]">
+          <p className="pt-0.5 text-[16px] font-medium leading-snug tracking-[-0.01em] text-[#1f1f1f]">
             Use your Apple account <span className="whitespace-nowrap">(mia.privaterelay@icloud.com)</span> to create a MOVEVI account.
           </p>
         </div>
 
-        <div className="mt-8 flex h-[74px] items-center gap-4 rounded-3xl bg-[#f1f1f2] px-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#d8d8db] text-[#1f1f1f]">
-            <User size={27} strokeWidth={2.5} />
+        <div className="mt-7 flex h-16 items-center gap-3.5 rounded-3xl bg-[#f1f1f2] px-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d8d8db] text-[#1f1f1f]">
+            <User size={23} strokeWidth={2.5} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[20px] font-black text-black">Name</p>
-            <p className="text-[18px] font-medium text-neutral-500">Mia Liu</p>
+            <p className="text-[17px] font-black text-black">Name</p>
+            <p className="text-[15px] font-medium text-neutral-500">Mia Liu</p>
           </div>
         </div>
 
@@ -457,9 +457,9 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
           type="button"
           disabled={isBusy}
           onClick={onContinue}
-          className="mt-8 flex h-16 w-full items-center justify-center gap-3 rounded-full bg-black text-[21px] font-black text-white transition active:scale-[0.99] disabled:bg-neutral-200 disabled:text-neutral-400"
+          className="mt-7 flex h-14 w-full items-center justify-center gap-3 rounded-full bg-black text-[18px] font-black text-white transition active:scale-[0.99] disabled:bg-neutral-200 disabled:text-neutral-400"
         >
-          {loadingProvider === 'apple' ? <Loader2 size={23} className="animate-spin" /> : null}
+          {loadingProvider === 'apple' ? <Loader2 size={21} className="animate-spin" /> : null}
           Continue
         </button>
       </motion.div>
@@ -477,36 +477,36 @@ function GoogleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Pro
       exit={{ opacity: 0, x: 12 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="mx-0 mt-12 flex flex-1 flex-col rounded-t-[34px] bg-white shadow-[0_-12px_34px_rgba(0,0,0,0.10)]">
-        <div className="flex h-24 items-center justify-between px-8">
+      <div className="mx-0 mt-12 flex flex-1 flex-col rounded-t-[32px] bg-white shadow-[0_-12px_34px_rgba(0,0,0,0.10)]">
+        <div className="flex h-20 items-center justify-between px-6">
           <button
             type="button"
             onClick={onBack}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#202124] shadow-[0_4px_18px_rgba(0,0,0,0.08)] transition active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#202124] shadow-[0_4px_18px_rgba(0,0,0,0.08)] transition active:scale-95"
             aria-label="Close Google sign-in"
           >
-            <X size={29} strokeWidth={2.2} />
+            <X size={24} strokeWidth={2.2} />
           </button>
-          <p className="text-[26px] font-black tracking-[-0.035em] text-[#202124]">accounts.google.com</p>
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#202124] shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
-            <PanelTop size={29} strokeWidth={2.2} />
+          <p className="text-[21px] font-black tracking-[-0.025em] text-[#202124]">accounts.google.com</p>
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#202124] shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
+            <PanelTop size={24} strokeWidth={2.2} />
           </div>
         </div>
 
-        <div className="flex h-24 items-center gap-5 border-b border-[#d4d4d4] px-8">
-          <span className="flex h-11 w-11 items-center justify-center text-[44px] font-black leading-none tracking-[-0.08em]">
+        <div className="flex h-20 items-center gap-4 border-b border-[#d4d4d4] px-6">
+          <span className="flex h-9 w-9 items-center justify-center text-[36px] font-black leading-none tracking-[-0.08em]">
             <span className="text-[#4285f4]">G</span>
           </span>
-          <p className="text-[22px] font-semibold text-[#3c4043]">Sign in with Google</p>
+          <p className="text-[18px] font-semibold text-[#3c4043]">Sign in with Google</p>
         </div>
 
-        <div className="flex flex-1 flex-col px-8 pb-8 pt-16">
-          <div className="mb-20">
-            <div className="mb-10 flex h-24 w-24 items-center justify-center rounded-[28px] bg-[#11170f] text-[#65F06D]">
-              <Orbit size={58} strokeWidth={3} />
+        <div className="flex flex-1 flex-col px-7 pb-7 pt-12">
+          <div className="mb-16">
+            <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#11170f] text-[#65F06D]">
+              <Orbit size={48} strokeWidth={3} />
             </div>
-            <h2 className="text-[58px] font-normal leading-none tracking-[-0.055em] text-[#202124]">Sign in</h2>
-            <p className="mt-8 text-[26px] font-normal leading-tight text-[#202124]">
+            <h2 className="text-[46px] font-normal leading-none tracking-[-0.045em] text-[#202124]">Sign in</h2>
+            <p className="mt-6 text-[21px] font-normal leading-tight text-[#202124]">
               Continue to <span className="font-semibold text-[#1a73e8]">MOVEVI</span>
             </p>
           </div>
@@ -514,30 +514,30 @@ function GoogleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Pro
           <label className="block">
             <input
               placeholder="Email or phone"
-              className="h-[82px] w-full rounded-none border-2 border-[#5f6368] bg-white px-5 text-[27px] font-normal text-[#202124] outline-none transition placeholder:text-[#5f6368] focus:border-[#1a73e8]"
+              className="h-[68px] w-full rounded-none border-2 border-[#5f6368] bg-white px-4 text-[22px] font-normal text-[#202124] outline-none transition placeholder:text-[#5f6368] focus:border-[#1a73e8]"
             />
           </label>
 
-          <button type="button" className="mt-8 self-start text-[23px] font-semibold text-[#1a73e8]">
+          <button type="button" className="mt-6 self-start text-[19px] font-semibold text-[#1a73e8]">
             Forgot email?
           </button>
 
-          <p className="mt-20 text-[21px] font-normal leading-relaxed text-[#3c4043]">
+          <p className="mt-16 text-[17px] font-normal leading-relaxed text-[#3c4043]">
             Before using MOVEVI, review this app's <span className="font-semibold text-[#1a73e8]">Privacy Policy</span> and{' '}
             <span className="font-semibold text-[#1a73e8]">Terms of Service</span>.
           </p>
 
-          <div className="mt-auto flex items-center justify-between pt-12">
-            <button type="button" className="text-[23px] font-semibold text-[#1a73e8]">
+          <div className="mt-auto flex items-center justify-between pt-10">
+            <button type="button" className="text-[19px] font-semibold text-[#1a73e8]">
               Create account
             </button>
             <button
               type="button"
               disabled={isBusy}
               onClick={onContinue}
-              className="flex h-16 min-w-[142px] items-center justify-center gap-3 rounded-full bg-[#0b57d0] px-8 text-[23px] font-semibold text-white transition active:scale-[0.99] disabled:bg-neutral-200 disabled:text-neutral-400"
+              className="flex h-[52px] min-w-[116px] items-center justify-center gap-2.5 rounded-full bg-[#0b57d0] px-7 text-[19px] font-semibold text-white transition active:scale-[0.99] disabled:bg-neutral-200 disabled:text-neutral-400"
             >
-              {loadingProvider === 'google' ? <Loader2 size={23} className="animate-spin" /> : null}
+              {loadingProvider === 'google' ? <Loader2 size={20} className="animate-spin" /> : null}
               Next
             </button>
           </div>
