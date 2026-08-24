@@ -41,6 +41,7 @@ interface ProfileTabProps {
   onUpdatePaymentMethod: () => void;
   onOpenSettings: () => void;
   onOpenEditProfile: () => void;
+  onOpenWallet: () => void;
 }
 
 export default function ProfileTab({
@@ -54,6 +55,7 @@ export default function ProfileTab({
   onUpdatePaymentMethod,
   onOpenSettings,
   onOpenEditProfile,
+  onOpenWallet,
 }: ProfileTabProps) {
   const [showManageModal, setShowManageModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -91,7 +93,7 @@ export default function ProfileTab({
   const menuItems = [
     { icon: ClipboardList, label: 'Workout History' },
     { icon: MonitorSmartphone, label: 'My Devices' },
-    { icon: Wallet, label: 'My Wallet' },
+    { icon: Wallet, label: 'My Wallet', onClick: onOpenWallet },
     { icon: HeadphonesIcon, label: 'Help & Support' },
     { icon: FileText, label: 'Feedback' },
     { icon: BookOpen, label: 'App Guide' },

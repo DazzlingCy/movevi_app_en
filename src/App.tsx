@@ -18,6 +18,7 @@ import SubscriptionPage from './components/SubscriptionPage';
 import MedalDrawView from './components/MedalDrawView';
 import CheckInRedPacketView from './components/CheckInRedPacketView';
 import SettingsPage from './components/SettingsPage';
+import WalletPage from './components/WalletPage';
 import {
   SubscriptionPlan,
   SubscriptionState,
@@ -43,7 +44,7 @@ export default function App() {
     clearAuthSession();
     return null;
   });
-  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription' | 'settings' | 'editProfile', data?: any} | null>(null);
+  const [fullScreenPage, setFullScreenPage] = useState<{type: 'cityRoutes' | 'routeDetail' | 'runPlayback' | 'litRecords' | 'leaderboard' | 'weekendMedley' | 'medalDraw' | 'checkInRedPacket' | 'subscription' | 'settings' | 'editProfile' | 'wallet', data?: any} | null>(null);
 
   const [subscription, setSubscription] = useState<SubscriptionState>(() => readSubscriptionState());
   const hasPremiumAccess = getHasPremiumAccess(subscription);
@@ -255,6 +256,7 @@ export default function App() {
             onUpdatePaymentMethod={handleUpdatePaymentMethod}
             onOpenSettings={() => setFullScreenPage({ type: 'settings' })}
             onOpenEditProfile={() => setFullScreenPage({ type: 'editProfile' })}
+            onOpenWallet={() => setFullScreenPage({ type: 'wallet' })}
           />
         );
       default:
@@ -544,6 +546,12 @@ export default function App() {
                 user={authUser}
                 onBack={() => setFullScreenPage(null)}
                 onSignOut={handleSignOut}
+              />
+            )}
+            {fullScreenPage.type === 'wallet' && (
+              <WalletPage
+                userStats={userStats}
+                onBack={() => setFullScreenPage(null)}
               />
             )}
             {fullScreenPage.type === 'editProfile' && authUser && (
