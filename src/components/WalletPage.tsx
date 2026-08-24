@@ -22,6 +22,9 @@ interface WalletPageProps {
 }
 
 type WalletTab = 'earnings' | 'payouts';
+type PayPalBindStep = 'details' | 'authorize';
+
+const defaultPayPalEmail = 'mia.liu@example.com';
 
 const fallbackEarnings = [
   { id: 'sample-1', title: 'Run the World', detail: 'Route reward', date: 'Aug 23, 2026 12:15 AM', amount: 16.60 },
@@ -58,6 +61,10 @@ const formatActivityDate = (value?: string) => {
 export default function WalletPage({ userStats, onBack }: WalletPageProps) {
   const [activeTab, setActiveTab] = useState<WalletTab>('earnings');
   const [showWithdrawSheet, setShowWithdrawSheet] = useState(false);
+  const [showPayPalSheet, setShowPayPalSheet] = useState(false);
+  const [payPalStep, setPayPalStep] = useState<PayPalBindStep>('details');
+  const [payPalEmail, setPayPalEmail] = useState(defaultPayPalEmail);
+  const [draftPayPalEmail, setDraftPayPalEmail] = useState(defaultPayPalEmail);
   const [toast, setToast] = useState('');
 
   const activityEarnings = useMemo(() => {
@@ -89,6 +96,29 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
   const confirmWithdraw = () => {
     setShowWithdrawSheet(false);
     setToast('Withdrawal request sent to PayPal.');
+    window.setTimeout(() => setToast(''), 2200);
+  };
+
+  const openPayPalBinding = () => {
+    setDraftPayPalEmail(payPalEmail);
+    setPayPalStep('details');
+    setShowPayPalSheet(true);
+  };
+
+  const startPayPalAuthorization = () => {
+    if (!/^\S+@\S+\.\S+$/.test(draftPayPalEmail.trim())) {
+      setToast('Enter a valid PayPal email.');
+      window.setTimeout(() => setToast(''), 2200);
+      return;
+    }
+    setPayPalStep('authorize');
+  };
+
+  const completePayPalBinding = () => {
+    setPayPalEmail(draftPayPalEmail.trim());
+    setShowPayPalSheet(false);
+    setPayPalStep('details');
+    setToast('PayPal account linked.');
     window.setTimeout(() => setToast(''), 2200);
   };
 
@@ -140,25 +170,25 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
             </div>
           </section>
 
-          <button
-            type="button"
-            onClick={() => setShowWithdrawSheet(true)}
-            className="mt-4 flex h-[72px] w-full items-center justify-between rounded-[20px] border border-white/[0.07] bg-[#17263b]/90 px-4 text-left shadow-[0_14px_30px_rgba(0,0,0,0.22)] active:scale-[0.99]"
-          >
+          <div className="mt-4 flex h-[72px] w-full items-center justify-between rounded-[20px] border border-white/[0.07] bg-[#17263b]/90 px-4 text-left shadow-[0_14px_30px_rgba(0,0,0,0.22)]">
             <span className="flex items-center gap-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003087] text-2xl font-black text-white shadow-[0_12px_28px_rgba(0,48,135,0.25)]">
                 P
               </span>
               <span>
                 <span className="block text-base font-black text-white">PayPal</span>
-                <span className="mt-0.5 block text-xs font-semibold text-slate-400">mia.liu@example.com linked</span>
+                <span className="mt-0.5 block max-w-[165px] truncate text-xs font-semibold text-slate-400">{payPalEmail} linked</span>
               </span>
             </span>
-            <span className="flex items-center gap-2 text-sm font-bold text-slate-300">
+            <button
+              type="button"
+              onClick={openPayPalBinding}
+              className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 text-sm font-bold text-slate-300 transition active:scale-95"
+            >
               Manage
               <ChevronRight size={22} className="text-slate-500" />
-            </span>
-          </button>
+            </button>
+          </div>
 
           <section className="mt-4 overflow-hidden rounded-[24px] border border-white/[0.07] bg-[#142238]/92 shadow-[0_16px_38px_rgba(0,0,0,0.24)]">
             <div className="flex items-center gap-7 px-5 pt-5">
@@ -267,7 +297,7 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#003087] text-lg font-black text-white">P</span>
                     <div>
                       <p className="text-sm font-black text-white">PayPal</p>
-                      <p className="text-xs font-semibold text-slate-500">mia.liu@example.com</p>
+                      <p className="text-xs font-semibold text-slate-500">{payPalEmail}</p>
                     </div>
                   </div>
                   <ReceiptText size={20} className="text-slate-500" />
@@ -281,6 +311,113 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
               >
                 Request payout
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showPayPalSheet && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-40 flex items-end bg-black/65 p-4 backdrop-blur-sm"
+            onClick={() => setShowPayPalSheet(false)}
+          >
+            <motion.div
+              initial={{ y: 40 }}
+              animate={{ y: 0 }}
+              exit={{ y: 40 }}
+              className="w-full rounded-[26px] border border-white/10 bg-[#0d1727] p-5 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-300">Payout account</p>
+                  <h2 className="mt-1 text-xl font-black text-white">
+                    {payPalStep === 'details' ? 'Link PayPal' : 'PayPal authorization'}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPayPalSheet(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-slate-300"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {payPalStep === 'details' ? (
+                <>
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+                    <label className="block">
+                      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">PayPal email</span>
+                      <input
+                        value={draftPayPalEmail}
+                        onChange={(event) => setDraftPayPalEmail(event.target.value)}
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="name@example.com"
+                        className="mt-3 h-12 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60"
+                      />
+                    </label>
+                  </div>
+
+                  <p className="mt-4 text-xs font-semibold leading-relaxed text-slate-400">
+                    MOVEVI uses PayPal for US-friendly cash payouts. You will confirm access on a simulated PayPal page before this account is linked.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={startPayPalAuthorization}
+                    className="mt-5 h-12 w-full rounded-full bg-[#0070E0] text-sm font-black text-white shadow-[0_14px_30px_rgba(0,112,224,0.18)] active:scale-[0.98]"
+                  >
+                    Continue to PayPal
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mt-5 overflow-hidden rounded-[22px] bg-white text-[#111827]">
+                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#003087] text-sm font-black text-white">P</span>
+                        <span className="text-sm font-black">paypal.com</span>
+                      </div>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-black text-slate-500">Secure</span>
+                    </div>
+                    <div className="p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0070E0]">Authorize MOVEVI</p>
+                      <h3 className="mt-2 text-2xl font-black tracking-[-0.04em]">Link your PayPal account</h3>
+                      <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-500">
+                        Allow MOVEVI to send approved cash rewards to {draftPayPalEmail.trim()}.
+                      </p>
+                      <div className="mt-5 rounded-2xl bg-slate-100 p-4">
+                        <p className="text-xs font-bold text-slate-500">PayPal account</p>
+                        <p className="mt-1 text-sm font-black text-slate-900">{draftPayPalEmail.trim()}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPayPalStep('details')}
+                      className="h-12 rounded-full border border-white/10 bg-white/[0.045] text-sm font-black text-slate-200 active:scale-[0.98]"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={completePayPalBinding}
+                      className="h-12 rounded-full bg-[#0070E0] text-sm font-black text-white shadow-[0_14px_30px_rgba(0,112,224,0.18)] active:scale-[0.98]"
+                    >
+                      Authorize
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}
