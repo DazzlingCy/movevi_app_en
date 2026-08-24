@@ -33,9 +33,9 @@ const fallbackEarnings = [
 ];
 
 const fallbackPayouts = [
-  { id: 'payout-1', title: 'Venmo payout', detail: '@mia-run', date: 'Aug 12, 2026 09:42 PM', amount: -24.00, status: 'Paid' },
-  { id: 'payout-2', title: 'Venmo payout', detail: '@mia-run', date: 'Jul 28, 2026 07:18 PM', amount: -18.50, status: 'Paid' },
-  { id: 'payout-3', title: 'Venmo payout', detail: '@mia-run', date: 'Jul 09, 2026 11:04 AM', amount: -12.00, status: 'Paid' },
+  { id: 'payout-1', title: 'PayPal payout', detail: 'mia.liu@example.com', date: 'Aug 12, 2026 09:42 PM', amount: -24.00, status: 'Paid' },
+  { id: 'payout-2', title: 'PayPal payout', detail: 'mia.liu@example.com', date: 'Jul 28, 2026 07:18 PM', amount: -18.50, status: 'Paid' },
+  { id: 'payout-3', title: 'PayPal payout', detail: 'mia.liu@example.com', date: 'Jul 09, 2026 11:04 AM', amount: -12.00, status: 'Paid' },
 ];
 
 const formatMoney = (value: number) => `$${value.toFixed(2)}`;
@@ -88,7 +88,7 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
 
   const confirmWithdraw = () => {
     setShowWithdrawSheet(false);
-    setToast('Withdrawal request sent to Venmo.');
+    setToast('Withdrawal request sent to PayPal.');
     window.setTimeout(() => setToast(''), 2200);
   };
 
@@ -146,12 +146,12 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
             className="mt-4 flex h-[72px] w-full items-center justify-between rounded-[20px] border border-white/[0.07] bg-[#17263b]/90 px-4 text-left shadow-[0_14px_30px_rgba(0,0,0,0.22)] active:scale-[0.99]"
           >
             <span className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#008CFF] text-2xl font-black text-white shadow-[0_12px_28px_rgba(0,140,255,0.25)]">
-                V
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003087] text-2xl font-black text-white shadow-[0_12px_28px_rgba(0,48,135,0.25)]">
+                P
               </span>
               <span>
-                <span className="block text-base font-black text-white">Venmo</span>
-                <span className="mt-0.5 block text-xs font-semibold text-slate-400">@mia-run linked</span>
+                <span className="block text-base font-black text-white">PayPal</span>
+                <span className="mt-0.5 block text-xs font-semibold text-slate-400">mia.liu@example.com linked</span>
               </span>
             </span>
             <span className="flex items-center gap-2 text-sm font-bold text-slate-300">
@@ -211,7 +211,7 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
               <h3 className="text-sm font-black text-white">Payout review</h3>
             </div>
             <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-400">
-              Cash rewards are reviewed before payout. Most Venmo transfers arrive within 1-3 business days after approval.
+              Cash rewards are reviewed before payout. Most PayPal transfers arrive within 1-3 business days after approval.
             </p>
           </section>
         </main>
@@ -236,7 +236,7 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-300">Cash payout</p>
-                  <h2 className="mt-1 text-xl font-black text-white">Withdraw to Venmo</h2>
+                  <h2 className="mt-1 text-xl font-black text-white">Withdraw to PayPal</h2>
                 </div>
                 <button
                   type="button"
@@ -264,10 +264,10 @@ export default function WalletPage({ userStats, onBack }: WalletPageProps) {
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#008CFF] text-lg font-black text-white">V</span>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#003087] text-lg font-black text-white">P</span>
                     <div>
-                      <p className="text-sm font-black text-white">Venmo</p>
-                      <p className="text-xs font-semibold text-slate-500">@mia-run</p>
+                      <p className="text-sm font-black text-white">PayPal</p>
+                      <p className="text-xs font-semibold text-slate-500">mia.liu@example.com</p>
                     </div>
                   </div>
                   <ReceiptText size={20} className="text-slate-500" />
