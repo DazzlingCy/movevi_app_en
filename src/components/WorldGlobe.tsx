@@ -230,20 +230,42 @@ function getCityIconSvg(city: CityData) {
   return icons[city.englishName] || '<circle cx="12" cy="12" r="7"/><path d="M12 5v14"/><path d="M5 12h14"/>';
 }
 
-function FlatMapFallback({ cities, onCityClick }: { cities: CityData[]; onCityClick: (city: CityData) => void }) {
+function GlobeFallback({ cities, onCityClick }: { cities: CityData[]; onCityClick: (city: CityData) => void }) {
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[28px] bg-[#071827]">
-      <svg viewBox="0 0 1200 800" className="absolute inset-0 h-full w-full opacity-80" aria-hidden="true">
-        <g fill="#02070c" stroke="#0b5b73" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
-          <path d="M88 178L143 120L230 95L307 118L358 166L382 230L345 282L290 315L215 330L145 306L86 255L60 205Z" />
-          <path d="M245 96L282 70L345 82L386 116L350 150L298 132Z" />
-          <path d="M366 332L430 365L470 435L452 548L410 655L350 710L318 620L300 520L323 420Z" />
-          <path d="M498 204L548 163L632 152L700 190L715 248L654 296L565 285L510 250Z" />
-          <path d="M610 306L690 328L742 410L735 520L694 624L625 604L575 520L550 430Z" />
-          <path d="M680 184L790 128L930 118L1062 160L1134 230L1110 320L1018 386L875 374L750 325L705 252Z" />
-          <path d="M780 330L830 358L812 410L750 390Z" />
-          <path d="M915 516L1025 538L1102 605L1074 665L980 684L910 638Z" />
+    <div className="relative h-full w-full overflow-hidden rounded-[28px] bg-[#061827]">
+      <div className="absolute left-1/2 top-[47%] h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_40%_28%,rgba(103,232,249,0.24),rgba(8,47,73,0.76)_38%,rgba(1,6,12,0.96)_70%)] shadow-[inset_-48px_-54px_80px_rgba(0,0,0,0.9),inset_18px_16px_34px_rgba(125,211,252,0.16),0_0_120px_rgba(20,184,166,0.34)]" />
+      <svg viewBox="0 0 1200 800" className="absolute inset-0 h-full w-full opacity-95" aria-hidden="true">
+        <defs>
+          <clipPath id="fallback-globe-clip">
+            <circle cx="600" cy="390" r="315" />
+          </clipPath>
+          <radialGradient id="fallback-globe-shade" cx="39%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="rgba(125,211,252,0.18)" />
+            <stop offset="52%" stopColor="rgba(8,47,73,0.06)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.74)" />
+          </radialGradient>
+        </defs>
+        <g clipPath="url(#fallback-globe-clip)">
+          <rect x="260" y="65" width="680" height="650" fill="rgba(3,18,30,0.72)" />
+          <g fill="#02070c" stroke="#0b6f86" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+            <path d="M260 188L315 130L402 105L479 128L530 176L554 240L517 292L462 325L387 340L317 316L258 265L232 215Z" />
+            <path d="M417 106L454 80L517 92L558 126L522 160L470 142Z" />
+            <path d="M538 342L602 375L642 445L624 558L582 665L522 720L490 630L472 530L495 430Z" />
+            <path d="M530 214L580 173L664 162L732 200L747 258L686 306L597 295L542 260Z" />
+            <path d="M642 316L722 338L774 420L767 530L726 634L657 614L607 530L582 440Z" />
+            <path d="M712 194L822 138L962 128L1094 170L1166 240L1142 330L1050 396L907 384L782 335L737 262Z" />
+            <path d="M812 340L862 368L844 420L782 400Z" />
+            <path d="M947 526L1057 548L1134 615L1106 675L1012 694L942 648Z" />
+          </g>
+          <g fill="none" stroke="rgba(125,211,252,0.09)" strokeWidth="1.3">
+            <ellipse cx="600" cy="390" rx="292" ry="106" />
+            <ellipse cx="600" cy="390" rx="292" ry="206" />
+            <ellipse cx="600" cy="390" rx="130" ry="314" />
+            <ellipse cx="600" cy="390" rx="226" ry="314" />
+          </g>
+          <circle cx="600" cy="390" r="315" fill="url(#fallback-globe-shade)" />
         </g>
+        <circle cx="600" cy="390" r="316" fill="none" stroke="rgba(103,232,249,0.24)" strokeWidth="2" />
       </svg>
       {cities.map(city => {
         const style = getPointStyle(city);
@@ -266,9 +288,6 @@ function FlatMapFallback({ cities, onCityClick }: { cities: CityData[]; onCityCl
           </button>
         );
       })}
-      <div className="absolute left-4 top-4 rounded-full border border-amber-200/20 bg-black/40 px-3 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-md">
-        WebGL is unavailable. Showing the flat map instead.
-      </div>
     </div>
   );
 }
@@ -774,7 +793,7 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
   if (!webglAvailable) {
     return (
       <div ref={containerRef} className="absolute inset-0 z-10">
-        <FlatMapFallback cities={cities} onCityClick={onCityClick} />
+        <GlobeFallback cities={cities} onCityClick={onCityClick} />
       </div>
     );
   }
