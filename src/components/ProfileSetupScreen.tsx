@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Camera, Check, Loader2, UserRound } from 'lucide-react';
+import { Camera, Check, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AuthUser, updateAuthProfile } from '../lib/auth';
 
@@ -8,20 +8,71 @@ interface ProfileSetupScreenProps {
   onComplete: (user: AuthUser) => void;
 }
 
-const presetAvatars = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200&h=200',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200&h=200',
+const avatarPalettePool = [
+  { id: 'cyan', from: '#19D4FF', to: '#2FE7B5', glow: 'rgba(34,211,238,0.28)' },
+  { id: 'gold', from: '#FDBA22', to: '#FF6B2C', glow: 'rgba(251,191,36,0.30)' },
+  { id: 'violet', from: '#8B5CF6', to: '#EC4899', glow: 'rgba(168,85,247,0.28)' },
+  { id: 'coral', from: '#FF4F74', to: '#FF8A3D', glow: 'rgba(248,113,113,0.28)' },
+  { id: 'blue', from: '#38BDF8', to: '#6366F1', glow: 'rgba(96,165,250,0.28)' },
+  { id: 'lime', from: '#84CC16', to: '#22C55E', glow: 'rgba(132,204,22,0.28)' },
+  { id: 'rose', from: '#FB7185', to: '#A855F7', glow: 'rgba(244,114,182,0.28)' },
+  { id: 'amber', from: '#F59E0B', to: '#EF4444', glow: 'rgba(245,158,11,0.28)' },
 ];
 
+const getAvatarInitial = (name: string) => {
+  const cleanName = name.trim();
+  if (!cleanName) return '';
+  return cleanName.charAt(0).toUpperCase();
+};
+
+const getRandomAvatarPalettes = () => (
+  [...avatarPalettePool]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3)
+);
+
+const escapeSvgText = (value: string) => (
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+);
+
+const createInitialAvatarUrl = (initial: string, palette: typeof avatarPalettePool[number]) => {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+      <defs>
+        <linearGradient id="avatarGradient" x1="20" y1="12" x2="220" y2="228" gradientUnits="userSpaceOnUse">
+          <stop stop-color="${palette.from}"/>
+          <stop offset="1" stop-color="${palette.to}"/>
+        </linearGradient>
+        <radialGradient id="avatarGlow" cx="32%" cy="24%" r="70%">
+          <stop stop-color="rgba(255,255,255,0.55)"/>
+          <stop offset="0.46" stop-color="rgba(255,255,255,0.04)"/>
+          <stop offset="1" stop-color="rgba(0,0,0,0.32)"/>
+        </radialGradient>
+      </defs>
+      <rect width="240" height="240" rx="120" fill="url(#avatarGradient)"/>
+      <rect width="240" height="240" rx="120" fill="url(#avatarGlow)"/>
+      <text x="120" y="138" text-anchor="middle" dominant-baseline="middle" fill="#F8FAFC" font-family="Inter, Arial, sans-serif" font-size="106" font-weight="900" letter-spacing="-4">${escapeSvgText(initial)}</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+
 export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScreenProps) {
-  const [nickname, setNickname] = useState(user.name || '');
-  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || presetAvatars[0]);
+  const [nickname, setNickname] = useState('');
+  const randomAvatarPalettes = useMemo(() => getRandomAvatarPalettes(), []);
+  const [selectedPaletteIndex, setSelectedPaletteIndex] = useState(0);
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const canSubmit = useMemo(() => nickname.trim().length >= 2 && Boolean(avatarUrl), [avatarUrl, nickname]);
+  const selectedPalette = randomAvatarPalettes[selectedPaletteIndex] || randomAvatarPalettes[0] || avatarPalettePool[0];
+  const avatarInitial = getAvatarInitial(nickname);
+  const canSubmit = useMemo(() => nickname.trim().length >= 2, [nickname]);
 
   const handleAvatarFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,7 +84,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
 
     const reader = new FileReader();
     reader.onload = () => {
-      setAvatarUrl(String(reader.result || ''));
+      setUploadedAvatarUrl(String(reader.result || ''));
       setError('');
     };
     reader.onerror = () => setError('Could not load that image.');
@@ -52,7 +103,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
     window.setTimeout(() => {
       const result = updateAuthProfile(user.id, {
         name: nickname,
-        avatarUrl,
+        avatarUrl: uploadedAvatarUrl || createInitialAvatarUrl(getAvatarInitial(nickname), selectedPalette),
       });
       setIsSubmitting(false);
       if ('user' in result) {
@@ -81,22 +132,31 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
           Set up your runner profile
         </h1>
         <p className="mt-4 text-base font-semibold leading-relaxed text-slate-400">
-          Add a photo and name before entering MOVEVI.
+          Add your name, choose a color, or upload a profile photo before entering MOVEVI.
         </p>
 
         <div className="mt-8 flex flex-col items-center">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="group relative h-32 w-32 rounded-full bg-gradient-to-br from-cyan-300 to-emerald-300 p-[3px] shadow-[0_0_34px_rgba(34,211,238,0.24)] active:scale-[0.98]"
+            className="relative flex h-32 w-32 items-center justify-center rounded-full p-[3px]"
+            style={{
+              background: `linear-gradient(135deg, ${selectedPalette.from}, ${selectedPalette.to})`,
+              boxShadow: `0 0 34px ${selectedPalette.glow}`,
+            }}
             aria-label="Upload profile photo"
           >
-            <span className="block h-full w-full overflow-hidden rounded-full bg-slate-950">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Profile preview" className="h-full w-full object-cover" />
+            <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-slate-950 text-[58px] font-black tracking-[-0.08em] text-white shadow-[inset_-20px_-24px_38px_rgba(0,0,0,0.24),inset_12px_10px_24px_rgba(255,255,255,0.22)]">
+              {uploadedAvatarUrl ? (
+                <img src={uploadedAvatarUrl} alt="Profile preview" className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-slate-500">
-                  <UserRound size={42} />
+                <span
+                  className="flex h-full w-full items-center justify-center"
+                  style={{
+                    background: `radial-gradient(circle at 34% 24%, rgba(255,255,255,0.34), transparent 34%), linear-gradient(135deg, ${selectedPalette.from}, ${selectedPalette.to})`,
+                  }}
+                >
+                  {avatarInitial}
                 </span>
               )}
             </span>
@@ -108,24 +168,30 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
           <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarFile} className="hidden" />
 
           <div className="mt-5 flex gap-3">
-            {presetAvatars.map((src) => {
-              const selected = avatarUrl === src;
+            {randomAvatarPalettes.map((palette, index) => {
+              const selected = selectedPaletteIndex === index;
               return (
                 <button
-                  key={src}
+                  key={palette.id}
                   type="button"
                   onClick={() => {
-                    setAvatarUrl(src);
+                    setSelectedPaletteIndex(index);
+                    setUploadedAvatarUrl('');
                     setError('');
                   }}
-                  className={`relative h-12 w-12 overflow-hidden rounded-full border-2 transition ${
-                    selected ? 'border-cyan-300' : 'border-white/10 opacity-70'
+                  className={`relative h-12 w-12 overflow-hidden rounded-full border-2 transition active:scale-95 ${
+                    selected ? 'border-cyan-200 shadow-[0_0_22px_rgba(34,211,238,0.30)]' : 'border-white/10 opacity-80'
                   }`}
-                  aria-label="Choose preset avatar"
+                  aria-label={`Choose ${palette.id} avatar color`}
                 >
-                  <img src={src} alt="" className="h-full w-full object-cover" />
+                  <span
+                    className="block h-full w-full"
+                    style={{
+                      background: `linear-gradient(135deg, ${palette.from}, ${palette.to})`,
+                    }}
+                  />
                   {selected && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-cyan-300/25 text-white">
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/18 text-white">
                       <Check size={18} strokeWidth={3} />
                     </span>
                   )}
@@ -143,7 +209,7 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
               setNickname(event.target.value);
               setError('');
             }}
-            placeholder="Mia Liu"
+            placeholder="Enter your name"
             maxLength={24}
             className="h-16 w-full rounded-2xl border border-white/10 bg-white/[0.055] px-5 text-xl font-black text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60 focus:bg-white/[0.08]"
           />
