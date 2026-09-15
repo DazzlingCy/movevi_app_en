@@ -19,6 +19,7 @@ import {
   AuthProvider,
   AuthResult,
   AuthUser,
+  bindProviderEmailAndSignIn,
   requestEmailVerificationCode,
   signInWithProvider,
   verifyEmailCodeAndSignIn,
@@ -29,7 +30,7 @@ interface AuthScreenProps {
   onAuthenticated: (user: AuthUser) => void;
 }
 
-type AuthScreenStep = 'choice' | 'email' | 'code' | 'provider';
+type AuthScreenStep = 'choice' | 'email' | 'code' | 'provider' | 'bindEmail' | 'bindCode';
 
 type FieldErrors = {
   email?: string;
@@ -51,7 +52,8 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
   const canContinue = useMemo(() => {
     if (step === 'email') return emailPattern.test(email.trim()) && acceptedTerms;
-    if (step === 'code') return /^\d{6}$/.test(verificationCode.trim());
+    if (step === 'bindEmail') return emailPattern.test(email.trim());
+    if (step === 'code' || step === 'bindCode') return /^\d{6}$/.test(verificationCode.trim());
     return true;
   }, [acceptedTerms, email, step, verificationCode]);
 
@@ -80,6 +82,16 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       setVerificationCode('');
       return;
     }
+    if (step === 'bindCode') {
+      setStep('bindEmail');
+      setVerificationCode('');
+      return;
+    }
+    if (step === 'bindEmail') {
+      setStep('provider');
+      setVerificationCode('');
+      return;
+    }
     setSelectedProvider(null);
     setStep('choice');
   };
@@ -101,7 +113,17 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
     clearFeedback();
     setLoadingProvider(provider);
     window.setTimeout(() => {
-      applyAuthResult(signInWithProvider(provider));
+      const result = signInWithProvider(provider);
+      if ('user' in result) {
+        applyAuthResult(result);
+        return;
+      }
+
+      setLoadingProvider(null);
+      setEmail('');
+      setVerificationCode('');
+      setStep('bindEmail');
+      setMessage('Link an email to keep your MOVEVI account secure.');
     }, 420);
   };
 
@@ -114,7 +136,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       setFieldErrors({ email: 'Enter a valid email address.' });
       return;
     }
-    if (!acceptedTerms) {
+    if (step === 'email' && !acceptedTerms) {
       setError('Accept the Terms and Privacy Policy to continue.');
       return;
     }
@@ -124,7 +146,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
       const result = requestEmailVerificationCode(cleanEmail);
       setLoadingProvider(null);
       if (result.ok) {
-        setStep('code');
+        setStep(step === 'bindEmail' ? 'bindCode' : 'code');
         setVerificationCode('');
         setMessage(`Code sent. Demo code: ${result.code}`);
       } else {
@@ -144,7 +166,11 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
     setLoadingProvider('email');
     window.setTimeout(() => {
-      applyAuthResult(verifyEmailCodeAndSignIn(email, verificationCode));
+      if (step === 'bindCode' && selectedProvider) {
+        applyAuthResult(bindProviderEmailAndSignIn(selectedProvider, email, verificationCode));
+      } else {
+        applyAuthResult(verifyEmailCodeAndSignIn(email, verificationCode));
+      }
     }, 360);
   };
 
@@ -243,14 +269,19 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
             <div className="mb-24 grid grid-cols-2 gap-3">
               <div className="h-1.5 rounded-full bg-[#11170f]" />
-              <div className={`h-1.5 rounded-full ${step === 'code' ? 'bg-[#11170f]' : 'bg-neutral-300'}`} />
+              <div className={`h-1.5 rounded-full ${step === 'code' || step === 'bindCode' ? 'bg-[#11170f]' : 'bg-neutral-300'}`} />
             </div>
 
-            {step === 'email' ? (
+            {step === 'email' || step === 'bindEmail' ? (
               <form onSubmit={submitEmail} className="flex flex-1 flex-col">
                 <h2 className="mb-16 text-center text-[34px] font-black tracking-[-0.035em] text-[#11170f]">
-                  Enter your email
+                  {step === 'bindEmail' ? 'Link your email' : 'Enter your email'}
                 </h2>
+                {step === 'bindEmail' && (
+                  <p className="-mt-10 mb-12 text-center text-base font-semibold leading-relaxed text-neutral-500">
+                    Add an email so you can recover your account and receive important account updates.
+                  </p>
+                )}
 
                 <label className="block">
                   <span className="mb-3 block text-[28px] font-medium leading-none text-[#11170f]">Email</span>
@@ -271,21 +302,23 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   {fieldErrors.email && <p className="mt-3 text-sm font-bold text-red-500">{fieldErrors.email}</p>}
                 </label>
 
-                <label className="mt-7 flex items-start gap-3 text-sm font-semibold leading-relaxed text-neutral-500">
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(event) => {
-                      setAcceptedTerms(event.target.checked);
-                      setError('');
-                    }}
-                    className="mt-0.5 h-5 w-5 accent-[#65d86d]"
-                  />
-                  <span>
-                    I agree to the <span className="underline">Terms of Service</span> and{' '}
-                    <span className="underline">Privacy Policy</span>.
-                  </span>
-                </label>
+                {step === 'email' && (
+                  <label className="mt-7 flex items-start gap-3 text-sm font-semibold leading-relaxed text-neutral-500">
+                    <input
+                      type="checkbox"
+                      checked={acceptedTerms}
+                      onChange={(event) => {
+                        setAcceptedTerms(event.target.checked);
+                        setError('');
+                      }}
+                      className="mt-0.5 h-5 w-5 accent-[#65d86d]"
+                    />
+                    <span>
+                      I agree to the <span className="underline">Terms of Service</span> and{' '}
+                      <span className="underline">Privacy Policy</span>.
+                    </span>
+                  </label>
+                )}
 
                 <AuthFeedback message={feedback} isError={Boolean(error)} />
 
@@ -302,7 +335,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
             ) : (
               <form onSubmit={submitCode} className="flex flex-1 flex-col">
                 <h2 className="mb-5 text-center text-[34px] font-black tracking-[-0.035em] text-[#11170f]">
-                  Enter your code
+                  {step === 'bindCode' ? 'Verify your email' : 'Enter your code'}
                 </h2>
                 <p className="mb-14 text-center text-base font-semibold leading-relaxed text-neutral-500">
                   We sent a 6-digit code to {email}.
@@ -439,7 +472,7 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
             <Orbit size={38} strokeWidth={3} />
           </div>
           <p className="pt-0.5 text-[16px] font-medium leading-snug tracking-[-0.01em] text-[#1f1f1f]">
-            Use your Apple account <span className="whitespace-nowrap">(mia.privaterelay@icloud.com)</span> to create a MOVEVI account.
+            Use your Apple account to continue to MOVEVI. You may be asked to link an email after authorization.
           </p>
         </div>
 

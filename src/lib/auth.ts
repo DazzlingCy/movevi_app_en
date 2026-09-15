@@ -20,6 +20,7 @@ interface StoredAccount {
   name: string;
   email: string;
   provider: AuthProvider;
+  providerSubjectId?: string;
   emailVerified: boolean;
   avatarUrl?: string;
   heightCm?: string;
@@ -50,18 +51,16 @@ interface StoredEmailCode {
   expiresAt: number;
 }
 
-const socialProfiles: Record<Exclude<AuthProvider, 'email'>, Pick<AuthUser, 'name' | 'email' | 'provider' | 'emailVerified'>> = {
+const socialProfiles: Record<Exclude<AuthProvider, 'email'>, Pick<AuthUser, 'name' | 'provider'> & { subjectId: string }> = {
   apple: {
     name: 'Mia Liu',
-    email: 'mia.privaterelay@icloud.com',
     provider: 'apple',
-    emailVerified: true,
+    subjectId: 'apple_demo_mia_liu',
   },
   google: {
     name: 'Mia Liu',
-    email: 'mia.liu@gmail.com',
     provider: 'google',
-    emailVerified: true,
+    subjectId: 'google_demo_mia_liu',
   },
 };
 
@@ -186,6 +185,7 @@ export const updateAuthProfile = (userId: string, profile: {
           name: sessionUser.name,
           email: sessionUser.email,
           provider: sessionUser.provider,
+          providerSubjectId: undefined,
           emailVerified: sessionUser.emailVerified,
           avatarUrl: sessionUser.avatarUrl,
           heightCm: sessionUser.heightCm,
@@ -227,12 +227,83 @@ export const signInWithProvider = (provider: Exclude<AuthProvider, 'email'>): Au
   const profile = socialProfiles[provider];
   const now = new Date().toISOString();
   const accounts = readAccounts();
-  const existingIndex = accounts.findIndex(account => account.email === profile.email);
-  const account: StoredAccount = existingIndex >= 0
-    ? { ...accounts[existingIndex], profileCompleted: accounts[existingIndex].profileCompleted ?? true, lastSignedInAt: now, provider }
+  const existingIndex = accounts.findIndex(
+    account => account.provider === provider && account.providerSubjectId === profile.subjectId
+  );
+
+  if (existingIndex < 0) {
+    return { ok: false, message: 'Link an email address to finish signing in.' };
+  }
+
+  const account: StoredAccount = {
+    ...accounts[existingIndex],
+    name: accounts[existingIndex].name || profile.name,
+    provider,
+    providerSubjectId: profile.subjectId,
+    emailVerified: true,
+    profileCompleted: accounts[existingIndex].profileCompleted ?? true,
+    lastSignedInAt: now,
+  };
+
+  accounts[existingIndex] = account;
+  saveAccounts(accounts);
+  const user = toUser(account);
+  saveAuthSession(user);
+  return { ok: true, user };
+};
+
+export const bindProviderEmailAndSignIn = (
+  provider: Exclude<AuthProvider, 'email'>,
+  email: string,
+  code: string
+): AuthResult => {
+  const profile = socialProfiles[provider];
+  const cleanEmail = normalizeEmail(email);
+  const cleanCode = code.trim();
+
+  if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+    return { ok: false, message: 'Enter a valid email address.' };
+  }
+  if (!/^\d{6}$/.test(cleanCode)) {
+    return { ok: false, message: 'Enter the 6-digit code.' };
+  }
+
+  const codes = readEmailCodes();
+  const matchingCode = codes.find(item => item.email === cleanEmail);
+  if (!matchingCode) {
+    return { ok: false, message: 'Your code expired. Request a new one.' };
+  }
+  if (matchingCode.code !== cleanCode) {
+    return { ok: false, message: 'Incorrect code. Try again.' };
+  }
+
+  const now = new Date().toISOString();
+  const accounts = readAccounts();
+  const providerIndex = accounts.findIndex(
+    account => account.provider === provider && account.providerSubjectId === profile.subjectId
+  );
+  const emailIndex = accounts.findIndex(account => account.email === cleanEmail);
+  const existingIndex = providerIndex >= 0 ? providerIndex : emailIndex;
+  const existingAccount = existingIndex >= 0 ? accounts[existingIndex] : null;
+
+  const account: StoredAccount = existingAccount
+    ? {
+        ...existingAccount,
+        name: existingAccount.name || profile.name,
+        email: cleanEmail,
+        provider,
+        providerSubjectId: profile.subjectId,
+        emailVerified: true,
+        profileCompleted: existingAccount.profileCompleted ?? true,
+        lastSignedInAt: now,
+      }
     : {
         id: createId(),
-        ...profile,
+        name: profile.name,
+        email: cleanEmail,
+        provider,
+        providerSubjectId: profile.subjectId,
+        emailVerified: true,
         profileCompleted: false,
         createdAt: now,
         lastSignedInAt: now,
@@ -245,6 +316,7 @@ export const signInWithProvider = (provider: Exclude<AuthProvider, 'email'>): Au
   }
 
   saveAccounts(accounts);
+  saveEmailCodes(codes.filter(item => item.email !== cleanEmail));
   const user = toUser(account);
   saveAuthSession(user);
   return { ok: true, user };
