@@ -1,0 +1,1825 @@
+import { periodOpen, weekendPeriod } from '../../journey/weekendRelay';
+import { Fragment, lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import {
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, CircleHelp, ClipboardList,
+  Clock3, Compass, Flame, Footprints, GalleryHorizontalEnd, Globe2, Headphones, HeadphonesIcon, LockKeyhole, Mail, Map, MapPin,
+  LogOut, Medal, MessageSquare, MonitorSmartphone, Navigation, Pause, Play, RotateCcw, Route,
+  Settings, Sparkles, SquarePen, Target, Trophy, UserRound, UsersRound, Wallet, Wifi, WifiOff, X
+} from 'lucide-react';
+import { CITIES, type CityData } from '../../data/cities';
+import { getRouteCover } from '../../data/routeCovers';
+import { getCityRouteReleaseDate, getJourneyCity, getJourneyRoute, hasPublishedCityRoutes, JOURNEY_SEQUENCE } from '../../journey/data';
+import {
+  createDemoJourneyState, getCandidateCityIds, getCityPlanTotals, getCityStatus,
+  getCompletedRouteIds, getCountryLevelProgress, getHomeJourneyCityIds, getJourneyTotals, getOpenRouteCount, getRouteStatus, journeyReducer
+} from '../../journey/state';
+import type { JourneyCity, JourneyRoute, JourneyState, RunResult } from '../../journey/types';
+import { getWeightPlanRewardAmount, type WeightPlanRewardRecord } from '../../lib/weightPlan';
+import CityRoutesView, { type CityRouteListItem } from '../CityRoutesView';
+import EventsTab from '../EventsTab';
+import JourneyLevelView from '../JourneyLevelView';
+import LeaderboardView from '../LeaderboardView';
+import MedalLotteryView from '../MedalLotteryView';
+import OnlineSupportView from '../OnlineSupportView';
+import MyDevicesView from '../MyDevicesView';
+import DeviceConnectedPrompt from '../DeviceConnectedPrompt';
+import { resolveLocalImage } from '../../lib/localImages';
+import RouteDetailView from '../RouteDetailView';
+import RunPlaybackView from '../RunPlaybackView';
+import TeamRelayView from '../TeamRelayView';
+import { usePuzzleTeam } from '../../journey/usePuzzleTeam';
+import { getPuzzlePreviewMode } from '../../journey/puzzleDemo';
+import { createCarouselSettler, hasMeaningfulCarouselScroll } from '../../journey/homeCarousel';
+import { periodParticipation, ownPieces, puzzleComplete, type PuzzleRoute } from '../../journey/puzzleTeam';
+import WeightLossPlanView from '../WeightLossPlanView';
+import WeekendMedleyView from '../WeekendMedleyView';
+import Modal from './Modal';
+import type { AuthUser } from '../../lib/auth';
+
+const JourneyGlobe = lazy(() => import('./JourneyGlobe'));
+
+const JOURNEY_CITY_SEQUENCE: JourneyCity[] = JOURNEY_SEQUENCE
+  .map(cityId => getJourneyCity(cityId))
+  .filter((city): city is JourneyCity => Boolean(city));
+
+const CITY_CONTINENT_FILTERS = ["All", "Asia", "Europe", "Africa", "North America", "South America", "Oceania", "Antarctica"] as const;
+type CityContinentFilter = (typeof CITY_CONTINENT_FILTERS)[number];
+
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+};
+
+const cityStyle = (city: JourneyCity) => ({ '--city-accent': city.accent } as CSSProperties);
+
+const JOURNEY_CITY_IMAGES: Record<string, string> = {
+  hangzhou: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg/1280px-%E6%9D%AD%E5%B7%9E%E9%92%B1%E6%B1%9F%E6%96%B0%E5%9F%8E_4_%28cropped%29.jpg',
+  beijing: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Skyline_of_Beijing_CBD_with_B-5906_approaching_%2820211016171955%29_%281%29.jpg/1280px-Skyline_of_Beijing_CBD_with_B-5906_approaching_%2820211016171955%29_%281%29.jpg',
+  shanghai: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Huangpu_Park_20124-Shanghai_%2832208802494%29.jpg/1280px-Huangpu_Park_20124-Shanghai_%2832208802494%29.jpg',
+  xian: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/City_wall_of_Xi%27an_51550-Xian_%2827959363326%29.jpg/1280px-City_wall_of_Xi%27an_51550-Xian_%2827959363326%29.jpg',
+  tokyo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Skyscrapers_of_Shinjuku_2009_January.jpg/1280px-Skyscrapers_of_Shinjuku_2009_January.jpg',
+  paris: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1200',
+  london: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/London_Skyline_%28125508655%29.jpeg/1280px-London_Skyline_%28125508655%29.jpeg',
+  'new-york': 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=1200',
+  sydney: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&q=80&w=1200',
+  rio: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&q=80&w=1200',
+  cairo: 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&q=80&w=1200',
+  bangkok: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&q=80&w=1200',
+  mumbai: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Gateway_of_India_%28cropped%29.jpg/1280px-Gateway_of_India_%28cropped%29.jpg',
+  singapore: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&q=80&w=1200',
+  moscow: 'https://images.unsplash.com/photo-1513326738677-b964603b136d?auto=format&fit=crop&q=80&w=1200',
+  'los-angeles': 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Los_Angeles%2C_Winter_2016.jpg/1280px-Los_Angeles%2C_Winter_2016.jpg',
+  rome: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1200',
+  dubai: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=1200',
+  berlin: 'https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&q=80&w=1200',
+  toronto: 'https://images.unsplash.com/photo-1517935706615-2717063c2225?auto=format&fit=crop&q=80&w=1200'
+};
+
+const JOURNEY_CITY_VIDEOS: Partial<Record<string, string>> = {
+  tokyo: 'https://videos.pexels.com/video-files/11720138/11720138-hd_1280_720_30fps.mp4',
+  paris: 'https://videos.pexels.com/video-files/20046743/20046743-hd_1280_720_60fps.mp4',
+  'new-york': 'https://videos.pexels.com/video-files/37898785/16079913_4094_2160_30fps.mp4'
+};
+
+const CITY_RUNNER_COUNTS: Record<string, number> = {
+  hangzhou: 18642,
+  beijing: 28376,
+  shanghai: 25819,
+  xian: 14208,
+  tokyo: 31486,
+  paris: 27905,
+  london: 24613,
+  'new-york': 29740,
+  sydney: 16386,
+  rio: 12948,
+  cairo: 11672,
+  bangkok: 15931,
+  mumbai: 19284,
+  singapore: 13756,
+  moscow: 10843,
+  'los-angeles': 21567,
+  rome: 17429,
+  dubai: 18906,
+  berlin: 16752,
+  toronto: 14635
+};
+
+const DEFAULT_JOURNEY_CITY_VIDEO = JOURNEY_CITY_VIDEOS.tokyo!;
+
+const cityImageFor = (city: JourneyCity) => resolveLocalImage(
+  JOURNEY_CITY_IMAGES[city.id]
+  ?? CITIES.find(item => item.name === city.name || item.englishName === city.englishName)?.image
+  ?? 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=1200')!;
+
+const cityVideoFor = (city: JourneyCity) => JOURNEY_CITY_VIDEOS[city.id] ?? DEFAULT_JOURNEY_CITY_VIDEO;
+
+const toLegacyCity = (city: JourneyCity, state: JourneyState): CityData => {
+  const completed = getCompletedRouteIds(state, city.id).length;
+  return {
+    id: city.id,
+    name: city.name,
+    englishName: city.englishName,
+    continent: city.continent,
+    x: 0,
+    y: 0,
+    lat: city.latitude,
+    lng: city.longitude,
+    image: cityImageFor(city),
+    routes: city.routes.length,
+    spots: city.routes.flatMap(route => route.landmarks).length,
+    completed,
+    status: completed >= city.routes.length ? 'lit' : completed > 0 ? 'in-progress' : 'unlit',
+    completedRouteIndices: city.routes.filter(route => getCompletedRouteIds(state, city.id).includes(route.id)).map(route => route.order),
+    description: city.description
+  };
+};
+
+const getRouteListOpenCount = (state: JourneyState, cityId: string) => {
+  const city = getJourneyCity(cityId);
+  const completedCount = getCompletedRouteIds(state, cityId).length;
+  if (!city) return 0;
+  if (completedCount >= city.routes.length || getCityStatus(state, cityId) === 'completed') return city.routes.length;
+  return getOpenRouteCount(completedCount);
+};
+
+const toLegacyRouteItem = (route: JourneyRoute, state: JourneyState): CityRouteListItem => {
+  const status = getRouteStatus(state, route.cityId, route.id);
+  return {
+    title: route.name,
+    coverImage: getRouteCover(getJourneyCity(route.cityId)?.name ?? '', route.order)?.src,
+    distance: route.distanceKm.toFixed(1),
+    duration: `${String(route.durationMinutes).padStart(2, '0')}:00`,
+    calories: String(route.calories),
+    rating: '4.8',
+    spots: route.landmarks.join(' — '),
+    intro: route.description,
+    isCompleted: status === 'completed',
+    isUnlocked: status !== 'locked'
+  };
+};
+
+function TreadmillIcon({ connected = true }: { connected?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="treadmill-icon">
+      <path d="M5 17.5h10.4c1.4 0 2.6-.9 3-2.2l1.2-3.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3.8 19.5h13.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8.5 17.5 13 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12.2 7.5h5.3c.7 0 1.2.5 1.2 1.2v1.1c0 .7-.5 1.2-1.2 1.2h-6.9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16.1 8.9h.1" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      {connected && <circle cx="20" cy="5" r="2" fill="currentColor" />}
+    </svg>
+  );
+}
+
+function CityArtwork({ city, compact = false }: { city: JourneyCity; compact?: boolean }) {
+  return (
+    <div className={`city-artwork${compact ? ' city-artwork--compact' : ''}`} style={cityStyle(city)} aria-hidden="true">
+      <div className="city-artwork__sun" />
+      <div className="city-artwork__contours" />
+      <span className="city-artwork__code">{city.latitude.toFixed(1)}°N / {city.longitude.toFixed(1)}°E</span>
+      <strong>{city.englishName}</strong>
+      <div className="city-artwork__skyline"><i /><i /><i /><i /><i /><i /><i /></div>
+    </div>
+  );
+}
+
+function ProgressSegments({ completed, showRunner = false }: { completed: number; showRunner?: boolean }) {
+  const progress = Math.min(10, Math.max(0, completed)) * 10;
+  return (
+    <div className={`progress-segments${completed >= 10 ? ' is-finished' : ''}${showRunner ? ' has-runner' : ''}`} aria-label={`${completed} of 10 routes completed`} style={{ '--completed-progress': `${progress}%` } as CSSProperties}>
+      {showRunner && completed > 0 && <b className="progress-segments__runner" aria-hidden="true"><Footprints /></b>}
+      {Array.from({ length: 10 }, (_, index) => {
+        const complete = index < completed;
+        const latest = complete && index === completed - 1;
+        return <span key={index} className={`${complete ? 'is-complete' : ''}${latest ? ' is-latest' : ''}`} style={{ '--segment-index': index } as CSSProperties} />;
+      })}
+    </div>
+  );
+}
+
+interface HomePageProps {
+  state: JourneyState;
+  city: JourneyCity;
+  deviceConnected: boolean;
+  onRoutes: (cityId: string) => void;
+  onBrowseCity: (cityId: string) => void;
+  onSelectNextCity: (cityId: string) => void;
+  focusNextStation: boolean;
+  onNextStationFocused: () => void;
+  onDevice: () => void;
+  onLegacyFeature: (feature: LegacyFeature) => void;
+  onCarouselEnd: () => void;
+}
+
+type LegacyFeature = 'onlineSupport' | 'weightLossPlan' | 'leaderboard' | 'level' | 'medalLottery' | 'weekendMedley' | 'teamRelay';
+
+type WeightRouteTarget = {
+  cityId: string;
+  routeIndex: number;
+  image: string;
+  day: number;
+};
+
+type ActivityRouteTarget = {
+  source: 'medley';
+  cityId: string;
+  routeIndex: number;
+  image: string;
+} | {
+  source: 'teamRelay';
+  cityId: string;
+  routeIndex: number;
+  image: string;
+  taskId: string;
+};
+
+function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSelectNextCity, focusNextStation, onNextStationFocused, onDevice, onLegacyFeature, onCarouselEnd }: HomePageProps) {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const cityVideoRef = useRef<HTMLVideoElement>(null);
+  const hasAlignedCarouselRef = useRef(false);
+  const programmaticScrollRef = useRef(false);
+  const carouselSettlerRef = useRef<ReturnType<typeof createCarouselSettler> | null>(null);
+  const restingScrollLeftRef = useRef(0);
+  const scrollAnimationFrameRef = useRef<number | null>(null);
+  const cardMeasurementsRef = useRef<{ card: HTMLElement; center: number }[]>([]);
+  const settleCarouselRef = useRef<() => void>(() => {});
+  const afterScrollRef = useRef<(() => void) | null>(null);
+  const mouseDragRef = useRef<{ pointerId: number; startX: number; scrollLeft: number; dragged: boolean; lastX: number; lastTime: number; velocity: number } | null>(null);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipedRef = useRef(false);
+  const endGestureRef = useRef<{ x: number; y: number; atEnd: boolean } | null>(null);
+  const endNoticeTimeRef = useRef(-Infinity);
+  const endWheelRef = useRef({ time: -Infinity, distance: 0, atEnd: false, notified: false });
+  const isAtCarouselEnd = () => {
+    const rail = carouselRef.current;
+    return !!rail && rail.scrollWidth > rail.clientWidth && rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 4;
+  };
+  const notifyCarouselEnd = () => {
+    const now = performance.now();
+    if (now - endNoticeTimeRef.current < 2000) return;
+    endNoticeTimeRef.current = now;
+    onCarouselEnd();
+  };
+  const finishEndGesture = (x: number, y: number) => {
+    const start = endGestureRef.current;
+    endGestureRef.current = null;
+    if (!start?.atEnd || !isAtCarouselEnd()) return;
+    const distance = start.x - x;
+    if (distance >= 48 && distance > Math.abs(start.y - y) * 1.2) notifyCarouselEnd();
+  };
+  const [videoNeedsTap, setVideoNeedsTap] = useState(false);
+  const [candidateBatchIndex, setCandidateBatchIndex] = useState(0);
+  const homeJourneyCities = getHomeJourneyCityIds(state).map(cityId => getJourneyCity(cityId)!).filter(Boolean);
+  const cityIndex = Math.max(0, homeJourneyCities.findIndex(item => item.id === city.id));
+  const nextStationCandidatePool = getCandidateCityIds(state, JOURNEY_CITY_SEQUENCE.length).map(cityId => getJourneyCity(cityId)!).filter(Boolean);
+  const candidateBatchCount = Math.max(1, Math.ceil(nextStationCandidatePool.length / 3));
+  const nextStationCandidates = Array.from(
+    { length: Math.min(3, nextStationCandidatePool.length) },
+    (_, offset) => nextStationCandidatePool[(candidateBatchIndex * 3 + offset) % nextStationCandidatePool.length]
+  ).filter(Boolean);
+  const currentCityCompleted = getCompletedRouteIds(state, state.currentCityId).length >= 10 || state.completedCityIds.includes(state.currentCityId);
+  const getProgressCopy = (item: JourneyCity) => {
+    const itemStatus = getCityStatus(state, item.id);
+    return itemStatus === 'completed' || itemStatus === 'current'
+      ? ''
+      : 'Complete the previous city to unlock';
+  };
+
+  const updateCarouselCardVisuals = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const viewportCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    const influenceDistance = Math.max(1, carousel.clientWidth * 0.58);
+    const viewportWidth = carousel.clientWidth;
+
+    const measurements = cardMeasurementsRef.current.map(({ card, center }) => {
+      const signedDistance = center - viewportCenter;
+      const distanceRatio = Math.min(1, Math.abs(signedDistance) / influenceDistance);
+      const closeness = 1 - distanceRatio;
+      const eased = closeness * closeness * (3 - 2 * closeness);
+      return { card, signedDistance, distanceRatio, eased };
+    });
+
+    measurements.forEach(({ card, signedDistance, eased }) => {
+      const nearby = Math.abs(signedDistance) <= viewportWidth * 2;
+      const willChange = nearby ? 'transform, translate, opacity' : 'auto';
+      if (card.style.willChange !== willChange) card.style.willChange = willChange;
+      if (!nearby) return;
+      // Compress the visual spacing together with the cards, without changing snap geometry.
+      const browseShift = -signedDistance * .26;
+      card.style.setProperty('--journey-card-browse-x', `${browseShift.toFixed(2)}px`);
+      card.style.setProperty('--journey-card-browse-opacity', (.7 + eased * .28).toFixed(3));
+    });
+  }, []);
+
+  const requestCarouselVisualUpdate = useCallback(() => {
+    if (scrollAnimationFrameRef.current) return;
+    scrollAnimationFrameRef.current = window.requestAnimationFrame(() => {
+      scrollAnimationFrameRef.current = null;
+      updateCarouselCardVisuals();
+    });
+  }, [updateCarouselCardVisuals]);
+
+  const setCarouselBrowsing = useCallback((browsing: boolean) => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    if (!browsing) restingScrollLeftRef.current = carousel.scrollLeft;
+    if (carousel.classList.contains('is-browsing') !== browsing) carousel.classList.toggle('is-browsing', browsing);
+    requestCarouselVisualUpdate();
+  }, [requestCarouselVisualUpdate]);
+
+  const holdCarouselBrowsing = useCallback(() => {
+    carouselSettlerRef.current?.cancel();
+  }, []);
+
+  const armCarouselSettle = useCallback(() => {
+    if (!carouselSettlerRef.current) carouselSettlerRef.current = createCarouselSettler({
+      delay:(callback,ms)=>window.setTimeout(callback,ms),
+      clearDelay:id=>window.clearTimeout(id),
+      frame:callback=>window.requestAnimationFrame(callback),
+      cancelFrame:id=>window.cancelAnimationFrame(id),
+    },()=>{
+      carouselRef.current?.classList.remove('is-settling');
+    },()=>{
+      if (mouseDragRef.current?.dragged) return;
+      programmaticScrollRef.current = false;
+      settleCarouselRef.current();
+      afterScrollRef.current?.();
+      afterScrollRef.current = null;
+    });
+    carouselSettlerRef.current.arm();
+  }, []);
+
+  const carouselCityOrder = homeJourneyCities.map(item => item.id).join(',');
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    const measureCards = () => {
+      cardMeasurementsRef.current = [...carousel.querySelectorAll<HTMLElement>('[data-city-id], [data-next-station]')]
+        .map(card => ({ card, center: card.offsetLeft + card.clientWidth / 2 }));
+      requestCarouselVisualUpdate();
+    };
+    measureCards();
+    const observer = new ResizeObserver(measureCards);
+    observer.observe(carousel);
+    return () => observer.disconnect();
+  }, [carouselCityOrder, currentCityCompleted, requestCarouselVisualUpdate]);
+
+  useEffect(() => () => {
+    carouselSettlerRef.current?.cancel();
+    if (scrollAnimationFrameRef.current) {
+      window.cancelAnimationFrame(scrollAnimationFrameRef.current);
+      scrollAnimationFrameRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    const target = carousel?.querySelector<HTMLElement>(`[data-city-id="${city.id}"]`);
+    if (!carousel || !target) return;
+    const targetLeft = target.offsetLeft - (carousel.clientWidth - target.clientWidth) / 2;
+    if (Math.abs(carousel.scrollLeft - targetLeft) < 3) {
+      programmaticScrollRef.current = false;
+      hasAlignedCarouselRef.current = true;
+      setCarouselBrowsing(false);
+      requestCarouselVisualUpdate();
+      return;
+    }
+    setCarouselBrowsing(true);
+    programmaticScrollRef.current = true;
+    carousel.scrollTo({
+      left: targetLeft,
+      behavior: hasAlignedCarouselRef.current ? 'smooth' : 'auto'
+    });
+    hasAlignedCarouselRef.current = true;
+    armCarouselSettle();
+  }, [city.id, armCarouselSettle, requestCarouselVisualUpdate, setCarouselBrowsing]);
+
+  useEffect(() => {
+    if (!focusNextStation) return;
+    const carousel = carouselRef.current;
+    const target = carousel?.querySelector<HTMLElement>('[data-next-station]');
+    if (!carousel || !target) return;
+
+    const targetLeft = target.offsetLeft - (carousel.clientWidth - target.clientWidth) / 2;
+    setCarouselBrowsing(true);
+    programmaticScrollRef.current = true;
+    carousel.scrollTo({ left: targetLeft, behavior: 'smooth' });
+    hasAlignedCarouselRef.current = true;
+
+    afterScrollRef.current = onNextStationFocused;
+    armCarouselSettle();
+  }, [focusNextStation, onNextStationFocused, armCarouselSettle, setCarouselBrowsing]);
+
+  const selectNearestCity = () => {
+    if (programmaticScrollRef.current) return false;
+    const carousel = carouselRef.current;
+    if (!carousel) return false;
+    const cards = [...carousel.querySelectorAll<HTMLElement>('[data-city-id], [data-next-station]')];
+    const firstCard = cards[0];
+    if (!firstCard) return false;
+    const viewportCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    const next = cards.reduce((nearest, card) => (
+      Math.abs(card.offsetLeft + card.clientWidth / 2 - viewportCenter) < Math.abs(nearest.offsetLeft + nearest.clientWidth / 2 - viewportCenter) ? card : nearest
+    ), firstCard);
+    if (next.dataset.cityId && next.dataset.cityId !== city.id) {
+      onBrowseCity(next.dataset.cityId);
+      return true;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    settleCarouselRef.current = () => {
+      const cityChanged = selectNearestCity();
+      if (!cityChanged) setCarouselBrowsing(false);
+    };
+  });
+
+  const scheduleNearestCitySelection = () => {
+    setCarouselBrowsing(true);
+    armCarouselSettle();
+  };
+
+  const handleCarouselScroll = () => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    if (!carousel.classList.contains('is-browsing') && !hasMeaningfulCarouselScroll(restingScrollLeftRef.current,carousel.scrollLeft)) return;
+    scheduleNearestCitySelection();
+  };
+
+  const handleCarouselKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    if (event.key === 'ArrowRight' && isAtCarouselEnd()) {
+      if (!event.repeat) notifyCarouselEnd();
+      return;
+    }
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const nextCity = homeJourneyCities[Math.min(homeJourneyCities.length - 1, Math.max(0, cityIndex + direction))];
+    if (nextCity) onBrowseCity(nextCity.id);
+  };
+
+  const handleCarouselPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    holdCarouselBrowsing();
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    endGestureRef.current = { x: event.clientX, y: event.clientY, atEnd: isAtCarouselEnd() };
+    mouseDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: event.currentTarget.scrollLeft,
+      dragged: false,
+      lastX: event.clientX,
+      lastTime: performance.now(),
+      velocity: 0
+    };
+  };
+
+  const handleCarouselPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = mouseDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    if (!drag.dragged && Math.abs(deltaX) > 5) {
+      drag.dragged = true;
+      programmaticScrollRef.current = false;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.classList.remove('is-settling');
+      event.currentTarget.classList.add('is-dragging');
+      setCarouselBrowsing(true);
+    }
+    if (!drag.dragged) return;
+
+    event.preventDefault();
+    const now = performance.now();
+    const elapsed = Math.max(8, now - drag.lastTime);
+    const instantaneousVelocity = (drag.lastX - event.clientX) / elapsed;
+    drag.velocity = drag.velocity * .68 + instantaneousVelocity * .32;
+    drag.lastX = event.clientX;
+    drag.lastTime = now;
+    event.currentTarget.scrollLeft = drag.scrollLeft - deltaX;
+    requestCarouselVisualUpdate();
+    holdCarouselBrowsing();
+  };
+
+  const finishCarouselPointerDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse') {
+      if (event.type === 'pointerup') finishEndGesture(event.clientX, event.clientY);
+      else endGestureRef.current = null;
+    }
+    event.currentTarget.classList.remove('is-dragging');
+    const drag = mouseDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      const start = swipeStartRef.current;
+      const moved = start ? Math.abs(event.clientX - start.x) > 8 : false;
+      // Touch scrolling hands control to the browser through pointercancel.
+      if (moved || event.type === 'pointercancel') scheduleNearestCitySelection();
+      else if (carouselRef.current?.classList.contains('is-browsing')) armCarouselSettle();
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    mouseDragRef.current = null;
+
+    if (drag.dragged) {
+      swipedRef.current = true;
+      window.setTimeout(() => { swipedRef.current = false; }, 180);
+      const carousel = event.currentTarget;
+      // Keep native snap disabled until this single momentum animation finishes.
+      carousel.classList.add('is-settling');
+      const cards = [...carousel.querySelectorAll<HTMLElement>('[data-city-id], [data-next-station]')];
+      if (cards.length > 0) {
+        const velocity = performance.now() - drag.lastTime < 100 ? drag.velocity : 0;
+        const momentum = Math.max(-carousel.clientWidth * .52, Math.min(carousel.clientWidth * .52, velocity * 170));
+        const projectedCenter = carousel.scrollLeft + momentum + carousel.clientWidth / 2;
+        const target = cards.reduce((nearest, card) => (
+          Math.abs(card.offsetLeft + card.clientWidth / 2 - projectedCenter) < Math.abs(nearest.offsetLeft + nearest.clientWidth / 2 - projectedCenter) ? card : nearest
+        ), cards[0]);
+        carousel.scrollTo({
+          left: target.offsetLeft - (carousel.clientWidth - target.clientWidth) / 2,
+          behavior: 'smooth'
+        });
+      }
+      scheduleNearestCitySelection();
+    } else {
+      if (carouselRef.current?.classList.contains('is-browsing')) armCarouselSettle();
+    }
+  };
+
+  const handleSwipeStart = (event: PointerEvent<HTMLElement>) => {
+    swipeStartRef.current = { x: event.clientX, y: event.clientY };
+    swipedRef.current = false;
+  };
+  const handleSwipeEnd = (event: PointerEvent<HTMLElement>) => {
+    if (!swipeStartRef.current) return;
+    const deltaX = event.clientX - swipeStartRef.current.x;
+    const deltaY = event.clientY - swipeStartRef.current.y;
+    swipeStartRef.current = null;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+    swipedRef.current = true;
+    window.setTimeout(() => { swipedRef.current = false; }, 180);
+  };
+  const handleRoutesClick = (cityId: string) => {
+    if (swipedRef.current || !hasPublishedCityRoutes(cityId)) return;
+    onRoutes(cityId);
+  };
+  const handleCityCardClick = (cityId: string) => {
+    if (swipedRef.current || cityId === city.id) return;
+    onBrowseCity(cityId);
+  };
+  const handleCtaPointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    swipeStartRef.current = null;
+    mouseDragRef.current = null;
+    swipedRef.current = false;
+  };
+  const handleNextCitySelect = (cityId: string) => {
+    if (swipedRef.current || !currentCityCompleted) return;
+    onSelectNextCity(cityId);
+  };
+  const showNextCandidateBatch = () => {
+    if (!currentCityCompleted || candidateBatchCount <= 1) return;
+    setCandidateBatchIndex(index => (index + 1) % candidateBatchCount);
+  };
+  const playCityVideo = useCallback(() => {
+    const video = cityVideoRef.current;
+    if (!video) return;
+    video.muted = true;
+    void video.play()
+      .then(() => setVideoNeedsTap(false))
+      .catch(() => setVideoNeedsTap(true));
+  }, []);
+
+  useEffect(() => {
+    setVideoNeedsTap(false);
+    let cancelled = false;
+
+    const tryPlayback = () => {
+      if (cancelled || document.visibilityState === 'hidden') return;
+      const video = cityVideoRef.current;
+      if (!video || !video.paused) return;
+      video.muted = true;
+      void video.play()
+        .then(() => {
+          if (!cancelled) setVideoNeedsTap(false);
+        })
+        .catch(() => {
+          if (!cancelled) setVideoNeedsTap(true);
+        });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') tryPlayback();
+    };
+    const handleUserActivation = () => tryPlayback();
+    const initialRetry = window.setTimeout(tryPlayback, 80);
+    const readinessRetry = window.setTimeout(tryPlayback, 650);
+    const fallbackTimer = window.setTimeout(() => {
+      if (!cancelled && cityVideoRef.current?.paused) setVideoNeedsTap(true);
+    }, 1200);
+
+    window.addEventListener('pageshow', tryPlayback);
+    document.addEventListener('visibilitychange', handleVisibility);
+    document.addEventListener('pointerdown', handleUserActivation, { capture: true });
+    document.addEventListener('touchstart', handleUserActivation, { capture: true, passive: true });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(initialRetry);
+      window.clearTimeout(readinessRetry);
+      window.clearTimeout(fallbackTimer);
+      window.removeEventListener('pageshow', tryPlayback);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener('pointerdown', handleUserActivation, { capture: true });
+      document.removeEventListener('touchstart', handleUserActivation, { capture: true });
+    };
+  }, [city.id]);
+
+  useEffect(() => {
+    setCandidateBatchIndex(0);
+  }, [state.currentCityId, state.completedCityIds.length]);
+
+  return (
+    <main className="page page--home" id="main-content">
+      <header className="home-commandbar">
+        <div className="home-commandbar-title">
+          <h1>Where to today?</h1>
+          <button className="home-city-list-entry" type="button" aria-label="Browse the list of cities" aria-controls="home-city-carousel" onPointerDown={handleCtaPointerDown} onClick={()=>{scheduleNearestCitySelection();carouselRef.current?.focus({preventScroll:true});}}>
+            <GalleryHorizontalEnd aria-hidden="true"/><span>All Cities</span>
+          </button>
+        </div>
+        <nav className="home-quick-actions" aria-label="Home shortcuts">
+          <button className="home-quick-action home-quick-action--support" type="button" onClick={() => onLegacyFeature('onlineSupport')} aria-label="Open support" title="Support">
+            <HeadphonesIcon />
+          </button>
+          <button className="home-reward-chip" type="button" onClick={() => onLegacyFeature('weightLossPlan')} aria-label="Open daily check-in">
+            <Flame />
+            <span>Daily Check-In</span>
+          </button>
+          <button
+            className={`home-quick-action home-quick-action--device ${deviceConnected ? 'is-online' : 'is-offline'}`}
+            type="button"
+            onClick={onDevice}
+            aria-label="My devices"
+            title="My devices"
+          >
+            <TreadmillIcon connected={deviceConnected} />
+          </button>
+        </nav>
+      </header>
+      <section className="home-city-swipe-zone" aria-label="City journeys. Swipe to browse." onPointerDown={handleSwipeStart} onPointerUp={handleSwipeEnd} onPointerCancel={() => { swipeStartRef.current = null; }}>
+        <div
+          id="home-city-carousel"
+          className="destination-carousel"
+          ref={carouselRef}
+          role="region"
+          tabIndex={0}
+          aria-label="Global cities. Swipe to browse."
+          onScroll={handleCarouselScroll}
+          onKeyDown={handleCarouselKeyDown}
+          onPointerDown={handleCarouselPointerDown}
+          onPointerMove={handleCarouselPointerMove}
+          onPointerUp={finishCarouselPointerDrag}
+          onPointerCancel={finishCarouselPointerDrag}
+          onTouchStart={event => {
+            const touch = event.touches[0];
+            endGestureRef.current = event.touches.length === 1 && touch
+              ? { x: touch.clientX, y: touch.clientY, atEnd: isAtCarouselEnd() } : null;
+          }}
+          onTouchEnd={event => {
+            const touch = event.changedTouches[0];
+            if (touch) finishEndGesture(touch.clientX, touch.clientY);
+          }}
+          onTouchCancel={() => { endGestureRef.current = null; }}
+          onWheel={event => {
+            const now = performance.now();
+            const wheel = endWheelRef.current;
+            if (now - wheel.time > 300) {
+              wheel.atEnd = isAtCarouselEnd();
+              wheel.distance = 0;
+              wheel.notified = false;
+            }
+            wheel.time = now;
+            if (!wheel.atEnd || wheel.notified || Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+            wheel.distance += event.deltaX * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? event.currentTarget.clientWidth : 1);
+            if (wheel.distance >= 48 && isAtCarouselEnd()) {
+              wheel.notified = true;
+              notifyCarouselEnd();
+            }
+          }}
+        >
+          {homeJourneyCities.map((item) => {
+            const itemStatus = getCityStatus(state, item.id);
+            const releaseDate = getCityRouteReleaseDate(item.id);
+            if (!hasPublishedCityRoutes(item.id) && releaseDate) {
+              return (
+                <section
+                  className={`destination-journey-card destination-upcoming-card${item.id === city.id ? ' is-active' : ' is-side'}`}
+                  data-city-id={item.id}
+                  key={item.id}
+                  style={cityStyle(item)}
+                  aria-label={`${item.name}. Coming ${releaseDate}.`}
+                  onClick={() => handleCityCardClick(item.id)}
+                >
+                  <img className="destination-upcoming-card__photo" src={cityImageFor(item)} alt="" aria-hidden="true" />
+                  <span className="destination-upcoming-card__shade" aria-hidden="true" />
+                  <span className="destination-upcoming-card__status"><Clock3 />Coming Soon</span>
+                  <div className="destination-upcoming-card__copy">
+                    <h2>{item.name}</h2>
+                    <p>{item.englishName}</p>
+                    <span><CalendarDays />Launching {releaseDate}</span>
+                  </div>
+                </section>
+              );
+            }
+            const itemCompletedRouteIds = getCompletedRouteIds(state, item.id);
+            const itemCompleted = itemCompletedRouteIds.length;
+            const itemCompletedRouteIdSet = new Set(itemCompletedRouteIds);
+            const itemExerciseTotals = item.routes.reduce((summary, route) => {
+              if (!itemCompletedRouteIdSet.has(route.id)) return summary;
+              summary.distance += route.distanceKm;
+              summary.duration += route.durationMinutes;
+              summary.calories += route.calories;
+              return summary;
+            }, { distance: 0, duration: 0, calories: 0 });
+            const itemHasJourneyProgress = itemStatus === 'current' || itemStatus === 'completed';
+            const itemLabel = itemStatus === 'completed' ? 'City Completed' : itemStatus === 'current' ? 'Current City' : 'Global Destination';
+            return (
+              <Fragment key={item.id}>
+                <section className={`destination-journey-card${item.id === city.id ? ' is-active' : ' is-side'}`} data-city-id={item.id} key={item.id} style={cityStyle(item)} aria-label={`${item.name}，${itemLabel}`} onClick={() => handleCityCardClick(item.id)}>
+                  <div className="destination-card">
+                    <img className="destination-card__photo" src={cityImageFor(item)} alt="" aria-hidden="true" />
+                    {itemStatus === 'current' && item.id === city.id && cityVideoFor(item) && (
+                      <>
+                        <video
+                          key={cityVideoFor(item)}
+                          ref={cityVideoRef}
+                          className="destination-card__video"
+                          src={cityVideoFor(item)}
+                          poster={cityImageFor(item)}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          preload="auto"
+                          crossOrigin="anonymous"
+                          disablePictureInPicture
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          onLoadedMetadata={event => {
+                            event.currentTarget.muted = true;
+                            void event.currentTarget.play().catch(() => setVideoNeedsTap(true));
+                          }}
+                          onLoadedData={event => {
+                            event.currentTarget.classList.add('is-ready');
+                            event.currentTarget.muted = true;
+                            void event.currentTarget.play().catch(() => setVideoNeedsTap(true));
+                          }}
+                          onCanPlay={event => {
+                            event.currentTarget.classList.add('is-ready');
+                            event.currentTarget.muted = true;
+                            void event.currentTarget.play().catch(() => setVideoNeedsTap(true));
+                          }}
+                          onPlaying={event => {
+                            event.currentTarget.classList.add('is-ready');
+                            setVideoNeedsTap(false);
+                          }}
+                          onError={event => {
+                            event.currentTarget.style.display = 'none';
+                            setVideoNeedsTap(false);
+                          }}
+                        />
+                        {videoNeedsTap && (
+                          <button
+                            className="destination-card__video-play"
+                            type="button"
+                            onPointerDown={event => event.stopPropagation()}
+                            onClick={event => { event.stopPropagation(); playCityVideo(); }}
+                          >
+                            <Play /> Play City Video
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <div className="destination-card__overlay" />
+                    <div className="destination-card__content">
+                      <div>
+                        <span className="destination-card__kicker"><MapPin /> {itemLabel}</span>
+                        <h2>{item.name}</h2>
+                        <p><span>{item.countryName}</span><i aria-hidden="true">·</i>{item.englishName}</p>
+                      </div>
+                      <span className="destination-card__runners"><UsersRound aria-hidden="true" />{(CITY_RUNNER_COUNTS[item.id] ?? 1000).toLocaleString('en-US')} runners</span>
+                    </div>
+                  </div>
+                  <section className="journey-progress" aria-label={`${item.name}Progress of the journey`}>
+                    <div className="journey-progress__topline">
+                      <div><span>City Progress</span><strong>{itemCompleted}<small>/10</small></strong></div>
+                      {getProgressCopy(item) && <p>{getProgressCopy(item)}</p>}
+                    </div>
+                    <ProgressSegments completed={itemCompleted} showRunner={itemStatus === 'current'} />
+                    {itemHasJourneyProgress && (
+                      <div className={`city-card-sport-stats city-card-sport-stats--${itemStatus}`} aria-label={`${item.name}Cumulative motion data`}>
+                        <div><span><Footprints />Distance</span><strong>{itemExerciseTotals.distance.toFixed(1)}<small>km</small></strong></div>
+                        <div><span><Clock3 />Time</span><strong>{(itemExerciseTotals.duration / 60).toFixed(1)}<small>h</small></strong></div>
+                        <div><span><Flame />Calories</span><strong>{Math.round(itemExerciseTotals.calories).toLocaleString('en-US')}<small>kcal</small></strong></div>
+                      </div>
+                    )}
+                    <button className={`${itemHasJourneyProgress ? 'primary-button ' : ''}journey-cta journey-cta--${itemStatus}`} type="button" onPointerDown={handleCtaPointerDown} onClick={(event) => { event.stopPropagation(); handleRoutesClick(item.id); }}>
+                      {itemStatus === 'completed' ? `View ${item.name}` : itemStatus === 'current' ? `Continue ${item.name}` : `${item.name} · Locked`} {itemHasJourneyProgress ? <ArrowRight /> : <LockKeyhole />}
+                    </button>
+                  </section>
+                </section>
+                {item.id === state.currentCityId && (
+                  <section className={`destination-journey-card destination-next-card${currentCityCompleted ? ' is-ready' : ' is-locked'}`} data-next-station="true" key={`${item.id}-next-station`} aria-label="Choose your next city">
+                    <div className="next-station-card__hero">
+                      <div className="next-station-card__topline">
+                        <span className="next-station-card__eyebrow"><Navigation /> NEXT STOP</span>
+                        {currentCityCompleted && candidateBatchCount > 1 && (
+                          <button className="next-station-card__refresh" type="button" onPointerDown={handleCtaPointerDown} onClick={(event) => { event.stopPropagation(); showNextCandidateBatch(); }} aria-label="Show new city recommendations">
+                            <RotateCcw aria-hidden="true" />Refresh
+                          </button>
+                        )}
+                      </div>
+                      <h2>{currentCityCompleted ? 'Choose your next city' : 'Finish this city to continue'}</h2>
+                      <p>{currentCityCompleted ? 'Pick the next stop in your journey from these recommendations.' : `Complete all 10 routes in ${getJourneyCity(state.currentCityId)?.name ?? 'this city'} to unlock your next stop.`}</p>
+                    </div>
+                    <div className="next-station-card__options" role="group" aria-label="Recommended next cities">
+                      {nextStationCandidates.map((candidate, candidateIndex) => (
+                        <button
+                          key={candidate.id}
+                          className="next-station-option"
+                          type="button"
+                          onPointerDown={handleCtaPointerDown}
+                          onClick={(event) => { event.stopPropagation(); handleNextCitySelect(candidate.id); }}
+                          disabled={!currentCityCompleted}
+                          aria-label={currentCityCompleted ? `Choose ${candidate.name} as your next stop` : `Destination ${candidateIndex + 1}. Finish the current city to unlock.`}
+                          data-obscured={!currentCityCompleted ? 'true' : undefined}
+                          style={cityStyle(candidate)}
+                        >
+                          <img src={cityImageFor(candidate)} alt="" aria-hidden="true" />
+                          <span>{String(candidateIndex + 1).padStart(2, '0')}</span>
+                          {currentCityCompleted && <><strong>{candidate.name}</strong><small>{candidate.englishName}</small></>}
+                        </button>
+                      ))}
+                    </div>
+                    {!currentCityCompleted && <div className="next-station-card__lock"><LockKeyhole /> Keep running to unlock</div>}
+                  </section>
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+        <button
+          className="home-buddy-entry"
+          hidden
+          type="button"
+          aria-label="Find a set. Open the Globe team."
+          onPointerEnter={holdCarouselBrowsing}
+          onPointerLeave={armCarouselSettle}
+          onFocus={holdCarouselBrowsing}
+          onBlur={armCarouselSettle}
+          onPointerDown={event => { handleCtaPointerDown(event); holdCarouselBrowsing(); }}
+          onPointerUp={armCarouselSettle}
+          onPointerCancel={armCarouselSettle}
+          onClick={event => { event.stopPropagation(); onLegacyFeature('teamRelay'); }}
+        >
+          <UsersRound aria-hidden="true"/><span>{"Let's find a way to run."}</span><ChevronRight aria-hidden="true"/>
+        </button>
+      </section>
+    </main>
+  );
+}
+
+function CityListSheet({ state, selectedCityId, onSelect, onClose }: { state: JourneyState; selectedCityId: string; onSelect: (cityId: string) => void; onClose: () => void }) {
+  const [activeContinent, setActiveContinent] = useState<CityContinentFilter>("All");
+  const statusText = { current: 'Exploring', locked: 'Locked', upcoming: 'Coming Soon' } as const;
+  const filteredCities = JOURNEY_CITY_SEQUENCE
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => activeContinent === "All" || item.continent === activeContinent);
+  const visibleCities = [
+    ...filteredCities.filter(({ item }) => hasPublishedCityRoutes(item.id)),
+    ...filteredCities.filter(({ item }) => !hasPublishedCityRoutes(item.id))
+  ];
+
+  return (
+    <Modal labelId="city-list-title" onClose={onClose} className="city-list-sheet">
+      <header className="sheet-header">
+        <div><h2 id="city-list-title">World Cities</h2></div>
+        <button className="icon-button icon-button--paper" type="button" onClick={onClose} aria-label="Close city list"><X /></button>
+      </header>
+      <nav className="city-continent-filter" aria-label="Filter cities by continent">
+        {CITY_CONTINENT_FILTERS.map(continent => {
+          const active = activeContinent === continent;
+          return (
+            <button
+              className={active ? 'is-active' : ''}
+              type="button"
+              key={continent}
+              aria-pressed={active}
+              onClick={() => setActiveContinent(continent)}
+            >
+              <span>{continent}</span>
+            </button>
+          );
+        })}
+      </nav>
+      <div className="city-list-grid">
+        {visibleCities.map(({ item, index }) => {
+          const journeyStatus = getCityStatus(state, item.id);
+          const releaseDate = getCityRouteReleaseDate(item.id);
+          const status = !hasPublishedCityRoutes(item.id)
+            ? 'upcoming'
+            : journeyStatus === 'completed' || journeyStatus === 'current' ? journeyStatus : 'locked';
+          const completed = getCompletedRouteIds(state, item.id).length;
+          const StatusIcon = status === 'current' ? MapPin : status === 'locked' ? LockKeyhole : status === 'upcoming' ? Clock3 : null;
+          const statusLabel = status === 'completed' ? "Completed" : statusText[status];
+          const isSelected = status !== 'locked' && status !== 'upcoming' && selectedCityId === item.id;
+          return (
+            <button className={`city-list-card city-list-card--${status}${isSelected ? ' is-selected' : ''}`} type="button" key={item.id} onClick={() => { onSelect(item.id); onClose(); }} aria-label={`${String(index + 1).padStart(2, '0')} ${item.name}. ${statusLabel}.${releaseDate ? ` Launching ${releaseDate}.` : ' View city routes.'}`} aria-pressed={isSelected} disabled={status === 'upcoming'} style={cityStyle(item)}>
+              <img className="city-list-card__photo" src={cityImageFor(item)} alt="" aria-hidden="true" />
+              <span className="city-list-card__veil" aria-hidden="true" />
+              <span className="city-list-card__number">{String(index + 1).padStart(2, '0')}</span>
+              {StatusIcon && <span className="city-list-card__status"><StatusIcon />{statusText[status]}</span>}
+              {status === 'completed' && <span className="city-list-card__stamp" aria-hidden="true"><b>{"Completed"}</b><small>COMPLETED</small></span>}
+              {status === 'locked' && <span className="city-list-card__fog-lock" aria-hidden="true"><LockKeyhole /></span>}
+              <strong>{item.name}</strong><small>{item.englishName}</small>
+              {status === 'upcoming' && releaseDate && <span className="city-list-card__release"><CalendarDays />Launching {releaseDate}</span>}
+              {status !== 'upcoming' && <i><span style={{ width: `${completed * 10}%` }} /></i>}
+            </button>
+          );
+        })}
+      </div>
+      {visibleCities.length === 0 && (
+        <div className="city-list-empty" role="status">
+          <Globe2 />
+          <strong>Antarctica is still being mapped</strong>
+          <span>New destinations are coming soon.</span>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountryLevel }: { state: JourneyState; totals: ReturnType<typeof getJourneyTotals>; onOpenCity: (cityId: string) => void; onCities: () => void; onLeaderboard: () => void; onCountryLevel: () => void }) {
+  const reduceMotion = useReducedMotion();
+  const cityGoal = 20;
+  const routeGoal = 300;
+  const cityProgress = Math.min(100, (totals.completedCities / cityGoal) * 100);
+  const routeProgress = Math.min(100, (totals.completedRoutes / routeGoal) * 100);
+  const countryLevel = getCountryLevelProgress(state);
+  const exerciseTotals = Object.entries(state.completedRouteIdsByCity).reduce((summary, [cityId, routeIds]) => {
+    routeIds.forEach(routeId => {
+      const route = getJourneyRoute(cityId, routeId);
+      if (!route) return;
+      summary.distance += route.distanceKm;
+      summary.duration += route.durationMinutes;
+      summary.calories += route.calories;
+    });
+    return summary;
+  }, { distance: 0, duration: 0, calories: 0 });
+  const revealInitial = reduceMotion ? false : { opacity: 0, y: 18 };
+  const revealTransition = { duration: reduceMotion ? 0 : .42, ease: 'easeOut' as const };
+  return (
+    <main className="page page--map page--world" id="main-content">
+      <section className="world-hero" aria-labelledby="world-page-title">
+        <header className="world-header">
+          <h1 className="world-header__eyebrow" id="world-page-title"><Sparkles aria-hidden="true" />Your World</h1>
+        </header>
+        <div className="world-globe-panel">
+          <Suspense fallback={<div className="globe-loading" role="status"><Globe2 /><span>{"Loading your world."}</span></div>}>
+            <JourneyGlobe state={state} onOpenCity={onOpenCity} />
+          </Suspense>
+          <div className="world-globe-actions">
+            <button className="world-globe-action world-level-entry" type="button" onClick={onCountryLevel} aria-label={`View world level. Current level ${countryLevel.level} of ${countryLevel.maxLevel}.`}>
+              <i aria-hidden="true"><Medal /></i>
+              <span><small>World Level</small><strong>LV.{countryLevel.level} <b>/{countryLevel.maxLevel}</b></strong></span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+            <button className="world-globe-action world-leaderboard-entry" type="button" onClick={onLeaderboard} aria-label="View the global leaderboard. Your current rank is 142.">
+              <i aria-hidden="true"><Trophy /></i>
+              <span><small>Global Rank</small><strong>142<b>Updated today</b></strong></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="world-journey-content">
+        <motion.section
+          className="world-goal-card"
+          aria-labelledby="world-progress-title"
+          initial={revealInitial}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: .18 }}
+          transition={revealTransition}
+        >
+          <header>
+            <div><Target aria-hidden="true" /><strong id="world-progress-title">Exploration Progress</strong></div>
+            <span>{totals.discoveredSpots} landmarks found</span>
+          </header>
+          <div className="world-goal-card__items">
+            <div className="world-goal-item">
+              <div className="world-goal-item__topline"><span>Cities Completed</span><strong>{totals.completedCities}<small>/{cityGoal}</small></strong></div>
+              <i role="progressbar" aria-label="Urban exploration progress" aria-valuemin={0} aria-valuemax={cityGoal} aria-valuenow={totals.completedCities}><span style={{ width: `${cityProgress}%` }} /></i>
+            </div>
+            <div className="world-goal-item">
+              <div className="world-goal-item__topline"><span>Routes Completed</span><strong>{totals.completedRoutes}<small>/{routeGoal}</small></strong></div>
+              <i role="progressbar" aria-label="Progress on route completion" aria-valuemin={0} aria-valuemax={routeGoal} aria-valuenow={totals.completedRoutes}><span style={{ width: `${routeProgress}%` }} /></i>
+            </div>
+          </div>
+          <div className="world-sport-stats" aria-label="Cumulative motion data">
+            <div className="world-sport-stat">
+              <i aria-hidden="true"><Footprints /></i>
+              <span><small>Total Distance</small><strong>{exerciseTotals.distance.toFixed(1)}<b>km</b></strong></span>
+            </div>
+            <div className="world-sport-stat">
+              <i aria-hidden="true"><Clock3 /></i>
+              <span><small>Active Time</small><strong>{(exerciseTotals.duration / 60).toFixed(1)}<b>h</b></strong></span>
+            </div>
+            <div className="world-sport-stat">
+              <i aria-hidden="true"><Flame /></i>
+              <span><small>Calories Burned</small><strong>{Math.round(exerciseTotals.calories).toLocaleString('en-US')}<b>kcal</b></strong></span>
+            </div>
+          </div>
+        </motion.section>
+        <button className="world-cities-button" type="button" onClick={onCities} aria-label="Open world city guide">
+          <span><BookOpen aria-hidden="true" /><b>World City Guide</b></span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+      </div>
+    </main>
+  );
+}
+
+interface RouteSheetProps {
+  city: JourneyCity;
+  state: JourneyState;
+  selectedRouteId: string | null;
+  deviceConnected: boolean;
+  onClose: () => void;
+  onSelectRoute: (route: JourneyRoute) => void;
+  onBackToList: () => void;
+  onStart: (route: JourneyRoute) => void;
+}
+
+function RouteSheet({ city, state, selectedRouteId, deviceConnected, onClose, onSelectRoute, onBackToList, onStart }: RouteSheetProps) {
+  const completed = getCompletedRouteIds(state, city.id).length;
+  const selectedRoute = selectedRouteId ? getJourneyRoute(city.id, selectedRouteId) : undefined;
+  return (
+    <Modal labelId="route-sheet-title" onClose={onClose} className="route-sheet">
+      {selectedRoute ? (
+        <div className="route-detail">
+          <header className="sheet-header">
+            <button className="icon-button icon-button--paper" type="button" onClick={onBackToList} aria-label="Back to routes"><ChevronLeft /></button>
+            <div><span>{"Route"} {String(selectedRoute.order).padStart(2, '0')}</span><h2 id="route-sheet-title">{selectedRoute.name}</h2></div>
+            <button className="icon-button icon-button--paper" type="button" onClick={onClose} aria-label="Close route details"><X /></button>
+          </header>
+          <CityArtwork city={city} compact />
+          <div className="route-detail__stats">
+            <div><Route /><strong>{selectedRoute.distanceKm.toFixed(1)}</strong><span>km</span></div>
+            <div><Clock3 /><strong>{selectedRoute.durationMinutes}</strong><span>{"min"}</span></div>
+            <div><Footprints /><strong>{selectedRoute.calories}</strong><span>kcal</span></div>
+          </div>
+          <section className="route-story"><p className="eyebrow">{"Landmarks"}</p><h3>{selectedRoute.landmarks.join(' → ')}</h3><p>{selectedRoute.description}</p></section>
+          <div className={`device-inline ${deviceConnected ? 'is-online' : ''}`}>
+            {deviceConnected ? <Wifi /> : <WifiOff />}
+            <span><strong>{deviceConnected ? 'Treadmill connected' : 'Treadmill not connected'}</strong><small>{deviceConnected ? 'Ready to start your route.' : 'Connect a treadmill to begin.'}</small></span>
+          </div>
+          <button className="primary-button" type="button" onClick={() => onStart(selectedRoute)}>
+            {getRouteStatus(state, city.id, selectedRoute.id) === 'completed' ? 'Run Again' : deviceConnected ? 'Start Route' : 'Connect Treadmill'} <ArrowRight />
+          </button>
+        </div>
+      ) : (
+        <div className="route-list">
+          <header className="sheet-header">
+            <div><span>{city.englishName}</span><h2 id="route-sheet-title">{city.name} Routes</h2></div>
+            <button className="icon-button icon-button--paper" type="button" onClick={onClose} aria-label="Close Route List"><X /></button>
+          </header>
+          <div className="route-list__progress"><ProgressSegments completed={completed} /><span>{completed}/10</span></div>
+          <p className="route-stage-copy">{completed < 3 ? 'Complete 3 routes to unlock the next chapter.' : completed < 6 ? 'Chapter 2 unlocked. Complete 6 routes to keep going.' : completed < 10 ? 'Final chapter unlocked. Finish the remaining routes.' : 'All 10 city routes complete.'}</p>
+          <div className="route-grid">
+            {city.routes.map(route => {
+              const status = getRouteStatus(state, city.id, route.id);
+              const discoverable = status === 'discoverable';
+              const locked = status === 'locked';
+              return (
+                <button className={`route-card route-card--${status}`} type="button" key={route.id} disabled={locked} onClick={() => onSelectRoute(route)} aria-label={locked ? `Route ${route.order} locked` : discoverable ? `Reveal route ${route.order}` : `${route.name}, ${status === 'completed' ? 'completed' : 'available'}`}>
+                  <span className="route-card__number">{String(route.order).padStart(2, '0')}</span>
+                  <span className="route-card__icon">{status === 'completed' ? <Check /> : locked ? <LockKeyhole /> : discoverable ? <Sparkles /> : <Route />}</span>
+                  <strong>{discoverable ? 'Mystery Route' : locked ? 'Locked' : route.name}</strong>
+                  <small>{discoverable ? 'Tap to reveal' : locked ? `Complete ${getOpenRouteCount(completed)} routes to unlock` : `${route.distanceKm.toFixed(1)} km · ${route.landmarks[0]}`}</small>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function RunPage({ city, route, reduceMotion, onCancel, onComplete }: { city: JourneyCity; route: JourneyRoute; reduceMotion: boolean; onCancel: () => void; onComplete: (result: RunResult) => void }) {
+  const [elapsed, setElapsed] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const [confirmExit, setConfirmExit] = useState(false);
+  useEffect(() => {
+    if (!playing) return;
+    const timer = window.setInterval(() => setElapsed(value => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [playing]);
+  const demoProgress = Math.min(1, elapsed / 60);
+  const distance = route.distanceKm * demoProgress;
+  const calories = Math.round(route.calories * demoProgress);
+  const finish = () => onComplete({ distanceKm: route.distanceKm, durationSeconds: route.durationMinutes * 60, calories: route.calories });
+  return (
+    <main className="run-page" id="main-content" style={cityStyle(city)}>
+      <div className="run-page__scene" aria-hidden="true"><CityArtwork city={city} /></div><div className="run-page__veil" />
+      <header className="run-topbar">
+        <button className="icon-button icon-button--dark" type="button" onClick={() => setConfirmExit(true)} aria-label="Exit running."><ChevronLeft /></button>
+        <div><strong>{route.name}</strong><span>{city.name} · Route {route.order}</span></div><span className="run-online"><Wifi /> Connected</span>
+      </header>
+      <section className="run-metric" aria-live="polite">
+        <motion.div className="run-metric__ring" animate={reduceMotion || !playing ? undefined : { scale: [1, 1.025, 1] }} transition={{ duration: 2.4, repeat: Infinity }}>
+          <span>Distance</span><strong>{distance.toFixed(2)}</strong><small>km</small>
+        </motion.div>
+      </section>
+      <section className="run-controls">
+        <div className="run-stats">
+          <div><span>{"Time"}</span><strong>{formatDuration(elapsed)}</strong></div>
+          <div><span>Pace</span><strong>{elapsed > 0 && distance > 0 ? "7'30\"" : '--'}</strong></div>
+          <div><span>Calories</span><strong>{calories} <small>kcal</small></strong></div>
+        </div>
+        <button className="primary-button primary-button--run" type="button" onClick={() => setPlaying(value => !value)}>{playing ? <><Pause /> Pause Run</> : <><Play /> Resume Run</>}</button>
+        <button className="finish-run-button" type="button" onClick={finish}>Demo: Finish Run</button>
+      </section>
+      <AnimatePresence>{confirmExit && (
+        <motion.div className="run-confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="exit-run-title"><h2 id="exit-run-title">End this run?</h2><p>Your demo progress will not be saved. You can restart the route from its details page.</p><button className="primary-button primary-button--danger" type="button" onClick={onCancel}>End Run</button><button className="text-button" type="button" onClick={() => setConfirmExit(false)}>Keep Running</button></div>
+        </motion.div>
+      )}</AnimatePresence>
+    </main>
+  );
+}
+
+function RouteCompletePage({ city, route, completed, result, firstCompletion, onNext, onMap }: { city: JourneyCity; route: JourneyRoute; completed: number; result: RunResult; firstCompletion: boolean; onNext: () => void; onMap: () => void }) {
+  return (
+    <main className="page completion-page" id="main-content">
+      <div className="completion-mark"><Check /></div><p className="eyebrow">ROUTE COMPLETE</p><h1>Nice run!</h1><p className="completion-subtitle">{city.name} · {route.name}</p>
+      <section className="result-ticket"><div className="result-ticket__notch result-ticket__notch--left" /><div className="result-ticket__notch result-ticket__notch--right" /><div><strong>{result.distanceKm.toFixed(1)}</strong><span>km</span></div><div><strong>{Math.round(result.durationSeconds / 60)}</strong><span>min</span></div><div><strong>{result.calories}</strong><span>kcal</span></div></section>
+      <section className="new-progress"><div><span>{firstCompletion ? 'City Progress' : 'Run Saved'}</span><strong>{completed}<small>/10</small></strong></div><ProgressSegments completed={completed} /><p>{firstCompletion ? `The next ${city.name} route is now open.` : 'Your run was saved without changing city progress.'}</p></section>
+      <div className="completion-actions"><button className="primary-button" type="button" onClick={onNext}>View Next Route <ArrowRight /></button><button className="secondary-button" type="button" onClick={onMap}><Globe2 /> View My World</button></div>
+    </main>
+  );
+}
+
+function CityCompletePage({ city, candidates, selectedId, onSelect, onContinue }: { city: JourneyCity; candidates: JourneyCity[]; selectedId: string; onSelect: (cityId: string) => void; onContinue: () => void }) {
+  const totals = getCityPlanTotals(city.id);
+  const selected = getJourneyCity(selectedId);
+  return (
+    <main className="page city-complete-page" id="main-content">
+      <div className="passport-stamp passport-stamp--complete"><span>COMPLETED</span><b>{city.name}</b><small>10 routes</small></div><p className="eyebrow">CITY COMPLETE</p><h1>You completed {city.name}</h1><p className="completion-subtitle">You ran every route and created a travel story of your own.</p>
+      <section className="city-recap"><div><strong>10</strong><span>Routes</span></div><div><strong>{totals.distanceKm.toFixed(1)}</strong><span>Total km</span></div><div><strong>{Math.round(totals.durationMinutes / 60)}h</strong><span>Active time</span></div><div><strong>{totals.landmarks.length}</strong><span>Landmarks</span></div></section>
+      <section className="next-city-section"><p className="eyebrow">Where do you want to go next?</p><div className="candidate-grid" role="radiogroup" aria-label="Choose your next city">{candidates.map((candidate, index) => (
+        <button key={candidate.id} className={`candidate-card${selectedId === candidate.id ? ' is-selected' : ''}`} type="button" role="radio" aria-checked={selectedId === candidate.id} onClick={() => onSelect(candidate.id)} style={cityStyle(candidate)}>{index === 0 && <span className="recommend-tag">Recommended</span>}<span className="candidate-card__dot" /><strong>{candidate.name}</strong><small>{candidate.englishName}</small></button>
+      ))}</div></section>
+      <button className="primary-button" type="button" onClick={onContinue} disabled={!selected}>Go to {selected?.name ?? 'Next Stop'} <Navigation /></button>
+    </main>
+  );
+}
+
+function TravelPage({ from, to, reduceMotion }: { from: JourneyCity; to: JourneyCity; reduceMotion: boolean }) {
+  return (
+    <main className="travel-page" id="main-content" style={cityStyle(to)}><div className="travel-grid" aria-hidden="true" /><div className="travel-copy"><p className="eyebrow">NEXT DESTINATION</p><h1>Next stop: {to.name}</h1><p>{from.name} → {to.englishName}</p></div>
+      <svg className="travel-route" viewBox="0 0 360 280" aria-hidden="true"><path className="travel-route__base" d="M42 214 Q178 30 320 98" /><motion.path className="travel-route__active" d="M42 214 Q178 30 320 98" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: reduceMotion ? 0 : 1.35, ease: 'easeInOut' }} /><circle cx="42" cy="214" r="7" className="travel-route__origin" /><motion.g initial={{ offsetDistance: '0%' }} animate={{ offsetDistance: '100%' }} transition={{ duration: reduceMotion ? 0 : 1.35, ease: 'easeInOut' }} style={{ offsetPath: "path('M42 214 Q178 30 320 98')" }}><Navigation x="-10" y="-10" width="20" height="20" className="travel-plane" /></motion.g><circle cx="320" cy="98" r="10" className="travel-route__destination" /></svg>
+      <motion.div className="passport-stamp passport-stamp--arrival" initial={{ opacity: 0, scale: 1.6, rotate: -20 }} animate={{ opacity: 1, scale: 1, rotate: -8 }} transition={{ delay: reduceMotion ? 0 : 1.15, type: 'spring', stiffness: 240, damping: 16 }}><span>Arriving</span><b>{to.name}</b><small>{to.englishName}</small></motion.div>
+    </main>
+  );
+}
+
+function ProfilePage({
+  user,
+  totals,
+  countryLevel,
+  onDevice,
+  onLevel,
+  onSettings,
+  onFeature
+}: {
+  user: AuthUser;
+  totals: ReturnType<typeof getJourneyTotals>;
+  countryLevel: ReturnType<typeof getCountryLevelProgress>;
+  onDevice: () => void;
+  onLevel: () => void;
+  onSettings: () => void;
+  onFeature: (label: string) => void;
+}) {
+  const profileStats = [
+    { label: 'Cities Completed', value: totals.completedCities },
+    { label: 'Routes Completed', value: totals.completedRoutes },
+    { label: 'Distance', value: '62.0', unit: 'km' },
+    { label: 'Active Time', value: '12.0', unit: 'h' }
+  ];
+  const menuItems = [
+    { icon: ClipboardList, label: 'Workout History', action: () => onFeature('Workout History') },
+    { icon: MonitorSmartphone, label: 'My Devices', action: onDevice },
+    { icon: Wallet, label: 'My Wallet', action: () => onFeature('My Wallet') },
+    { icon: MessageSquare, label: 'Send Feedback', action: () => onFeature('Send Feedback') },
+    { icon: Headphones, label: 'Customer Support', action: () => onFeature('Customer Support') },
+    { icon: BookOpen, label: 'User Guide', action: () => onFeature('User Guide') },
+    { icon: Settings, label: 'Settings', action: onSettings }
+  ];
+  return (
+    <main className="page profile-page profile-page--legacy" id="main-content">
+      <header className="legacy-profile-actions">
+        <div>
+          <button type="button" onClick={() => onFeature('Messages')} aria-label="Messages"><Mail /></button>
+          <button type="button" onClick={() => onFeature('Edit Profile')} aria-label="Edit profile"><SquarePen /></button>
+        </div>
+      </header>
+      <section className="legacy-profile-card">
+        <div className="legacy-profile-card__identity">
+          <button type="button" className="legacy-avatar" onClick={() => onFeature('Edit Profile')} aria-label="View or edit profile">
+            <img src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200'} alt={`${user.name}'s profile photo`} />
+          </button>
+          <div><h1>{user.name}</h1><button className="legacy-profile-level" type="button" onClick={onLevel} aria-label={`View world level. Current level ${countryLevel.level} of ${countryLevel.maxLevel}.`}><span>LV.{countryLevel.level}</span><strong>/ {countryLevel.maxLevel}</strong><ChevronRight /></button></div>
+        </div>
+        <div className="legacy-profile-stats">
+          {profileStats.map(item => <div key={item.label}><strong>{item.value}{item.unit && <small>{item.unit}</small>}</strong><span>{item.label}</span></div>)}
+        </div>
+      </section>
+      <section className="legacy-collection-actions" aria-label="City collection">
+        <button className="legacy-collection-action legacy-collection-action--cards" type="button" onClick={() => onFeature('City Cards')}>
+          <span className="legacy-collection-action__icon" aria-hidden="true"><Map /></span>
+          <span className="legacy-collection-action__copy"><strong>City Cards</strong><b>Save the cities you run</b></span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <button className="legacy-collection-action legacy-collection-action--medals" type="button" onClick={() => onFeature('Landmark Medals')}>
+          <span className="legacy-collection-action__icon" aria-hidden="true"><Medal /></span>
+          <span className="legacy-collection-action__copy"><strong>Landmark Medals</strong><b>Remember every discovery</b></span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+      </section>
+      <section className="legacy-menu" aria-label="Profile options">
+        {menuItems.map(item => {
+          const Icon = item.icon;
+          return <button type="button" key={item.label} onClick={item.action}><span className="legacy-menu__icon"><Icon /></span><strong>{item.label}</strong><ChevronRight /></button>;
+        })}
+      </section>
+    </main>
+  );
+}
+
+function FirstCitySelectionPage({ selectedId, onSelect, onContinue }: { selectedId: string | null; onSelect: (cityId: string | null) => void; onContinue: () => void }) {
+  const selectableCities = JOURNEY_CITY_SEQUENCE.filter(city => hasPublishedCityRoutes(city.id));
+  const batchSize = 6;
+  const batchCount = Math.ceil(selectableCities.length / batchSize);
+  const [batchIndex, setBatchIndex] = useState(0);
+  const batchStart = batchIndex * batchSize;
+  const starterCities = Array.from({ length: Math.min(batchSize, selectableCities.length) }, (_, offset) => selectableCities[(batchStart + offset) % selectableCities.length]);
+  const selectedCity = selectedId ? getJourneyCity(selectedId) : undefined;
+  const showNextBatch = () => {
+    setBatchIndex(index => (index + 1) % batchCount);
+    onSelect(null);
+  };
+  return (
+    <main className="first-city-page" id="main-content">
+      <header className="first-city-hero">
+        <span><Compass />YOUR FIRST JOURNEY</span>
+        <h1>Where do you want to start?</h1>
+        <p>Choose your first city. Its routes will unlock one at a time as you run.</p>
+      </header>
+      <section className="first-city-picker" aria-labelledby="first-city-title">
+        <div className="first-city-picker__heading">
+          <div><h2 id="first-city-title">Choose your first stop</h2><p>You can explore more cities from the World tab later.</p></div>
+          <div className="first-city-picker__actions">
+            <button type="button" onClick={showNextBatch} aria-label="Show a new set of recommended cities"><RotateCcw />Refresh</button>
+          </div>
+        </div>
+        <div className="first-city-grid">
+          {starterCities.map((item, index) => {
+            const selected = item.id === selectedId;
+            const totals = getCityPlanTotals(item.id);
+            return (
+              <button
+                className={`first-city-card${selected ? ' is-selected' : ''}`}
+                type="button"
+                key={item.id}
+                aria-pressed={selected}
+                onClick={() => onSelect(item.id)}
+                style={{ ...cityStyle(item), '--city-choice-index': index } as CSSProperties}
+              >
+                <img src={cityImageFor(item)} alt="" aria-hidden="true" />
+                <span className="first-city-card__shade" aria-hidden="true" />
+                <span className="first-city-card__number">{String(index + 1).padStart(2, '0')}</span>
+                {selected && <span className="first-city-card__check" aria-hidden="true"><Check /></span>}
+                <span className="first-city-card__copy">
+                  <strong>{item.name}</strong>
+                  <small>{item.englishName}</small>
+                  <b><Route />10 routes · {totals.distanceKm.toFixed(1)} km</b>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+      <footer className="first-city-footer">
+        <button className="primary-button" type="button" disabled={!selectedCity} onClick={onContinue}>
+          {selectedCity ? `Start in ${selectedCity.name}` : 'Choose a city'} <ArrowRight />
+        </button>
+      </footer>
+    </main>
+  );
+}
+
+function FirstJourneyIntroPage({ onStart }: { onStart: () => void }) {
+  const previewCities = ['tokyo', 'paris', 'new-york']
+    .map(cityId => getJourneyCity(cityId))
+    .filter((city): city is JourneyCity => Boolean(city));
+
+  return (
+    <main className="first-journey-intro" id="main-content">
+      <div className="first-journey-intro__glow" aria-hidden="true" />
+      <header className="first-journey-intro__header">
+        <span className="first-journey-intro__brand">
+          <span className="first-journey-intro__brand-mark"><i aria-hidden="true" />MV</span>
+          <span className="first-journey-intro__wordmark"><strong>MOVEVI</strong><small>RUN THE WORLD</small></span>
+        </span>
+      </header>
+
+      <section className="first-journey-intro__visual" aria-label="Explore cities around the world as you run">
+        <div className="first-journey-intro__orbit" aria-hidden="true">
+          <span /><i /><b><Globe2 /></b>
+        </div>
+        <div className="first-journey-intro__city-stack" aria-hidden="true">
+          {previewCities.map((city, index) => (
+            <figure key={city.id} style={{ '--intro-city-index': index } as CSSProperties}>
+              <img src={cityImageFor(city)} alt="" />
+              <figcaption><MapPin />{city.name}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <span className="first-journey-intro__route-dot first-journey-intro__route-dot--one" aria-hidden="true" />
+        <span className="first-journey-intro__route-dot first-journey-intro__route-dot--two" aria-hidden="true" />
+      </section>
+
+      <section className="first-journey-intro__copy">
+        <p><Sparkles />YOUR GLOBAL RUNNING JOURNEY</p>
+        <h1>Run the world<br />without leaving home</h1>
+        <span>Choose a city, unlock new routes, discover landmarks, and build a travel story with every run.</span>
+      </section>
+
+      <div className="first-journey-intro__features" aria-label="Journey features">
+        <span><Route /><b>City Routes</b></span>
+        <span><MapPin /><b>Landmarks</b></span>
+        <span><Footprints /><b>Run History</b></span>
+      </div>
+
+      <footer className="first-journey-intro__footer">
+        <button className="primary-button" type="button" onClick={onStart}>
+          Start Your Journey <ArrowRight />
+        </button>
+      </footer>
+    </main>
+  );
+}
+
+function CurrentJourneyDialog({ city, completedRoutes, onContinue, onReselect }: { city: JourneyCity; completedRoutes: number; onContinue: () => void; onReselect: () => void }) {
+  const progress = Math.min(10, Math.max(0, completedRoutes));
+
+  return (
+    <motion.div
+      className="current-journey-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="current-journey-title"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.section
+        className="current-journey-dialog__panel"
+        initial={{ opacity: 0, y: 28, scale: .97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: .98 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+      >
+        <header className="current-journey-dialog__header">
+          <span><Navigation />CONTINUE YOUR JOURNEY</span>
+          <h2 id="current-journey-title">Pick up where you left off</h2>
+          <p>Your last city is ready, with all of your progress saved.</p>
+        </header>
+
+        <div className="current-journey-card is-selected" style={cityStyle(city)}>
+          <img src={cityImageFor(city)} alt="" aria-hidden="true" />
+          <span className="current-journey-card__shade" aria-hidden="true" />
+          <span className="current-journey-card__selected"><Check />Selected</span>
+          <div className="current-journey-card__copy">
+            <span>Now exploring</span>
+            <strong>{city.name}</strong>
+            <small>{city.countryName} · {city.englishName}</small>
+          </div>
+          <div className="current-journey-card__progress">
+            <span><b>{progress}</b>/10 routes</span>
+            <i aria-hidden="true"><b style={{ width: `${progress * 10}%` }} /></i>
+          </div>
+        </div>
+
+        <div className="current-journey-dialog__actions">
+          <button className="primary-button" type="button" onClick={onContinue} autoFocus>
+            Continue This City <ArrowRight />
+          </button>
+          <button className="current-journey-dialog__reselect" type="button" onClick={onReselect}>
+            <RotateCcw />Choose Another City
+          </button>
+        </div>
+      </motion.section>
+    </motion.div>
+  );
+}
+
+function FirstJourneyExperience({ selectedId, currentCity, currentCityCompletedRoutes, hasExistingJourney, onSelect, onContinue, onResume }: {
+  selectedId: string | null;
+  currentCity: JourneyCity;
+  currentCityCompletedRoutes: number;
+  hasExistingJourney: boolean;
+  onSelect: (cityId: string | null) => void;
+  onContinue: () => void;
+  onResume: () => void;
+}) {
+  const [stage, setStage] = useState<'intro' | 'resume' | 'choose'>('intro');
+  const isChoosingCity = stage === 'choose';
+  const startJourney = () => setStage(hasExistingJourney ? 'resume' : 'choose');
+  const reselectCity = () => {
+    onSelect(null);
+    setStage('choose');
+  };
+
+  return (
+    <div className="first-journey-stage">
+      <div className={`first-journey-flip${isChoosingCity ? ' is-flipped' : ''}`}>
+        <div className="first-journey-face first-journey-face--front" aria-hidden={stage !== 'intro'}>
+          <FirstJourneyIntroPage onStart={startJourney} />
+        </div>
+        <div className="first-journey-face first-journey-face--back" aria-hidden={!isChoosingCity}>
+          <FirstCitySelectionPage selectedId={selectedId} onSelect={onSelect} onContinue={onContinue} />
+        </div>
+      </div>
+      <AnimatePresence>
+        {stage === 'resume' && (
+          <CurrentJourneyDialog city={currentCity} completedRoutes={currentCityCompletedRoutes} onContinue={onResume} onReselect={reselectCity} />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+type PrimaryTab = 'home' | 'world' | 'activity' | 'profile';
+const SHOW_EVENTS_TAB = false;
+
+function BottomNavigation({ active, onChange }: { active: PrimaryTab; onChange: (tab: PrimaryTab) => void }) {
+  const items = [
+    { id: 'home' as const, label: 'Home', icon: Compass },
+    { id: 'world' as const, label: "World", icon: Globe2 },
+    ...(SHOW_EVENTS_TAB ? [{ id: 'activity' as const, label: 'Events', icon: CalendarDays }] : []),
+    { id: 'profile' as const, label: 'Profile', icon: UserRound }
+  ];
+  return (
+    <nav
+      className={`bottom-nav${active === 'home' ? ' bottom-nav--home' : ''}`}
+      aria-label="Main Navigation"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+    >
+      {items.map(item => {
+        const Icon = item.icon;
+        const selected = active === item.id;
+        return (
+          <button key={item.id} type="button" className={selected ? 'is-active' : ''} aria-current={selected ? 'page' : undefined} onClick={() => onChange(item.id)}>
+            <span><Icon /></span><small>{item.label}</small>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function UtilityPanel({ mode, user, deviceConnected, manualReducedMotion, onToggleDevice, onToggleMotion, onReset, onSignOut, onClose }: { mode: 'device' | 'profile'; user: AuthUser; deviceConnected: boolean; manualReducedMotion: boolean; onToggleDevice: () => void; onToggleMotion: () => void; onReset: () => void; onSignOut: () => void; onClose: () => void }) {
+  return (
+    <Modal labelId="utility-title" onClose={onClose} className="utility-panel">
+      <header className="sheet-header"><div><span>{mode === 'device' ? 'Device' : 'Account'}</span><h2 id="utility-title">{mode === 'device' ? "My equipment." : "Personal and Settings"}</h2></div><button className="icon-button icon-button--paper" type="button" onClick={onClose} aria-label="Close Panel"><X /></button></header>
+      {mode === 'device' ? <><section className={`device-card ${deviceConnected ? 'is-online' : ''}`}><div className="device-card__icon"><TreadmillIcon connected={deviceConnected} /></div><div><strong>MOVEVI Runner S1</strong><span>{deviceConnected ? 'Connected · Strong signal' : 'Not connected'}</span></div><i /></section><button className="secondary-button" type="button" onClick={onToggleDevice}>{deviceConnected ? 'Disconnect Device' : 'Connect Device'}</button><div className="help-note"><CircleHelp /><p><strong>Having trouble connecting?</strong><span>Make sure your treadmill is on and keep your phone nearby.</span></p></div></> : <><section className="account-card"><span className="account-avatar">{user.name.trim().charAt(0).toUpperCase()}</span><div><strong>{user.name}</strong><small>{user.email}</small></div></section><div className="settings-list"><div><Settings /><span><strong>Reduce Motion</strong><small>Use simpler screen transitions</small></span><button className={`switch ${manualReducedMotion ? 'is-on' : ''}`} type="button" onClick={onToggleMotion} aria-pressed={manualReducedMotion}><i /></button></div><div><Headphones /><span><strong>Help & Support</strong><small>Get help with your device, runs, or account</small></span><ArrowRight /></div><button type="button" onClick={onReset}><RotateCcw /><span><strong>Reset Demo Progress</strong><small>Return to Tokyo at 6 of 10 routes</small></span><ArrowRight /></button><button type="button" onClick={onSignOut}><LogOut /><span><strong>Sign Out</strong><small>Sign in again next time you open the preview</small></span><ArrowRight /></button></div></>}
+    </Modal>
+  );
+}
+
+export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSignOut: () => void }) {
+  const {enabled:puzzleDemo,openOnLoad:puzzleDeepLink}=getPuzzlePreviewMode(window.location.search);
+  const [state, dispatch] = useReducer(journeyReducer, undefined, createDemoJourneyState);
+  const nextStationFocusTimerRef = useRef<number | null>(null);
+  const [isFirstUse, setIsFirstUse] = useState(!puzzleDeepLink);
+  const [firstCityChoiceId, setFirstCityChoiceId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<PrimaryTab>('home');
+  const [homeCityId, setHomeCityId] = useState(state.currentCityId);
+  const [cityListOpen, setCityListOpen] = useState(false);
+  const [routeCityId, setRouteCityId] = useState<string | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [runningRoute, setRunningRoute] = useState<{ cityId: string; routeId: string } | null>(null);
+  const [utilityMode, setUtilityMode] = useState<'device' | 'profile' | null>(null);
+  const [deviceConnected, setDeviceConnected] = useState(false);
+  const [startupConnectionSucceeded, setStartupConnectionSucceeded] = useState(false);
+  const [deviceConnectionAcknowledged, setDeviceConnectionAcknowledged] = useState(false);
+  const [manualReducedMotion, setManualReducedMotion] = useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [focusNextStation, setFocusNextStation] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [legacyFeature, setLegacyFeature] = useState<LegacyFeature | null>(puzzleDeepLink?'teamRelay':null);
+  const [medalLotteryTickets, setMedalLotteryTickets] = useState(0);
+  const [activityRoute, setActivityRoute] = useState<ActivityRouteTarget | null>(null);
+  const [runningActivityRoute, setRunningActivityRoute] = useState<ActivityRouteTarget | null>(null);
+  const [medleySelectedRouteIds, setMedleySelectedRouteIds] = useState<string[]>([]);
+  const [medleyCompletedRouteIds, setMedleyCompletedRouteIds] = useState<string[]>([]);
+  const [medleyLotteryChances, setMedleyLotteryChances] = useState(5);
+  const [medleyDrawHistory, setMedleyDrawHistory] = useState<number[]>([]);
+  const [medleyShareBonusClaimed, setMedleyShareBonusClaimed] = useState(false);
+  const [medleyActivityStarted, setMedleyActivityStarted] = useState(false);
+  const [medleyCompletionRewardClaimed, setMedleyCompletionRewardClaimed] = useState(false);
+  const puzzleSession = useRef<{ id: string; teamId: string; startedAt: number; slot: number; route: PuzzleRoute } | null>(null);
+  const puzzleCities = [...new Set([state.currentCityId, ...state.completedCityIds])].map(getJourneyCity)
+    .filter((c): c is JourneyCity => !!c && hasPublishedCityRoutes(c.id)).map(c => ({id:c.id,name:c.name,image:cityImageFor(c)}));
+  const puzzleRoutes: PuzzleRoute[] = puzzleCities.flatMap(c => getJourneyCity(c.id)!.routes
+    .filter(r => getRouteStatus(state,c.id,r.id) !== 'locked').map(r => ({ ...c, routeId:r.id, routeIndex:r.order,
+      title:r.name, image:getRouteCover(c.name,r.order)?.src || c.image, distanceKm:r.distanceKm, minutes:r.durationMinutes })));
+  const puzzle = usePuzzleTeam(puzzleDemo,puzzleCities.filter(c=>puzzleRoutes.some(r=>r.id===c.id)));
+  const [weightRoute, setWeightRoute] = useState<WeightRouteTarget | null>(null);
+  const [runningWeightRoute, setRunningWeightRoute] = useState<WeightRouteTarget | null>(null);
+  const [weightPlanStarted, setWeightPlanStarted] = useState(false);
+  const [weightCompletedDays, setWeightCompletedDays] = useState<number[]>([]);
+  const [weightRewardBoxes, setWeightRewardBoxes] = useState<number[]>([]);
+  const [weightOpenedRewardDays, setWeightOpenedRewardDays] = useState<number[]>([]);
+  const [weightRewardHistory, setWeightRewardHistory] = useState<WeightPlanRewardRecord[]>([]);
+  const [activationClaimed, setActivationClaimed] = useState(false);
+  const [firstRouteClaimed, setFirstRouteClaimed] = useState(false);
+  const systemReducedMotion = useReducedMotion();
+  const reduceMotion = Boolean(systemReducedMotion || manualReducedMotion);
+  const currentCity = getJourneyCity(state.currentCityId)!;
+  const currentCityCompletedRoutes = getCompletedRouteIds(state, state.currentCityId).length;
+  const hasExistingJourney = currentCityCompletedRoutes > 0 || state.completedCityIds.length > 0;
+  const homeCity = getJourneyCity(homeCityId) ?? currentCity;
+  const totals = getJourneyTotals(state);
+  const countryLevel = getCountryLevelProgress(state);
+  const candidateCities = getCandidateCityIds(state).map(cityId => getJourneyCity(cityId)!).filter(Boolean);
+  const effectiveCandidateId = selectedCandidateId ?? candidateCities[0]?.id ?? '';
+
+  useEffect(() => {
+    // Prototype-only auto-connect. Replace this simulated success with the hardware
+    // adapter's successful connection callback before enabling real device support.
+    // Cleanup also prevents duplicate callbacks during React StrictMode mounting.
+    const timer = window.setTimeout(() => {
+      setDeviceConnected(true);
+      setStartupConnectionSucceeded(true);
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (state.currentPage !== 'travel' || !state.pendingNextCityId) return;
+    const timer = window.setTimeout(() => {
+      dispatch({ type: 'ARRIVE_NEXT_CITY' });
+      setActiveTab('home');
+    }, reduceMotion ? 250 : 2200);
+    return () => window.clearTimeout(timer);
+  }, [reduceMotion, state.currentPage, state.pendingNextCityId]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 1800);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+  useEffect(() => setHomeCityId(state.currentCityId), [state.currentCityId]);
+  useEffect(() => () => {
+    if (nextStationFocusTimerRef.current) window.clearTimeout(nextStationFocusTimerRef.current);
+  }, []);
+
+  const openCity = (cityId: string) => {
+    setSelectedRouteId(null); setRouteCityId(cityId);
+  };
+  const openCityRoutesFromList = (cityId: string) => {
+    setCityListOpen(false);
+    setSelectedRouteId(null);
+    setRouteCityId(cityId);
+  };
+  const openLegacyRoute = (routeIndex: number) => {
+    const cityForRoutes = routeCityId ? getJourneyCity(routeCityId) : undefined;
+    if (!cityForRoutes) return;
+    const route = cityForRoutes.routes[routeIndex - 1];
+    if (!route) return;
+    const status = getRouteStatus(state, cityForRoutes.id, route.id);
+    if (status === 'discoverable') {
+      dispatch({ type: 'REVEAL_ROUTE', cityId: cityForRoutes.id, routeId: route.id });
+      setNotice(`${route.name}I've found out.`);
+    }
+    setSelectedRouteId(route.id);
+  };
+  const handleRouteSelect = (route: JourneyRoute) => {
+    const status = getRouteStatus(state, route.cityId, route.id);
+    if (status === 'discoverable') { dispatch({ type: 'REVEAL_ROUTE', cityId: route.cityId, routeId: route.id }); setNotice(`${route.name}I've found out.`); return; }
+    if (status === 'revealed' || status === 'completed') setSelectedRouteId(route.id);
+  };
+  const startRun = (route: JourneyRoute) => {
+    if (getRouteStatus(state, route.cityId, route.id) === 'locked') return;
+    if (!deviceConnected) setDeviceConnected(true);
+    setRunningRoute({ cityId: route.cityId, routeId: route.id });
+    setRouteCityId(null);
+  };
+  const startSelectedRoute = () => {
+    if (!routeCityId || !selectedRouteId) return;
+    const route = getJourneyRoute(routeCityId, selectedRouteId);
+    if (!route) return;
+    startRun(route);
+  };
+  const completeRun = (result: RunResult) => {
+    if (!runningRoute) return;
+    const alreadyCompleted = getCompletedRouteIds(state, runningRoute.cityId).includes(runningRoute.routeId);
+    const completedAfterRun = getCompletedRouteIds(state, runningRoute.cityId).length + (alreadyCompleted ? 0 : 1);
+    const willCompleteCurrentCity = runningRoute.cityId === state.currentCityId && completedAfterRun >= 10;
+    const completedCityId = runningRoute.cityId;
+    dispatch({ type: 'COMPLETE_ROUTE', ...runningRoute, result });
+    setRunningRoute(null);
+    setSelectedRouteId(null);
+    setSelectedCandidateId(null);
+    if (willCompleteCurrentCity) {
+      setActiveTab('home');
+      setHomeCityId(state.currentCityId);
+      setFocusNextStation(false);
+      setNotice(`${getJourneyCity(state.currentCityId)?.name ?? "Current city"}The journey has been completed. Please choose the next stop.`);
+      dispatch({ type: 'NAVIGATE', page: 'home' });
+      if (nextStationFocusTimerRef.current) window.clearTimeout(nextStationFocusTimerRef.current);
+      nextStationFocusTimerRef.current = window.setTimeout(() => {
+        setFocusNextStation(true);
+        nextStationFocusTimerRef.current = null;
+      }, reduceMotion ? 40 : 260);
+    } else {
+      dispatch({ type: 'NAVIGATE', page: 'home' });
+      setRouteCityId(completedCityId);
+      if (!alreadyCompleted && completedAfterRun < 10) setNotice(`Route${String(completedAfterRun + 1).padStart(2, '0')}Unlocked`);
+    }
+  };
+  const resetDemo = () => { if (nextStationFocusTimerRef.current) window.clearTimeout(nextStationFocusTimerRef.current); nextStationFocusTimerRef.current = null; dispatch({ type: 'RESET_DEMO' }); setActiveTab('home'); setHomeCityId('tokyo'); setFocusNextStation(false); setCityListOpen(false); setUtilityMode(null); setRouteCityId(null); setSelectedRouteId(null); setRunningRoute(null); setSelectedCandidateId(null); setNotice("Presentation status restored"); };
+  const clearNextStationFocus = useCallback(() => setFocusNextStation(false), []);
+  const startFirstJourney = () => {
+    if (!firstCityChoiceId || !getJourneyCity(firstCityChoiceId)) return;
+    dispatch({ type: 'START_JOURNEY', cityId: firstCityChoiceId });
+    setHomeCityId(firstCityChoiceId);
+    setActiveTab('home');
+    setIsFirstUse(false);
+    setNotice(`Your journey begins in ${getJourneyCity(firstCityChoiceId)?.name ?? 'your first city'}.`);
+  };
+  const resumeCurrentJourney = () => {
+    setHomeCityId(state.currentCityId);
+    setActiveTab('home');
+    dispatch({ type: 'NAVIGATE', page: 'home' });
+    setIsFirstUse(false);
+    setNotice(`Continuing your ${currentCity.name} journey.`);
+  };
+  const selectPrimaryTab = (tab: PrimaryTab) => {
+    setActiveTab(tab);
+    dispatch({ type: 'NAVIGATE', page: tab === 'world' ? 'map' : 'home' });
+  };
+  const openLegacyFeature = (feature: LegacyFeature) => {
+    if(feature==='teamRelay'&&puzzleDemo)puzzle.restartPreview();
+    setLegacyFeature(feature);
+    setRouteCityId(null);
+    setSelectedRouteId(null);
+  };
+  const drawMedalLottery = () => {
+    if (medalLotteryTickets <= 0) {
+      return { success: false, message: 'You need a draw ticket before you can enter.' };
+    }
+    const prizePool = ['$2.66', '$1.66', '6 bonus minutes', '$2.66', '$1.66', '6 bonus minutes'];
+    const amount = prizePool[Math.floor(Math.random() * prizePool.length)];
+    setMedalLotteryTickets(count => Math.max(0, count - 1));
+    return { success: true, message: `You won ${amount}!`, amount };
+  };
+  const openMedleyRoute = (cityId: string, routeIndex: number, image: string) => {
+    setActivityRoute({ source: 'medley', cityId, routeIndex, image });
+  };
+  const openTeamRelayRoute = (route: PuzzleRoute, preview = false) => {
+    const team = periodParticipation(puzzle.state,weekendPeriod(puzzle.now()).id);
+    const available = puzzleRoutes.find(r => r.id === route.id && r.routeId === route.routeId);
+    if (!team || team.archived || team.members.length !== 2 || !periodOpen(team.period,puzzle.now()) || !available || available.id !== team.city.id || puzzleComplete(team) || ownPieces(team).length >= 2
+      || team.pieces.some(p => p.route.id === route.id && p.route.routeId === route.routeId)) { setNotice('This route is no longer available. Return to the event and choose another route.'); return; }
+    const slot = team.pieces.length;
+    const target: ActivityRouteTarget = {source:'teamRelay',cityId:available.id,routeIndex:available.routeIndex,image:available.image,taskId:String(slot)};
+    dispatch({ type:'REVEAL_ROUTE',cityId:available.id,routeId:available.routeId });
+    if (preview) { setActivityRoute(target); return; }
+    puzzleSession.current = {id:crypto.randomUUID(),teamId:team.id,startedAt:puzzle.now(),slot,route:available};
+    if (puzzleDemo) {
+      const source=getJourneyRoute(available.id,available.routeId);
+      completeActivityRoute(target,{distance:available.distanceKm,duration:available.minutes*60,calories:source?.calories??0});
+      return;
+    }
+    setActivityRoute(null); setRunningActivityRoute(target);
+  };
+  const completeActivityRoute = (target: ActivityRouteTarget, stats?: {distance:number;duration:number;calories:number}) => {
+    setRunningActivityRoute(null);
+    if (target.source === 'medley') {
+      const routeId = `${target.cityId}-${target.routeIndex}`;
+      setMedleyCompletedRouteIds(completed => {
+        if (completed.includes(routeId)) return completed;
+        const next = [...completed, routeId];
+        if (next.length === 3 && !medleyCompletionRewardClaimed) {
+          setMedleyLotteryChances(chances => chances + 5);
+          setMedleyCompletionRewardClaimed(true);
+        }
+        return next;
+      });
+      setLegacyFeature('weekendMedley');
+      return;
+    }
+    const record = puzzleSession.current; puzzleSession.current = null;
+    if (record && stats) {
+      const next = puzzle.finish(record.teamId, {...record, memberId:'self', finishedAt:puzzle.now(), distanceKm:stats.distance});
+      const earned = next.teams.some(t => t.pieces.some(p => p.id === record.id));
+      if(earned)dispatch({type:'COMPLETE_ROUTE',cityId:record.route.id,routeId:record.route.routeId,background:true,result:{distanceKm:stats.distance,durationSeconds:stats.duration,calories:stats.calories}});
+      if(!puzzleDemo||!earned)setNotice(earned ? (puzzleComplete(next.teams.find(t => t.id === record.teamId)!) ? "Team's finished three routes. You can take the prize." : "Route completed, team updated.") : "Not included in this one, complete the route; up to 2 per person per period");
+    }
+    setLegacyFeature('teamRelay');
+  };
+  const openWeightRoute = (cityId: string, routeIndex: number, image: string, day: number) => {
+    setWeightRoute({ cityId, routeIndex, image, day });
+  };
+  const completeWeightRoute = (target: WeightRouteTarget) => {
+    setWeightCompletedDays(days => [...new Set([...days, target.day])].sort((a, b) => a - b));
+    setWeightRewardBoxes(days => [...new Set([...days, target.day])].sort((a, b) => a - b));
+    setRunningWeightRoute(null);
+    setLegacyFeature('weightLossPlan');
+  };
+  const openWeightReward = (day: number) => {
+    if (!weightRewardBoxes.includes(day)) return { success: false, message: "Complete this day's route before claiming its reward." };
+    if (weightOpenedRewardDays.includes(day)) return { success: false, message: "You've already claimed this day's reward." };
+    const amount = getWeightPlanRewardAmount(day);
+    setWeightOpenedRewardDays(days => [...new Set([...days, day])].sort((a, b) => a - b));
+    setWeightRewardHistory(records => [
+      { day, amount, openedAt: new Date().toLocaleString('en-US', { hour12: false }) },
+      ...records
+    ]);
+    return { success: true, message: `Day ${day} reward added to your wallet.`, amount };
+  };
+
+  const runningCity = runningRoute ? getJourneyCity(runningRoute.cityId) : undefined;
+  const runningRouteData = runningRoute ? getJourneyRoute(runningRoute.cityId, runningRoute.routeId) : undefined;
+  const routeSheetCity = routeCityId ? getJourneyCity(routeCityId) : undefined;
+  const selectedRouteData = routeSheetCity && selectedRouteId ? getJourneyRoute(routeSheetCity.id, selectedRouteId) : undefined;
+  const lastRunCity = state.lastRun ? getJourneyCity(state.lastRun.cityId) : undefined;
+  const lastRunRoute = state.lastRun ? getJourneyRoute(state.lastRun.cityId, state.lastRun.routeId) : undefined;
+  const pendingCity = state.pendingNextCityId ? getJourneyCity(state.pendingNextCityId) : undefined;
+  const showDeviceConnectedPrompt = startupConnectionSucceeded && deviceConnected && !deviceConnectionAcknowledged
+    && !isFirstUse && activeTab === 'home' && state.currentPage === 'home'
+    && !routeSheetCity && !runningRoute && !activityRoute && !runningActivityRoute
+    && !weightRoute && !runningWeightRoute && !legacyFeature && !cityListOpen && !utilityMode;
+
+  return (
+    <div className="app-stage"><a className="skip-link" href="#main-content">{"Go to main content"}</a><div className="phone-shell"><div className="paper-grain" aria-hidden="true" />
+      <AnimatePresence mode="wait" initial={false}>
+        {isFirstUse ? <motion.div className="screen-layer" key="first-city" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -12 }}><FirstJourneyExperience selectedId={firstCityChoiceId} currentCity={currentCity} currentCityCompletedRoutes={currentCityCompletedRoutes} hasExistingJourney={hasExistingJourney} onSelect={setFirstCityChoiceId} onContinue={startFirstJourney} onResume={resumeCurrentJourney} /></motion.div>
+        : runningActivityRoute ? <motion.div className="screen-layer" key="running-activity" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><RunPlaybackView cityId={runningActivityRoute.cityId} cityName={runningActivityRoute.source === 'teamRelay' ? getJourneyCity(runningActivityRoute.cityId)?.name : undefined} routeIndex={runningActivityRoute.routeIndex} image={runningActivityRoute.image} routeOverride={runningActivityRoute.source === 'teamRelay' ? toLegacyRouteItem(getJourneyCity(runningActivityRoute.cityId)!.routes[runningActivityRoute.routeIndex-1],state) : undefined} requireFullRoute={runningActivityRoute.source === 'teamRelay'} onExit={() => { puzzleSession.current=null; setActivityRoute(runningActivityRoute); setRunningActivityRoute(null); }} onComplete={stats => completeActivityRoute(runningActivityRoute,stats)} /></motion.div>
+        : activityRoute ? <motion.div className="screen-layer" key="activity-route-detail" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><RouteDetailView cityId={activityRoute.cityId} routeIndex={activityRoute.routeIndex} image={activityRoute.image} routeOverride={activityRoute.source === 'teamRelay' ? toLegacyRouteItem(getJourneyCity(activityRoute.cityId)!.routes[activityRoute.routeIndex-1],state) : undefined} onBack={() => setActivityRoute(null)} onStart={() => {
+          if (activityRoute.source === 'teamRelay') {
+            const team = periodParticipation(puzzle.state,weekendPeriod(puzzle.now()).id); const route = puzzleRoutes.find(r => r.id === activityRoute.cityId && r.routeIndex === activityRoute.routeIndex);
+            if (!team || team.archived || team.members.length !== 2 || !periodOpen(team.period,puzzle.now()) || !route || route.id !== team.city.id || puzzleComplete(team) || ownPieces(team).length >= 2 || team.pieces.some(p => p.route.id === route.id && p.route.routeId === route.routeId)) { setNotice("The route status has been updated, please return to active page for a new selection."); return; }
+            puzzleSession.current = {id:crypto.randomUUID(),teamId:team.id,startedAt:puzzle.now(),slot:Number(activityRoute.taskId),route};
+            dispatch({ type:'REVEAL_ROUTE',cityId:route.id,routeId:route.routeId });
+          }
+          setRunningActivityRoute(activityRoute); setActivityRoute(null);
+        }} /></motion.div>
+        : runningWeightRoute ? <motion.div className="screen-layer" key="running-weight" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><RunPlaybackView cityId={runningWeightRoute.cityId} routeIndex={runningWeightRoute.routeIndex} image={runningWeightRoute.image} onExit={() => { setRunningWeightRoute(null); setWeightRoute(runningWeightRoute); }} onComplete={() => completeWeightRoute(runningWeightRoute)} /></motion.div>
+        : weightRoute ? <motion.div className="screen-layer" key="weight-route-detail" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><RouteDetailView cityId={weightRoute.cityId} routeIndex={weightRoute.routeIndex} image={weightRoute.image} onBack={() => setWeightRoute(null)} onStart={() => { setRunningWeightRoute(weightRoute); setWeightRoute(null); }} /></motion.div>
+        : legacyFeature === 'level' ? <motion.div className="screen-layer" key="journey-level" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><JourneyLevelView state={state} onBack={() => setLegacyFeature(null)} /></motion.div>
+        : legacyFeature === 'leaderboard' ? <motion.div className="screen-layer" key="leaderboard" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><LeaderboardView currentLevel={countryLevel.level} onBack={() => setLegacyFeature(null)} /></motion.div>
+        : legacyFeature === 'onlineSupport' ? <motion.div className="screen-layer" key="online-support" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><OnlineSupportView onBack={() => setLegacyFeature(null)} /></motion.div>
+        : legacyFeature === 'medalLottery' ? <motion.div className="screen-layer" key="medal-lottery" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><MedalLotteryView tickets={medalLotteryTickets} onBack={() => setLegacyFeature(null)} onGoRun={() => { setLegacyFeature(null); setActiveTab('home'); }} onDraw={drawMedalLottery} /></motion.div>
+        : legacyFeature === 'weekendMedley' ? <motion.div className="screen-layer" key="weekend-medley" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><WeekendMedleyView onBack={() => setLegacyFeature(null)} selectedRouteIds={medleySelectedRouteIds} completedRouteIds={medleyCompletedRouteIds} lotteryChances={medleyLotteryChances} drawHistory={medleyDrawHistory} shareBonusClaimed={medleyShareBonusClaimed} activityStarted={medleyActivityStarted} onUpdateState={(next) => { if (next.selectedRouteIds !== undefined) setMedleySelectedRouteIds(next.selectedRouteIds); if (next.completedRouteIds !== undefined) setMedleyCompletedRouteIds(next.completedRouteIds); if (next.lotteryChances !== undefined) setMedleyLotteryChances(next.lotteryChances); if (next.drawHistory !== undefined) setMedleyDrawHistory(next.drawHistory); if (next.shareBonusClaimed !== undefined) setMedleyShareBonusClaimed(next.shareBonusClaimed); if (next.activityStarted !== undefined) setMedleyActivityStarted(next.activityStarted); }} onNavigateToRouteDetail={openMedleyRoute} /></motion.div>
+        : legacyFeature === 'teamRelay' ? <motion.div className="screen-layer" key="team-relay" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><TeamRelayView preview={puzzleDemo} state={puzzle.state} cities={puzzleCities} routes={puzzleRoutes} storageFailed={puzzle.storageFailed} onBack={() => setLegacyFeature(null)} onCreate={puzzle.create} onJoin={puzzle.join} onDraw={puzzle.draw} now={puzzle.now()} onRun={openTeamRelayRoute} onSimulatePartner={puzzleDemo?puzzle.demoFinishPartner:undefined} onSimulateJoin={puzzleDemo?puzzle.demoJoin:undefined} /></motion.div>
+        : legacyFeature === 'weightLossPlan' ? <motion.div className="screen-layer" key="weight-loss-plan" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><WeightLossPlanView started={weightPlanStarted} completedDays={weightCompletedDays} rewardBoxes={weightRewardBoxes} openedRewardDays={weightOpenedRewardDays} rewardHistory={weightRewardHistory} newbieTasks={{ treadmillActivated: deviceConnected, activationClaimed, completedRoutes: getJourneyTotals(state).completedRoutes, firstRouteClaimed }} onBack={() => setLegacyFeature(null)} onStartPlan={() => setWeightPlanStarted(true)} onOpenReward={openWeightReward} onClaimActivationTask={() => { setActivationClaimed(true); setNotice('Treadmill connection reward added to your wallet.'); }} onClaimFirstRouteTask={() => { setFirstRouteClaimed(true); setNotice('First-route reward added to your wallet.'); }} onNavigateToRouteDetail={openWeightRoute} /></motion.div>
+        : runningCity && runningRouteData ? <motion.div className="screen-layer" key="running" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><RunPlaybackView cityId={runningCity.id} cityName={runningCity.name} routeIndex={runningRouteData.order} image={cityImageFor(runningCity)} routeOverride={toLegacyRouteItem(runningRouteData, state)} onExit={() => { setRunningRoute(null); setRouteCityId(runningCity.id); setSelectedRouteId(runningRouteData.id); }} onComplete={(stats) => completeRun({ distanceKm: stats.distance, durationSeconds: stats.duration, calories: stats.calories })} /></motion.div>
+        : state.currentPage === 'routeComplete' && state.lastRun && lastRunCity && lastRunRoute ? <motion.div className="screen-layer" key="route-complete" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><RouteCompletePage city={lastRunCity} route={lastRunRoute} completed={getCompletedRouteIds(state, lastRunCity.id).length} result={state.lastRun} firstCompletion={state.lastRun.isFirstCompletion} onNext={() => { setActiveTab('home'); dispatch({ type: 'NAVIGATE', page: 'home' }); window.setTimeout(() => openCity(state.currentCityId), 0); }} onMap={() => selectPrimaryTab('world')} /></motion.div>
+        : state.currentPage === 'cityComplete' ? <motion.div className="screen-layer" key="city-complete" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><CityCompletePage city={currentCity} candidates={candidateCities} selectedId={effectiveCandidateId} onSelect={setSelectedCandidateId} onContinue={() => effectiveCandidateId && dispatch({ type: 'SELECT_NEXT_CITY', cityId: effectiveCandidateId })} /></motion.div>
+        : state.currentPage === 'travel' && pendingCity ? <motion.div className="screen-layer" key="travel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><TravelPage from={currentCity} to={pendingCity} reduceMotion={reduceMotion} /></motion.div>
+        : routeSheetCity && selectedRouteData ? <motion.div className="screen-layer" key="legacy-route-detail" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><RouteDetailView cityId={routeSheetCity.id} routeIndex={selectedRouteData.order} image={cityImageFor(routeSheetCity)} routeOverride={toLegacyRouteItem(selectedRouteData, state)} onBack={() => setSelectedRouteId(null)} onStart={startSelectedRoute} /></motion.div>
+        : routeSheetCity ? <motion.div className="screen-layer" key="legacy-route-list" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><CityRoutesView city={toLegacyCity(routeSheetCity, state)} routeItems={routeSheetCity.routes.map(route => toLegacyRouteItem(route, state))} completedRouteIndices={routeSheetCity.routes.filter(route => getCompletedRouteIds(state, routeSheetCity.id).includes(route.id)).map(route => route.order)} openRouteCount={getRouteListOpenCount(state, routeSheetCity.id)} onBack={() => { setRouteCityId(null); setSelectedRouteId(null); }} onRouteClick={openLegacyRoute} /></motion.div>
+        : activeTab === 'profile' ? <motion.div className="screen-layer" key="profile" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><ProfilePage user={user} totals={totals} countryLevel={countryLevel} onDevice={() => setUtilityMode('device')} onLevel={() => openLegacyFeature('level')} onSettings={() => setUtilityMode('profile')} onFeature={label => setNotice(`${label} · Preview`)} /></motion.div>
+        : activeTab === 'activity' ? <motion.div className="screen-layer" key="activity" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><EventsTab onSelectMedalLottery={() => openLegacyFeature('medalLottery')} onSelectMedley={() => openLegacyFeature('weekendMedley')} onSelectWeightLossPlan={() => openLegacyFeature('weightLossPlan')} onSelectTeamRelay={() => {openLegacyFeature('teamRelay');}} onSelectHundredCities={() => setNotice("The 100-person city plan is in preparation")} /></motion.div>
+        : activeTab === 'world' ? <motion.div className="screen-layer" key="world" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><MapPage state={state} totals={totals} onOpenCity={openCity} onCities={() => setCityListOpen(true)} onLeaderboard={() => openLegacyFeature('leaderboard')} onCountryLevel={() => openLegacyFeature('level')} /></motion.div>
+        : <motion.div className="screen-layer" key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><HomePage state={state} city={homeCity} deviceConnected={deviceConnected} onRoutes={openCity} onBrowseCity={setHomeCityId} onSelectNextCity={(cityId) => { setSelectedCandidateId(cityId); dispatch({ type: 'SELECT_NEXT_CITY', cityId }); }} focusNextStation={focusNextStation} onNextStationFocused={clearNextStationFocus} onDevice={() => setUtilityMode('device')} onLegacyFeature={openLegacyFeature} onCarouselEnd={() => setNotice("More cities, please look forward.")} /></motion.div>}
+      </AnimatePresence>
+      <AnimatePresence>
+        {cityListOpen && !runningRoute && <motion.div className="overlay-layer" key="city-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><CityListSheet state={state} selectedCityId={homeCity.id} onSelect={openCityRoutesFromList} onClose={() => setCityListOpen(false)} /></motion.div>}
+        {utilityMode && <motion.div className="overlay-layer" key="utility" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{utilityMode === 'device' ? <MyDevicesView connected={deviceConnected} onBack={() => setUtilityMode(null)} onAdd={() => setNotice('Device setup is available in the mobile app.')} onScan={() => setNotice('QR pairing is available in the mobile app.')} /> : <UtilityPanel mode={utilityMode} user={user} deviceConnected={deviceConnected} manualReducedMotion={manualReducedMotion} onToggleDevice={() => setDeviceConnected(value => !value)} onToggleMotion={() => setManualReducedMotion(value => !value)} onReset={resetDemo} onSignOut={onSignOut} onClose={() => setUtilityMode(null)} />}</motion.div>}
+        {showDeviceConnectedPrompt && <motion.div className="overlay-layer" key="device-connected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.18 }}><DeviceConnectedPrompt onDismiss={() => setDeviceConnectionAcknowledged(true)} onViewDevice={() => { setDeviceConnectionAcknowledged(true); setUtilityMode('device'); }} /></motion.div>}
+      </AnimatePresence>
+      {!isFirstUse && utilityMode !== 'device' && !runningRoute && !runningActivityRoute && !activityRoute && !runningWeightRoute && !weightRoute && !legacyFeature && !routeSheetCity && (state.currentPage === 'home' || state.currentPage === 'map') && <BottomNavigation active={activeTab} onChange={selectPrimaryTab} />}
+      <div className={`toast ${notice ? 'is-visible' : ''} ${notice === "More cities, please look forward." ? 'toast--centered' : ''}`} role="status" aria-live="polite">{notice}</div>
+    </div></div>
+  );
+}

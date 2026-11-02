@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { HTMLAttributeReferrerPolicy } from 'react';
 import { Landmark } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { resolveLocalImage } from '../lib/localImages';
 
 interface CityImageProps {
   src?: string;
@@ -9,7 +10,8 @@ interface CityImageProps {
   className?: string;
   fallbackLabel?: string;
   referrerPolicy?: HTMLAttributeReferrerPolicy;
-  compactFallback?: boolean;
+  loading?: 'eager' | 'lazy';
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 const cityGradientStops = [
@@ -23,7 +25,7 @@ function getGradientIndex(label: string) {
   return Array.from(label).reduce((sum, char) => sum + char.charCodeAt(0), 0) % cityGradientStops.length;
 }
 
-export default function CityImage({ src, alt, className, fallbackLabel, referrerPolicy = 'no-referrer', compactFallback = false }: CityImageProps) {
+export default function CityImage({ src, alt, className, fallbackLabel, referrerPolicy = 'no-referrer', loading = 'lazy', fetchPriority = 'auto' }: CityImageProps) {
   const [failed, setFailed] = useState(false);
   const label = fallbackLabel || alt || 'CITY';
 
@@ -39,9 +41,12 @@ export default function CityImage({ src, alt, className, fallbackLabel, referrer
   if (src && !failed) {
     return (
       <img
-        src={src}
+        src={resolveLocalImage(src)}
         alt={alt}
         className={className}
+        loading={loading}
+        fetchPriority={fetchPriority}
+        decoding="async"
         referrerPolicy={referrerPolicy}
         onError={() => setFailed(true)}
       />
@@ -51,21 +56,17 @@ export default function CityImage({ src, alt, className, fallbackLabel, referrer
   return (
     <div
       aria-label={alt}
+      aria-hidden={alt === '' ? true : undefined}
       className={cn('flex items-center justify-center overflow-hidden bg-slate-950', className)}
       style={{ background: gradient }}
     >
-      <div className={cn('flex flex-col items-center text-center text-cyan-50/90', compactFallback ? 'gap-0' : 'gap-2')}>
-        <div className={cn(
-          'flex items-center justify-center border border-cyan-100/20 bg-white/10 shadow-[0_0_24px_rgba(34,211,238,0.16)]',
-          compactFallback ? 'h-8 w-8 rounded-xl' : 'h-10 w-10 rounded-2xl'
-        )}>
-          <Landmark size={compactFallback ? 18 : 22} />
+      <div className="flex flex-col items-center gap-2 text-center text-cyan-50/90">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-100/20 bg-white/10 shadow-[0_0_24px_rgba(34,211,238,0.16)]">
+          <Landmark size={22} />
         </div>
-        {!compactFallback && (
-          <span className="max-w-[110px] px-2 text-xs font-black leading-tight tracking-wide">
-            {label}
-          </span>
-        )}
+        <span className="max-w-[110px] px-2 text-xs font-black leading-tight tracking-wide">
+          {label}
+        </span>
       </div>
     </div>
   );

@@ -1,67 +1,223 @@
 import { motion } from 'motion/react';
-import { Gift, Globe2, ChevronRight, Sparkles, MessageSquare, Calendar } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Calendar, ChevronRight, Flame, Gift, Globe2, MessageSquare, Sparkles, Users } from 'lucide-react';
+import { resolveLocalImage } from '../lib/localImages';
 
 interface EventsTabProps {
   onSelectMedley?: () => void;
-  onSelectMedalDraw?: () => void;
+  onSelectMedalLottery?: () => void;
+  onSelectWeightLossPlan?: () => void;
+  onSelectTeamRelay?: () => void;
+  onSelectHundredCities?: () => void;
 }
 
-export default function EventsTab({ onSelectMedley, onSelectMedalDraw }: EventsTabProps) {
+type EventCardProps = {
+  title: string;
+  description: string;
+  image: string;
+  accent: 'amber' | 'emerald' | 'purple' | 'cyan' | 'rose';
+  icon: ReactNode;
+  tag: ReactNode;
+  onClick?: () => void;
+  className?: string;
+  delay?: number;
+  taller?: boolean;
+};
+
+const accentStyles = {
+  amber: {
+    border: 'border-amber-500/30',
+    overlay: 'from-black via-black/60 to-amber-900/20',
+    glow: 'from-amber-500/20 to-transparent',
+    badge: 'bg-amber-500/20 text-amber-200 border-amber-500/50',
+    iconBox: 'bg-amber-500/20 border-amber-500/30',
+    iconText: 'text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]',
+    title: 'text-amber-100',
+    copy: 'text-amber-200/60',
+    action: 'bg-amber-500/20 hover:bg-amber-500/25 border-amber-500/40 text-amber-200',
+    arrow: 'bg-amber-500/10 border-amber-500/30 group-hover:bg-amber-500/30 text-amber-200'
+  },
+  emerald: {
+    border: 'border-emerald-500/30',
+    overlay: 'from-black via-black/70 to-emerald-900/20',
+    glow: 'from-emerald-500/20 to-transparent',
+    badge: 'bg-emerald-500/30 text-[#a1f2da] border-emerald-500/50',
+    iconBox: 'bg-emerald-500/20 border-emerald-500/30',
+    iconText: 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]',
+    title: 'text-emerald-100',
+    copy: 'text-emerald-200/60',
+    action: 'bg-emerald-500/20 hover:bg-emerald-500/25 border-emerald-500/40 text-[#a2dfcb]',
+    arrow: 'bg-emerald-500/10 border-emerald-500/30 group-hover:bg-emerald-500/30 text-emerald-200'
+  },
+  purple: {
+    border: 'border-purple-500/30',
+    overlay: 'from-black via-black/60 to-purple-900/20',
+    glow: 'from-purple-500/20 to-transparent',
+    badge: 'bg-purple-500/20 text-purple-200 border-purple-500/50',
+    iconBox: 'bg-purple-500/20 border-purple-500/30',
+    iconText: 'text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]',
+    title: 'text-purple-100',
+    copy: 'text-purple-200/60',
+    action: 'bg-purple-500/20 hover:bg-purple-500/25 border-purple-500/40 text-purple-200',
+    arrow: 'bg-purple-500/10 border-purple-500/30 group-hover:bg-purple-500/30 text-purple-200'
+  },
+  cyan: {
+    border: 'border-cyan-500/30',
+    overlay: 'from-black via-black/65 to-cyan-900/20',
+    glow: 'from-cyan-500/20 to-transparent',
+    badge: 'bg-cyan-500/20 text-cyan-200 border-cyan-500/50',
+    iconBox: 'bg-cyan-500/20 border-cyan-500/30',
+    iconText: 'text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]',
+    title: 'text-cyan-100',
+    copy: 'text-cyan-200/60',
+    action: 'bg-cyan-500/20 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-200',
+    arrow: 'bg-cyan-500/10 border-cyan-500/30 group-hover:bg-cyan-500/30 text-cyan-200'
+  },
+  rose: {
+    border: 'border-rose-400/30',
+    overlay: 'from-black via-black/70 to-rose-950/20',
+    glow: 'from-orange-400/20 via-transparent to-rose-500/10',
+    badge: 'bg-rose-400/20 text-rose-100 border-rose-300/40',
+    iconBox: 'bg-orange-400/20 border-orange-300/30',
+    iconText: 'text-orange-300 drop-shadow-[0_0_8px_rgba(251,146,60,0.8)]',
+    title: 'text-orange-50',
+    copy: 'text-orange-100/65',
+    action: 'bg-orange-400/20 border-orange-300/30 text-orange-100',
+    arrow: 'bg-orange-400/10 border-orange-300/30 group-hover:bg-orange-400/25 text-orange-100'
+  }
+};
+
+function EventCard({
+  title,
+  description,
+  image,
+  accent,
+  icon,
+  tag,
+  onClick,
+  className = '',
+  delay = 0,
+  taller = false
+}: EventCardProps) {
+  const styles = accentStyles[accent];
+
   return (
-    <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
-      <div className="sticky top-0 z-20 bg-black/40 backdrop-blur-md pt-safeb flex items-center justify-center p-3.5 border-b border-white/10">
-        <h1 className="text-sm font-bold tracking-widest uppercase text-cyan-400">Popular Events</h1>
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      onClick={onClick}
+      aria-label={`View ${title}`}
+      className={`relative w-full text-left ${taller ? 'h-[200px]' : 'h-[170px]'} rounded-2xl overflow-hidden shadow-2xl cursor-pointer group border ${styles.border} ${className}`}
+    >
+      <img
+        src={image}
+        alt={title}
+        className="absolute inset-0 h-full w-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
+      />
+      <div className={`absolute inset-0 bg-gradient-to-t ${styles.overlay} mix-blend-multiply`} />
+      <div className={`absolute inset-0 bg-gradient-to-br ${styles.glow} pointer-events-none`} />
+
+      <div className={`absolute right-3 top-3 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest shadow-lg backdrop-blur-sm ${styles.badge}`}>
+        {tag}
       </div>
 
-      <div className="p-3.5 space-y-3.5">
-        {/* Banner 1: Medal Blind Box Lucky Draw */}
-        <motion.div
-          whileTap={{ scale: 0.98 }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={onSelectMedalDraw}
-          className="relative w-full h-[170px] rounded-2xl overflow-hidden shadow-2xl cursor-pointer group border border-amber-500/30"
-        >
-          <img 
-            src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600&h=400" 
-            alt="Medal Lucky Draw" 
-            className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 opacity-60" 
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-amber-900/20 mix-blend-multiply" />
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-transparent pointer-events-none" />
-          
-          <div className="absolute top-3 right-3 bg-amber-500/20 backdrop-blur-sm text-[9px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full text-amber-200 flex items-center gap-1 shadow-lg border border-amber-500/50">
-            <Sparkles size={10} className="animate-pulse" />
-            ACTIVE
+      <div className="absolute inset-x-0 bottom-0 p-3.5">
+        <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg border shadow-inner backdrop-blur-md ${styles.iconBox} ${styles.iconText}`}>
+          {icon}
+        </div>
+        <h2 className={`mb-0.5 text-base font-bold tracking-wide ${styles.title}`}>{title}</h2>
+        <div className="flex items-center justify-between gap-3">
+          <p className={`max-w-[66%] text-[11px] leading-relaxed line-clamp-2 ${styles.copy}`}>{description}</p>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-lg ${styles.action}`}
+            >
+              <MessageSquare size={11} />
+              Details
+            </span>
+            <div className={`flex h-7 w-7 items-center justify-center rounded-full border backdrop-blur transition-colors ${styles.arrow}`}>
+              <ChevronRight size={14} />
+            </div>
           </div>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
 
-          <div className="absolute bottom-0 left-0 right-0 p-3.5">
-            <div className="w-8 h-8 bg-amber-500/20 backdrop-blur-md rounded-lg flex items-center justify-center mb-2 border border-amber-500/30 shadow-inner">
-               <Gift size={16} className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
-            </div>
-            <h2 className="text-base font-bold mb-0.5 tracking-wide text-amber-100">Medal Blind Box Draw</h2>
-            <div className="flex items-center justify-between">
-              <p className="text-amber-200/60 text-[11px] max-w-[65%] line-clamp-2">Spend medals to unlock epic routes, claim customized trophies, and draw cash rewards!</p>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/25 border border-amber-500/40 text-amber-200 text-[10px] font-semibold flex items-center gap-1.5 transition-colors shadow-lg active:scale-95 cursor-default"
-                >
-                  <MessageSquare size={11} />
-                  Discuss
-                </button>
-                <div className="w-7 h-7 rounded-full bg-amber-500/10 backdrop-blur flex items-center justify-center border border-amber-500/30 group-hover:bg-amber-500/30 transition-colors">
-                  <ChevronRight size={14} className="text-amber-200" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+export default function EventsTab({
+  onSelectMedley,
+  onSelectMedalLottery,
+  onSelectWeightLossPlan,
+  onSelectTeamRelay,
+  onSelectHundredCities
+}: EventsTabProps) {
+  return (
+    <div className="relative h-full w-full overflow-y-auto bg-[#05070A] pb-24 font-sans text-slate-100 hide-scrollbar">
+      <div className="sticky top-0 z-20 flex items-center justify-center border-b border-white/10 bg-black/40 p-3.5 pt-safeb backdrop-blur-md">
+        <h1 className="text-sm font-bold uppercase tracking-widest text-cyan-400">Featured Events</h1>
+      </div>
+
+      <div className="flex flex-col gap-3.5 p-3.5">
+        <EventCard
+          title="Medal Mystery Draw"
+          description="Complete routes, collect city medals, and enter the daily reward draw."
+          image="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&q=80&w=600&h=400"
+          accent="amber"
+          icon={<Gift size={16} />}
+          tag={<span className="flex items-center gap-1"><Sparkles size={10} className="animate-pulse" />{"Open daily"}</span>}
+          onClick={onSelectMedalLottery}
+        />
+
+        <EventCard
+          title="Global Team Relay"
+          description="Team up with another runner, complete city routes, and unlock the prize wheel."
+          image={resolveLocalImage('https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&q=80&w=1200')!}
+          accent="cyan"
+          icon={<Users size={16} />}
+          tag={<span className="flex items-center gap-1"><Users size={10} />2 runners</span>}
+          onClick={onSelectTeamRelay}
+          delay={0.05}
+        />
+
+        <EventCard
+          title="Weekend City Mix"
+          description="Choose three signature city routes and finish them to unlock a cash reward draw."
+          image="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=600&h=400"
+          accent="emerald"
+          icon={<Sparkles size={16} />}
+          tag={<span className="flex items-center gap-1"><Calendar size={10} className="animate-pulse" />Weekends</span>}
+          onClick={onSelectMedley}
+        />
+
+        <EventCard
+          title="30-Day Fitness Challenge"
+          description="Run one recommended route each day and unlock cash reward boxes along the way."
+          image="https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&q=80&w=600&h=400"
+          accent="rose"
+          icon={<Flame size={16} />}
+          tag={<span className="flex items-center gap-1"><Calendar size={10} />{"30-day plan"}</span>}
+          onClick={onSelectWeightLossPlan}
+          delay={0.05}
+        />
+
+        <EventCard
+          title="100 Runners, 100 Cities"
+          description="Join runners worldwide to unlock 100 iconic city routes and enter a trip giveaway."
+          image="https://images.unsplash.com/photo-1506501139174-099022df5260?auto=format&fit=crop&q=80&w=600&h=500"
+          accent="purple"
+          icon={<Globe2 size={16} />}
+          tag="Trip giveaway"
+          taller
+          delay={0.1}
+          onClick={onSelectHundredCities}
+        />
+
       </div>
     </div>
   );
 }
-

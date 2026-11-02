@@ -128,10 +128,10 @@ export default function ProfileSetupScreen({ user, onComplete }: ProfileSetupScr
 
       <form onSubmit={handleSubmit} className="relative z-10 flex min-h-full flex-col">
         <p className="text-[11px] font-black uppercase tracking-[0.34em] text-cyan-300">Profile setup</p>
-        <h1 className="mt-4 text-[38px] font-black leading-[1.05] tracking-[-0.04em] text-white">
+        <h1 className="mt-5 max-w-[360px] text-[36px] font-black leading-[1.14] tracking-normal text-white">
           Set up your runner profile
         </h1>
-        <p className="mt-4 text-base font-semibold leading-relaxed text-slate-400">
+        <p className="mt-5 max-w-[370px] text-base font-semibold leading-[1.65] text-slate-400">
           Add your name, choose a color, or upload a profile photo before entering MOVEVI.
         </p>
 

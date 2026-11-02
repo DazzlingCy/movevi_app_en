@@ -9,23 +9,23 @@ interface IntroScreenProps {
 const introSteps = [
   {
     id: 'step1',
-    title: 'Run & Illuminate Earth',
+    title: "Run. Light Earth.",
     subtitle: 'THE STELLAR LEAP',
-    text: 'In the year 3026, humanity has long migrated to other planets. On new paths and in new homes, we have built a massive interstellar network across the stars.',
+    text: "In 3026 A.D., humans had already migrated. New orbits, new homes, and we built a vast network of stars.",
     image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=1200&auto=format&fit=crop', // Earth / space
   },
   {
     id: 'step2',
-    title: 'Echoes of Earth',
+    title: "Homestar Echo",
     subtitle: 'ECHOES OF EARTH',
-    text: 'Traversing the cosmic deep, we miss our blue home planet more than ever. We long for Paris under morning fog, the warm desert wind before the Pyramids, and the sound of falling sycamore leaves along Nanjing\'s ancient city walls...',
+    text: "As we move to the deep of the universe, people are thinking of the blue home star.",
     image: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=90&w=1200&auto=format&fit=crop', // City neon/nostalgia
   },
   {
     id: 'step3',
-    title: 'Glowtrail Explorer',
+    title: "Photo Explorer",
     subtitle: 'GLOWTRAIL EXPLORER',
-    text: 'You are a MOVEVI Explorer. Every run helps reconnect the global route map and bring another city story back to life.',
+    text: "You're not an ordinary sportsman, you're a \"sight explorer\" attached to the Department of Earth Renewal. Your mission is to reconnect the home-star network with each run, to awaken the Earth's memory.",
     image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=90&w=1200&auto=format&fit=crop', // Runner / dark
   }
 ];
@@ -60,7 +60,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
             className="absolute inset-0"
           >
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#05070A]/80 to-[#05070A] z-10" />
-            <img src={step.image} alt={step.title} className="w-full h-full object-cover" />
+            <img src={step.image} alt={step.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
           </motion.div>
         </AnimatePresence>
         
@@ -108,12 +108,12 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
         >
           {currentStep === introSteps.length - 1 ? (
             <>
-              <span className="tracking-widest">Accept Mission</span>
+              <span className="tracking-widest">{"Accept Tasks"}</span>
               <Check className="ml-2" size={20} />
             </>
           ) : (
             <>
-              <span className="tracking-widest">Next Step</span>
+              <span className="tracking-widest">{"Next"}</span>
               <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
             </>
           )}

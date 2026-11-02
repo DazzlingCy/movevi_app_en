@@ -199,10 +199,10 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 <img src={moveviLogo} alt="MOVEVI" className="h-full w-full object-cover" />
               </div>
 
-              <h1 className="mt-9 text-center text-[40px] font-black leading-none tracking-[-0.04em] text-[#11170f]">
+              <h1 className="mt-9 text-center text-[40px] font-black leading-[1.12] tracking-normal text-[#11170f]">
                 MOVEVI
               </h1>
-              <p className="mt-4 max-w-[300px] text-center text-[21px] font-black leading-[1.16] tracking-[-0.025em] text-[#11170f]">
+              <p className="mt-5 max-w-[300px] text-center text-[20px] font-black leading-[1.35] tracking-normal text-[#11170f]">
                 Put the world on your treadmill.
               </p>
 
@@ -274,17 +274,17 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
 
             {step === 'email' || step === 'bindEmail' ? (
               <form onSubmit={submitEmail} className="flex flex-1 flex-col">
-                <h2 className="mb-16 text-center text-[34px] font-black tracking-[-0.035em] text-[#11170f]">
+                <h2 className={`${step === 'bindEmail' ? 'mb-6' : 'mb-14'} text-center text-[32px] font-black leading-[1.18] tracking-normal text-[#11170f]`}>
                   {step === 'bindEmail' ? 'Link your email' : 'Enter your email'}
                 </h2>
                 {step === 'bindEmail' && (
-                  <p className="-mt-10 mb-12 text-center text-base font-semibold leading-relaxed text-neutral-500">
+                  <p className="mb-12 text-center text-base font-semibold leading-[1.6] text-neutral-500">
                     Add an email so you can recover your account and receive important account updates.
                   </p>
                 )}
 
                 <label className="block">
-                  <span className="mb-3 block text-[28px] font-medium leading-none text-[#11170f]">Email</span>
+                  <span className="mb-3 block text-[18px] font-bold leading-[1.3] text-[#11170f]">Email</span>
                   <input
                     value={email}
                     onChange={(event) => {
@@ -295,7 +295,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     placeholder="you@example.com"
                     inputMode="email"
                     autoComplete="email"
-                    className={`h-[74px] w-full rounded-2xl border-[3px] bg-white px-5 text-2xl font-semibold text-[#11170f] outline-none transition placeholder:text-neutral-300 ${
+                    className={`h-16 w-full rounded-2xl border-2 bg-white px-5 text-xl font-semibold text-[#11170f] outline-none transition placeholder:text-neutral-300 ${
                       fieldErrors.email ? 'border-red-400' : 'border-[#11170f] focus:border-[#65d86d]'
                     }`}
                   />
@@ -325,7 +325,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 <button
                   type="submit"
                   disabled={isBusy || !canContinue}
-                  className="mt-12 flex h-[74px] w-full items-center justify-center gap-3 rounded-full bg-[#11170f] text-2xl font-black text-white transition active:scale-[0.99] disabled:bg-neutral-100 disabled:text-neutral-300"
+                  className="mt-12 flex h-16 w-full items-center justify-center gap-3 rounded-full bg-[#11170f] text-xl font-black text-white transition active:scale-[0.99] disabled:bg-neutral-100 disabled:text-neutral-300"
                 >
                   {loadingProvider === 'email' ? <Loader2 size={24} className="animate-spin" /> : null}
                   Continue
@@ -334,7 +334,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
               </form>
             ) : (
               <form onSubmit={submitCode} className="flex flex-1 flex-col">
-                <h2 className="mb-5 text-center text-[34px] font-black tracking-[-0.035em] text-[#11170f]">
+                <h2 className="mb-5 text-center text-[32px] font-black leading-[1.18] tracking-normal text-[#11170f]">
                   {step === 'bindCode' ? 'Verify your email' : 'Enter your code'}
                 </h2>
                 <p className="mb-14 text-center text-base font-semibold leading-relaxed text-neutral-500">
@@ -342,7 +342,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 </p>
 
                 <label className="block">
-                  <span className="mb-3 block text-[28px] font-medium leading-none text-[#11170f]">Code</span>
+                  <span className="mb-3 block text-[18px] font-bold leading-[1.3] text-[#11170f]">Code</span>
                   <input
                     value={verificationCode}
                     onChange={(event) => {
@@ -353,7 +353,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                     placeholder="000000"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    className={`h-[74px] w-full rounded-2xl border-[3px] bg-white px-5 text-center text-3xl font-black tracking-[0.3em] text-[#11170f] outline-none transition placeholder:text-neutral-300 ${
+                    className={`h-16 w-full rounded-2xl border-2 bg-white px-5 text-center text-2xl font-black tracking-[0.22em] text-[#11170f] outline-none transition placeholder:text-neutral-300 ${
                       fieldErrors.code ? 'border-red-400' : 'border-[#11170f] focus:border-[#65d86d]'
                     }`}
                   />
@@ -374,7 +374,7 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                 <button
                   type="submit"
                   disabled={isBusy || !canContinue}
-                  className="mt-12 flex h-[74px] w-full items-center justify-center gap-3 rounded-full bg-[#11170f] text-2xl font-black text-white transition active:scale-[0.99] disabled:bg-neutral-100 disabled:text-neutral-300"
+                  className="mt-12 flex h-16 w-full items-center justify-center gap-3 rounded-full bg-[#11170f] text-xl font-black text-white transition active:scale-[0.99] disabled:bg-neutral-100 disabled:text-neutral-300"
                 >
                   {loadingProvider === 'email' ? <Loader2 size={24} className="animate-spin" /> : null}
                   Continue
@@ -433,10 +433,10 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
           <div className="mt-9 flex h-20 w-20 items-center justify-center rounded-[28px] bg-[#11170f] text-[#65F06D]">
             <Orbit size={46} strokeWidth={3} />
           </div>
-          <h1 className="mt-11 text-center text-[42px] font-black leading-none tracking-[-0.055em] text-[#11170f]">
+          <h1 className="mt-11 text-center text-[40px] font-black leading-[1.12] tracking-normal text-[#11170f]">
             MOVEVI
           </h1>
-          <p className="mt-5 max-w-[320px] text-center text-[25px] font-black leading-[1.12] tracking-[-0.035em] text-[#11170f]">
+          <p className="mt-5 max-w-[320px] text-center text-[22px] font-black leading-[1.35] tracking-normal text-[#11170f]">
             Put the world on your treadmill.
           </p>
           <div className="mt-16 w-full space-y-4">
@@ -456,7 +456,7 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
         transition={{ type: 'spring', damping: 24, stiffness: 260 }}
       >
         <div className="mb-7 flex items-center justify-between">
-          <h2 className="text-[22px] font-black tracking-[-0.025em] text-black">Sign in with Apple</h2>
+          <h2 className="text-[22px] font-black leading-[1.25] tracking-normal text-black">Sign in with Apple</h2>
           <button
             type="button"
             onClick={onBack}
@@ -471,7 +471,7 @@ function AppleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Prov
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#11170f] text-[#65F06D] shadow-sm">
             <Orbit size={38} strokeWidth={3} />
           </div>
-          <p className="pt-0.5 text-[16px] font-medium leading-snug tracking-[-0.01em] text-[#1f1f1f]">
+          <p className="pt-0.5 text-[16px] font-medium leading-[1.5] tracking-normal text-[#1f1f1f]">
             Use your Apple account to continue to MOVEVI. You may be asked to link an email after authorization.
           </p>
         </div>
@@ -520,7 +520,7 @@ function GoogleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Pro
           >
             <X size={24} strokeWidth={2.2} />
           </button>
-          <p className="text-[21px] font-black tracking-[-0.025em] text-[#202124]">accounts.google.com</p>
+          <p className="text-[18px] font-black tracking-normal text-[#202124]">accounts.google.com</p>
           <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#202124] shadow-[0_4px_18px_rgba(0,0,0,0.08)]">
             <PanelTop size={24} strokeWidth={2.2} />
           </div>
@@ -538,7 +538,7 @@ function GoogleProviderMock({ isBusy, loadingProvider, onBack, onContinue }: Pro
             <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[24px] bg-[#11170f] text-[#65F06D]">
               <Orbit size={48} strokeWidth={3} />
             </div>
-            <h2 className="text-[46px] font-normal leading-none tracking-[-0.045em] text-[#202124]">Sign in</h2>
+            <h2 className="text-[42px] font-normal leading-[1.12] tracking-normal text-[#202124]">Sign in</h2>
             <p className="mt-6 text-[21px] font-normal leading-tight text-[#202124]">
               Continue to <span className="font-semibold text-[#1a73e8]">MOVEVI</span>
             </p>

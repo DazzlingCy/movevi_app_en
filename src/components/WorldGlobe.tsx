@@ -4,11 +4,13 @@ import * as THREE from 'three';
 import { feature } from 'topojson-client';
 import { CityData } from '../data/cities';
 import { cn } from '../lib/utils';
-import countriesTopologyUrl from '../assets/globe/countries-110m.json?url';
-import globeTextureUrl from '../assets/globe/earth-dark.svg?url';
 
 interface WorldGlobeProps {
   cities: CityData[];
+  appearance?: 'default' | 'aurora' | 'night';
+  focusCityId?: string;
+  focusAltitude?: number;
+  highlightedCountryIds?: string[];
   targetFlight?: { fromCityId: string; toCityId: string } | null;
   onCityClick: (city: CityData) => void;
   onFlightComplete?: () => void;
@@ -39,16 +41,24 @@ type FlightMarker = {
 
 type GlobeHtmlElement = CityPoint | FlightMarker;
 
-const GLOBE_TEXTURE_URL = globeTextureUrl;
-const COUNTRIES_TOPOLOGY_URL = countriesTopologyUrl;
-const CAMERA_ALTITUDE = 3.35;
-const REDUCED_CAMERA_ALTITUDE = 3.55;
+const viteBaseUrl = ((import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL || '/');
+const GLOBE_TEXTURE_URL = `${viteBaseUrl}globe/earth-dark.svg`;
+const NATURAL_EARTH_TEXTURE_URL = `${viteBaseUrl}globe/earth-natural.webp`;
+const NIGHT_EARTH_TEXTURE_URL = `${viteBaseUrl}globe/earth-night.webp`;
+const COUNTRIES_TOPOLOGY_URL = `${viteBaseUrl}globe/countries-110m.json`;
+const CAMERA_ALTITUDE = 1.78;
+const REDUCED_CAMERA_ALTITUDE = 1.95;
+const HOME_CAMERA_ALTITUDE = 2.55;
+const GLOBE_BOOTSTRAP_RETRY_MS = 120;
 
 type CountryPolygon = {
   type: string;
   geometry: unknown;
+  id?: string | number;
   properties?: Record<string, unknown>;
 };
+
+const countryPolygonId = (polygon: CountryPolygon) => String(polygon.id ?? '').padStart(3, '0');
 
 function isFlightMarker(point: GlobeHtmlElement): point is FlightMarker {
   return 'kind' in point && point.kind === 'flight-plane';
@@ -230,42 +240,23 @@ function getCityIconSvg(city: CityData) {
   return icons[city.englishName] || '<circle cx="12" cy="12" r="7"/><path d="M12 5v14"/><path d="M5 12h14"/>';
 }
 
-function GlobeFallback({ cities, onCityClick }: { cities: CityData[]; onCityClick: (city: CityData) => void }) {
+function FlatMapFallback({ cities, appearance, onCityClick }: { cities: CityData[]; appearance: 'default' | 'aurora' | 'night'; onCityClick: (city: CityData) => void }) {
+  const fallbackBackground = appearance === 'aurora' ? 'bg-[#061421]' : appearance === 'night' ? 'bg-[#020712]' : 'bg-[#071827]';
+  const fallbackLand = appearance === 'aurora' ? '#48654e' : appearance === 'night' ? '#172c43' : '#02070c';
+  const fallbackStroke = appearance === 'aurora' ? '#9bc6d3' : appearance === 'night' ? '#70a4c2' : '#0b5b73';
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-[28px] bg-[#061827]">
-      <div className="absolute left-1/2 top-[47%] h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle_at_40%_28%,rgba(103,232,249,0.24),rgba(8,47,73,0.76)_38%,rgba(1,6,12,0.96)_70%)] shadow-[inset_-48px_-54px_80px_rgba(0,0,0,0.9),inset_18px_16px_34px_rgba(125,211,252,0.16),0_0_120px_rgba(20,184,166,0.34)]" />
-      <svg viewBox="0 0 1200 800" className="absolute inset-0 h-full w-full opacity-95" aria-hidden="true">
-        <defs>
-          <clipPath id="fallback-globe-clip">
-            <circle cx="600" cy="390" r="315" />
-          </clipPath>
-          <radialGradient id="fallback-globe-shade" cx="39%" cy="30%" r="70%">
-            <stop offset="0%" stopColor="rgba(125,211,252,0.18)" />
-            <stop offset="52%" stopColor="rgba(8,47,73,0.06)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.74)" />
-          </radialGradient>
-        </defs>
-        <g clipPath="url(#fallback-globe-clip)">
-          <rect x="260" y="65" width="680" height="650" fill="rgba(3,18,30,0.72)" />
-          <g fill="#02070c" stroke="#0b6f86" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
-            <path d="M260 188L315 130L402 105L479 128L530 176L554 240L517 292L462 325L387 340L317 316L258 265L232 215Z" />
-            <path d="M417 106L454 80L517 92L558 126L522 160L470 142Z" />
-            <path d="M538 342L602 375L642 445L624 558L582 665L522 720L490 630L472 530L495 430Z" />
-            <path d="M530 214L580 173L664 162L732 200L747 258L686 306L597 295L542 260Z" />
-            <path d="M642 316L722 338L774 420L767 530L726 634L657 614L607 530L582 440Z" />
-            <path d="M712 194L822 138L962 128L1094 170L1166 240L1142 330L1050 396L907 384L782 335L737 262Z" />
-            <path d="M812 340L862 368L844 420L782 400Z" />
-            <path d="M947 526L1057 548L1134 615L1106 675L1012 694L942 648Z" />
-          </g>
-          <g fill="none" stroke="rgba(125,211,252,0.09)" strokeWidth="1.3">
-            <ellipse cx="600" cy="390" rx="292" ry="106" />
-            <ellipse cx="600" cy="390" rx="292" ry="206" />
-            <ellipse cx="600" cy="390" rx="130" ry="314" />
-            <ellipse cx="600" cy="390" rx="226" ry="314" />
-          </g>
-          <circle cx="600" cy="390" r="315" fill="url(#fallback-globe-shade)" />
+    <div className={`relative h-full w-full overflow-hidden rounded-[28px] ${fallbackBackground}`}>
+      <svg viewBox="0 0 1200 800" className="absolute inset-0 h-full w-full opacity-80" aria-hidden="true">
+        <g fill={fallbackLand} stroke={fallbackStroke} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
+          <path d="M88 178L143 120L230 95L307 118L358 166L382 230L345 282L290 315L215 330L145 306L86 255L60 205Z" />
+          <path d="M245 96L282 70L345 82L386 116L350 150L298 132Z" />
+          <path d="M366 332L430 365L470 435L452 548L410 655L350 710L318 620L300 520L323 420Z" />
+          <path d="M498 204L548 163L632 152L700 190L715 248L654 296L565 285L510 250Z" />
+          <path d="M610 306L690 328L742 410L735 520L694 624L625 604L575 520L550 430Z" />
+          <path d="M680 184L790 128L930 118L1062 160L1134 230L1110 320L1018 386L875 374L750 325L705 252Z" />
+          <path d="M780 330L830 358L812 410L750 390Z" />
+          <path d="M915 516L1025 538L1102 605L1074 665L980 684L910 638Z" />
         </g>
-        <circle cx="600" cy="390" r="316" fill="none" stroke="rgba(103,232,249,0.24)" strokeWidth="2" />
       </svg>
       {cities.map(city => {
         const style = getPointStyle(city);
@@ -273,7 +264,7 @@ function GlobeFallback({ cities, onCityClick }: { cities: CityData[]; onCityClic
           <button
             key={city.id}
             type="button"
-            aria-label={`View ${city.name}`}
+            aria-label={`View${city.name}`}
             onClick={() => onCityClick(city)}
             className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-200"
             style={{ left: `${city.x}%`, top: `${city.y}%` }}
@@ -288,21 +279,26 @@ function GlobeFallback({ cities, onCityClick }: { cities: CityData[]; onCityClic
           </button>
         );
       })}
+      <div className="absolute left-4 top-4 rounded-full border border-amber-200/20 bg-black/40 px-3 py-1 text-[10px] font-bold text-amber-100 backdrop-blur-md">
+        {"WebGL not available, toggle plane map"}
+      </div>
     </div>
   );
 }
 
-export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlightComplete }: WorldGlobeProps) {
+export default function WorldGlobe({ cities, appearance = 'default', focusCityId, focusAltitude = HOME_CAMERA_ALTITUDE, highlightedCountryIds = [], targetFlight, onCityClick, onFlightComplete }: WorldGlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const idleTimerRef = useRef<number | null>(null);
   const flightTimersRef = useRef<number[]>([]);
   const flightAnimationRef = useRef<number | null>(null);
   const activeFlightKeyRef = useRef<string | null>(null);
+  const homeFocusCityIdRef = useRef<string | null>(null);
   const citiesRef = useRef(cities);
   const onCityClickRef = useRef(onCityClick);
   const onFlightCompleteRef = useRef(onFlightComplete);
   const controlHandlersRef = useRef<{ start?: () => void; end?: () => void }>({});
   const readyRef = useRef(false);
+  const configuringRef = useRef(false);
   const { ref: containerRef, size } = useContainerSize();
   const reducedMotion = useReducedMotion();
   const [isReady, setIsReady] = useState(false);
@@ -310,6 +306,14 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
   const [flightArc, setFlightArc] = useState<FlightArc | null>(null);
   const [flightMarker, setFlightMarker] = useState<FlightMarker | null>(null);
   const [countryPolygons, setCountryPolygons] = useState<CountryPolygon[]>([]);
+  const highlightedCountrySet = useMemo(
+    () => new Set(highlightedCountryIds.map(countryId => String(countryId).padStart(3, '0'))),
+    [highlightedCountryIds]
+  );
+  const isHighlightedCountry = useCallback(
+    (polygon: object) => highlightedCountrySet.has(countryPolygonId(polygon as CountryPolygon)),
+    [highlightedCountrySet]
+  );
 
   const cityStatusKey = cities.map(city => `${city.id}:${city.status}:${city.completed}`).join('|');
   const cityPoints = useMemo(() => cities.map(city => ({
@@ -352,6 +356,60 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
       size: 1 + (index % 3) * 0.7
     };
   }), []);
+
+  const auroraOceanMaterial = useMemo(() => new THREE.MeshPhongMaterial({
+    color: new THREE.Color('#ffffff'),
+    emissive: new THREE.Color('#06131d'),
+    emissiveIntensity: 0.2,
+    specular: new THREE.Color('#a7cedd'),
+    shininess: 18
+  }), []);
+
+  useEffect(() => () => auroraOceanMaterial.dispose(), [auroraOceanMaterial]);
+
+  const nightEarthMaterial = useMemo(() => new THREE.MeshPhongMaterial({
+    color: new THREE.Color('#f6f7fb'),
+    emissive: new THREE.Color('#101521'),
+    emissiveIntensity: 0.46,
+    specular: new THREE.Color('#a0a8ba'),
+    shininess: 7
+  }), []);
+
+  useEffect(() => () => nightEarthMaterial.dispose(), [nightEarthMaterial]);
+
+  const applyGlobeLighting = useCallback(() => {
+    const globe = globeRef.current;
+    if (!globe) return;
+
+    if (appearance === 'aurora') {
+      const ambient = new THREE.AmbientLight(0x8fb8c9, 0.7);
+      const sunlight = new THREE.DirectionalLight(0xfff4dc, 1.5);
+      sunlight.position.set(-2.2, 1.6, 2.8);
+      const skyFill = new THREE.DirectionalLight(0x6ea6cc, 0.32);
+      skyFill.position.set(0.4, -1.6, 1.1);
+      const atmosphericRim = new THREE.DirectionalLight(0x8dd8f2, 0.46);
+      atmosphericRim.position.set(2.5, 0.4, -1.8);
+      globe.lights([ambient, sunlight, skyFill, atmosphericRim]);
+      return;
+    }
+
+    if (appearance === 'night') {
+      const ambient = new THREE.AmbientLight(0x8f96a6, 0.6);
+      const moonlight = new THREE.DirectionalLight(0xd7deef, 0.42);
+      moonlight.position.set(-1.8, 1.5, 2.6);
+      const cityRim = new THREE.DirectionalLight(0x8f96d8, 0.28);
+      cityRim.position.set(2.4, 0.3, -1.6);
+      globe.lights([ambient, moonlight, cityRim]);
+      return;
+    }
+
+    const ambient = new THREE.AmbientLight(0x7dd3fc, 1.35);
+    const key = new THREE.DirectionalLight(0xdff7ff, 1.7);
+    key.position.set(-1.6, 1.2, 2.4);
+    const rim = new THREE.DirectionalLight(0x2dd4bf, 0.85);
+    rim.position.set(2.2, -0.8, -1.1);
+    globe.lights([ambient, key, rim]);
+  }, [appearance]);
 
   useEffect(() => {
     let cancelled = false;
@@ -396,14 +454,14 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
     idleTimerRef.current = window.setTimeout(() => setAutoRotate(true), 4000);
   }, [clearIdleTimer, reducedMotion, setAutoRotate]);
 
-  const focusCity = useCallback((city: CityData, transitionMs = 900) => {
+  const focusCity = useCallback((city: CityData, transitionMs = 900, altitude = CAMERA_ALTITUDE) => {
     const globe = globeRef.current;
     if (!globe) return;
     globe.pointOfView(
       {
         lat: city.lat,
         lng: city.lng,
-        altitude: reducedMotion ? REDUCED_CAMERA_ALTITUDE : CAMERA_ALTITUDE
+        altitude: reducedMotion ? Math.max(altitude, REDUCED_CAMERA_ALTITUDE) : altitude
       },
       reducedMotion ? Math.min(transitionMs, 120) : transitionMs
     );
@@ -411,42 +469,98 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
 
   const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
-    if (!globe || readyRef.current) return;
-    readyRef.current = true;
+    if (!globe || readyRef.current || configuringRef.current) return false;
 
-    const renderer = globe.renderer();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setClearColor(0x000000, 0);
+    configuringRef.current = true;
+    try {
+      const renderer = globe.renderer();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x000000, 0);
 
-    const controls = globe.controls();
-    controls.enablePan = false;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.rotateSpeed = 0.52;
-    controls.zoomSpeed = 0.72;
-    controls.minDistance = 215;
-    controls.maxDistance = 560;
-    const handleControlStart = () => {
-      setAutoRotate(false);
+      const controls = globe.controls();
+      controls.enablePan = false;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.rotateSpeed = 0.52;
+      controls.zoomSpeed = 0.72;
+      controls.minDistance = 190;
+      controls.maxDistance = 520;
+
+      const previousHandlers = controlHandlersRef.current;
+      if (previousHandlers.start) controls.removeEventListener('start', previousHandlers.start);
+      if (previousHandlers.end) controls.removeEventListener('end', previousHandlers.end);
+
+      const handleControlStart = () => {
+        setAutoRotate(false);
+        clearIdleTimer();
+      };
+      const handleControlEnd = () => scheduleAutoRotate();
+      controlHandlersRef.current = { start: handleControlStart, end: handleControlEnd };
+      controls.addEventListener('start', handleControlStart);
+      controls.addEventListener('end', handleControlEnd);
+
+      applyGlobeLighting();
+
+      const city = cities.find(item => item.id === focusCityId)
+        || cities.find(item => item.status === 'in-progress')
+        || cities.find(item => item.status === 'lit')
+        || cities[0];
+      if (city) {
+        focusCity(city, 850, focusAltitude);
+        homeFocusCityIdRef.current = city.id;
+      }
       clearIdleTimer();
+      setAutoRotate(false);
+      scheduleAutoRotate();
+      readyRef.current = true;
+      setIsReady(true);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      configuringRef.current = false;
+    }
+  }, [applyGlobeLighting, cities, clearIdleTimer, focusAltitude, focusCity, focusCityId, scheduleAutoRotate, setAutoRotate]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    applyGlobeLighting();
+  }, [applyGlobeLighting, isReady]);
+
+  useEffect(() => {
+    if (!webglAvailable || isReady || size.width <= 1 || size.height <= 1) return;
+
+    let cancelled = false;
+    let retryTimer: number | null = null;
+
+    const attemptBootstrap = () => {
+      if (cancelled || readyRef.current) return;
+      if (!configureGlobe()) {
+        retryTimer = window.setTimeout(attemptBootstrap, GLOBE_BOOTSTRAP_RETRY_MS);
+      }
     };
-    const handleControlEnd = () => scheduleAutoRotate();
-    controlHandlersRef.current = { start: handleControlStart, end: handleControlEnd };
-    controls.addEventListener('start', handleControlStart);
-    controls.addEventListener('end', handleControlEnd);
 
-    const ambient = new THREE.AmbientLight(0x7dd3fc, 1.35);
-    const key = new THREE.DirectionalLight(0xdff7ff, 1.7);
-    key.position.set(-1.6, 1.2, 2.4);
-    const rim = new THREE.DirectionalLight(0x2dd4bf, 0.85);
-    rim.position.set(2.2, -0.8, -1.1);
-    globe.lights([ambient, key, rim]);
+    const animationFrame = window.requestAnimationFrame(attemptBootstrap);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(animationFrame);
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [configureGlobe, isReady, size.height, size.width, webglAvailable]);
 
-    const city = cities.find(item => item.status === 'in-progress') || cities.find(item => item.status === 'lit') || cities[0];
-    if (city) focusCity(city, 850);
+  useEffect(() => {
+    if (!isReady || !readyRef.current || targetFlight || !focusCityId) return;
+    if (homeFocusCityIdRef.current === focusCityId) return;
+
+    const city = citiesRef.current.find(item => item.id === focusCityId);
+    if (!city) return;
+
+    clearIdleTimer();
+    setAutoRotate(false);
+    focusCity(city, 720, focusAltitude);
+    homeFocusCityIdRef.current = city.id;
     scheduleAutoRotate();
-    setIsReady(true);
-  }, [cities, clearIdleTimer, focusCity, scheduleAutoRotate, setAutoRotate]);
+  }, [clearIdleTimer, focusAltitude, focusCity, focusCityId, isReady, scheduleAutoRotate, setAutoRotate, targetFlight]);
 
   useEffect(() => {
     const globe = globeRef.current;
@@ -590,7 +704,7 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
 
     if (isFlightMarker(globeElement)) {
       const plane = document.createElement('div');
-      plane.setAttribute('aria-label', 'Animated city flight route');
+      plane.setAttribute('aria-label', "City flight course, action drawings.");
       plane.innerHTML = `
         <span class="plane-rotor">
           <span class="plane-glow"></span>
@@ -657,7 +771,7 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
     const city = globeElement;
     const label = document.createElement('button');
     label.type = 'button';
-    label.setAttribute('aria-label', `View ${city.name}`);
+    label.setAttribute('aria-label', `View${city.name}`);
 
     const isLit = city.status === 'lit';
     const isCurrent = city.status === 'in-progress';
@@ -793,7 +907,7 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
   if (!webglAvailable) {
     return (
       <div ref={containerRef} className="absolute inset-0 z-10">
-        <GlobeFallback cities={cities} onCityClick={onCityClick} />
+        <FlatMapFallback cities={cities} appearance={appearance} onCityClick={onCityClick} />
       </div>
     );
   }
@@ -802,11 +916,11 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
     <div
       ref={containerRef}
       className="absolute inset-0 z-10 touch-none select-none overflow-hidden"
-      aria-label="Interactive 3D globe. Drag to rotate, scroll or pinch to zoom, and tap a city for details."
+      aria-label="Interactive 3D Earth map, drag-and-roll, roller or double-finger scaling, click on city to see details"
       role="application"
     >
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(20,184,166,0.14),transparent_34%),radial-gradient(circle_at_50%_42%,rgba(34,211,238,0.10),transparent_42%)]" />
+        <div className={`absolute inset-0 ${appearance === 'aurora' ? 'bg-[radial-gradient(circle_at_43%_31%,rgba(147,197,220,0.14),transparent_32%),radial-gradient(circle_at_58%_46%,rgba(56,189,248,0.07),transparent_46%)]' : appearance === 'night' ? 'bg-[radial-gradient(circle_at_47%_35%,rgba(210,216,232,0.08),transparent_34%),radial-gradient(circle_at_62%_48%,rgba(126,134,243,0.035),transparent_45%)]' : 'bg-[radial-gradient(circle_at_50%_38%,rgba(20,184,166,0.14),transparent_34%),radial-gradient(circle_at_50%_42%,rgba(34,211,238,0.10),transparent_42%)]'}`} />
         {starPoints.map(star => (
           <span
             key={star.id}
@@ -840,16 +954,23 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
         width={size.width}
         height={size.height}
         backgroundColor="rgba(0,0,0,0)"
-        globeImageUrl={GLOBE_TEXTURE_URL}
+        globeImageUrl={appearance === 'aurora' ? NATURAL_EARTH_TEXTURE_URL : appearance === 'night' ? NIGHT_EARTH_TEXTURE_URL : GLOBE_TEXTURE_URL}
+        globeMaterial={appearance === 'aurora' ? auroraOceanMaterial : appearance === 'night' ? nightEarthMaterial : undefined}
         showAtmosphere
-        atmosphereColor="#67e8f9"
-        atmosphereAltitude={0.16}
+        atmosphereColor={appearance === 'aurora' ? '#9bd7ee' : appearance === 'night' ? '#b9c1d8' : '#67e8f9'}
+        atmosphereAltitude={appearance === 'aurora' ? 0.13 : appearance === 'night' ? 0.085 : 0.16}
         globeCurvatureResolution={5}
         polygonsData={countryPolygons}
-        polygonAltitude={0.003}
-        polygonCapColor={() => 'rgba(31, 63, 76, 0.72)'}
-        polygonSideColor={() => 'rgba(8, 24, 39, 0.12)'}
-        polygonStrokeColor={() => 'rgba(125, 211, 252, 0.16)'}
+        polygonAltitude={(polygon: object) => isHighlightedCountry(polygon) ? 0.008 : appearance === 'default' ? 0.003 : 0.0015}
+        polygonCapColor={(polygon: object) => isHighlightedCountry(polygon)
+          ? appearance === 'night' ? 'rgba(70, 225, 165, 0.34)' : 'rgba(43, 198, 144, 0.42)'
+          : appearance === 'default' ? 'rgba(31, 63, 76, 0.72)' : 'rgba(255, 255, 255, 0)'}
+        polygonSideColor={(polygon: object) => isHighlightedCountry(polygon)
+          ? 'rgba(46, 196, 143, 0.3)'
+          : appearance === 'aurora' ? 'rgba(34, 70, 86, 0.08)' : appearance === 'night' ? 'rgba(90, 98, 118, 0.045)' : 'rgba(8, 24, 39, 0.12)'}
+        polygonStrokeColor={(polygon: object) => isHighlightedCountry(polygon)
+          ? 'rgba(137, 255, 212, 0.88)'
+          : appearance === 'aurora' ? 'rgba(185, 219, 228, 0.15)' : appearance === 'night' ? 'rgba(190, 198, 216, 0.085)' : 'rgba(125, 211, 252, 0.16)'}
         polygonsTransitionDuration={isReady ? 450 : 0}
         pointsData={[]}
         pointLat="lat"
@@ -862,7 +983,7 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
         pointsTransitionDuration={reducedMotion ? 0 : 500}
         pointLabel={(point: object) => {
           const city = point as CityPoint;
-          return `${city.name} · ${city.status === 'lit' ? 'Lit' : city.status === 'in-progress' ? 'In progress' : city.status === 'upcoming' ? 'Coming soon' : 'Unlit'}`;
+          return `${city.name} · ${city.status === 'lit' ? "Lighted" : city.status === 'in-progress' ? "Lighting up." : city.status === 'upcoming' ? "Unopen" : "♪ To light up"}`;
         }}
         onPointClick={handlePointClick}
         htmlElementsData={htmlElements}
@@ -924,10 +1045,20 @@ export default function WorldGlobe({ cities, targetFlight, onCityClick, onFlight
         onGlobeReady={configureGlobe}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#081827] via-[#081827]/62 to-transparent" />
+      {appearance === 'aurora' && (
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden" aria-hidden="true">
+          <div className="absolute left-[17%] top-[20%] h-24 w-[66%] -rotate-6 rounded-[50%] bg-[linear-gradient(105deg,transparent_10%,rgba(186,230,253,0.025)_34%,rgba(125,211,252,0.055)_52%,rgba(186,230,253,0.025)_70%,transparent_90%)] blur-2xl mix-blend-screen" />
+        </div>
+      )}
+
+      <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t ${appearance === 'aurora' ? 'from-[#04101a] via-[#04101a]/58' : appearance === 'night' ? 'from-[#020813] via-[#020813]/62' : 'from-[#081827] via-[#081827]/62'} to-transparent`} />
       <div className={cn(
-        "pointer-events-none absolute inset-0 rounded-[36px] border border-cyan-100/[0.03]",
-        "shadow-[inset_0_0_90px_rgba(8,24,39,0.68)]"
+        'pointer-events-none absolute inset-0 rounded-[36px] border',
+        appearance === 'aurora'
+          ? 'border-sky-100/[0.045] shadow-[inset_0_0_96px_rgba(2,18,30,0.58)]'
+          : appearance === 'night'
+          ? 'border-blue-100/[0.04] shadow-[inset_0_0_100px_rgba(1,8,20,0.72)]'
+          : 'border-cyan-100/[0.03] shadow-[inset_0_0_90px_rgba(8,24,39,0.68)]'
       )} />
     </div>
   );

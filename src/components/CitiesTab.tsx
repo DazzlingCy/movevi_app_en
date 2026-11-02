@@ -3,15 +3,16 @@ import { motion } from 'motion/react';
 import { Play } from 'lucide-react';
 import { CITIES_BY_CONTINENT, CONTINENTS_ORDER, CityData } from '../data/cities';
 import { cn } from '../lib/utils';
+import CityImage from './CityImage';
 
 const CONTINENT_ICONS: Record<string, string> = {
-  'China': '🏯',
-  'Asia': '🪷',
-  'Europe': '🏰',
-  'Africa': '🏜️',
-  'North America': '🗽',
-  'South America': '⛰️',
-  'Oceania': '🗿'
+  '中国': '🏯',
+  '亚洲其他': '🪷',
+  '欧洲': '🏰',
+  '非洲': '🏜️',
+  '北美洲': '🗽',
+  '南美洲': '⛰️',
+  '大洋洲': '🗿'
 };
 
 export default function CitiesTab({ onCityClick }: { onCityClick?: (city: CityData) => void }) {
@@ -21,7 +22,7 @@ export default function CitiesTab({ onCityClick }: { onCityClick?: (city: CityDa
     <div className="w-full h-full bg-[#05070A] flex flex-col text-slate-100 font-sans">
       {/* Header */}
       <div className="shrink-0 bg-black/40 backdrop-blur-md pt-safet pt-4 pb-4 border-b border-white/10 relative z-20 flex items-center justify-center px-4">
-        <h1 className="text-base font-bold text-center tracking-wider">Cities List</h1>
+        <h1 className="text-base font-bold text-center tracking-wider">{"City List"}</h1>
       </div>
 
       {/* Main Layout Area */}
@@ -78,9 +79,10 @@ export default function CitiesTab({ onCityClick }: { onCityClick?: (city: CityDa
                 className="bg-white/5 rounded-2xl overflow-hidden border border-white/10 shadow-lg flex p-2.5 gap-4 cursor-pointer hover:bg-white/10 transition-colors"
               >
                 <div className="relative w-[110px] h-[110px] shrink-0 rounded-xl overflow-hidden">
-                  <img 
+                  <CityImage
                     src={city.image} 
                     alt={city.name}
+                    fallbackLabel={city.name}
                     className="absolute inset-0 w-full h-full object-cover" 
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
@@ -92,17 +94,17 @@ export default function CitiesTab({ onCityClick }: { onCityClick?: (city: CityDa
                   <div className="flex gap-4 mt-auto mb-1.5">
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-slate-200">{city.routes}</span>
-                      <span className="text-[10px] text-slate-500">Routes</span>
+                      <span className="text-[10px] text-slate-500">{"Route"}</span>
                     </div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-slate-200">{city.spots}</span>
-                      <span className="text-[10px] text-slate-500">Spots</span>
+                      <span className="text-[10px] text-slate-500">{"View"}</span>
                     </div>
                   </div>
                   
                   <div className="mt-1">
                     <div className="flex justify-between items-end mb-1">
-                      <span className="text-[10px] text-slate-500">Progress</span>
+                      <span className="text-[10px] text-slate-500">{"Progress towards completion"}</span>
                       <span className="text-[10px] text-amber-500 font-mono font-medium">{city.completed}/{city.routes}</span>
                     </div>
                     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
@@ -118,7 +120,7 @@ export default function CitiesTab({ onCityClick }: { onCityClick?: (city: CityDa
             
             {(!CITIES_BY_CONTINENT[activeContinent] || CITIES_BY_CONTINENT[activeContinent].length === 0) && (
               <div className="text-center text-slate-500 text-xs py-10">
-                No city data available.
+                {"Urban data not available"}
               </div>
             )}
           </div>

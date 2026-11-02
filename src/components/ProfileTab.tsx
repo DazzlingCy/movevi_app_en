@@ -1,407 +1,195 @@
-import { useState } from 'react';
 import {
-  Settings,
-  ChevronRight,
-  SquarePen,
-  Medal,
-  Map as MapIcon,
-  MonitorSmartphone,
-  Wallet,
-  HeadphonesIcon,
-  FileText,
   BookOpen,
+  ChevronRight,
   ClipboardList,
-  Crown,
-  X,
+  HeadphonesIcon,
+  Mail,
+  Map as MapIcon,
+  Medal,
+  MessageSquare,
+  MonitorSmartphone,
+  Settings,
+  Sparkles,
+  SquarePen,
+  Wallet
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { AuthUser } from '../lib/auth';
-import {
-  SubscriptionState,
-  formatBillingDate,
-  getPlanName,
-  getPlanPrice,
-} from '../lib/subscription';
+import { motion } from 'motion/react';
+import { getGlowRank } from '../lib/glow';
+import type { AuthUser } from './AuthView';
+import type { AccountFeatureKind } from './AccountFeatureView';
 
 interface UserStats {
   completedCities: number;
   completedRoutes: number;
   totalDistance: number;
   totalTimeHours: number;
+  lightValue?: number;
+  lifetimeLightValue?: number;
 }
 
 interface ProfileTabProps {
-  user: AuthUser | null;
   userStats: UserStats;
-  isSubscribed: boolean;
-  subscription: SubscriptionState;
-  onOpenSubscription: () => void;
-  onCancelSubscription: () => void;
-  onResumeSubscription: () => void;
-  onUpdatePaymentMethod: () => void;
-  onOpenSettings: () => void;
-  onOpenEditProfile: () => void;
-  onOpenWallet: () => void;
+  authUser?: AuthUser | null;
+  onOpenAuth?: () => void;
+  onOpenSettings?: () => void;
+  onOpenFeature?: (feature: AccountFeatureKind) => void;
+  onOpenRouteCollection?: () => void;
+  onOpenWechatSupport?: () => void;
 }
 
-export default function ProfileTab({
-  user,
-  userStats,
-  isSubscribed,
-  subscription,
-  onOpenSubscription,
-  onCancelSubscription,
-  onResumeSubscription,
-  onUpdatePaymentMethod,
-  onOpenSettings,
-  onOpenEditProfile,
-  onOpenWallet,
-}: ProfileTabProps) {
-  const [showManageModal, setShowManageModal] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const isCancellationPending = isSubscribed && subscription.status === 'canceled_at_period_end';
-  const isGracePeriod = subscription.status === 'grace_period';
-  const isBillingRetry = subscription.status === 'billing_retry';
-  const isExpired = subscription.status === 'expired';
-  const hasBillingIssue = isGracePeriod || isBillingRetry;
-  const isInactiveMembership = isExpired;
-  const billingDate = formatBillingDate(subscription.currentPeriodEnd);
-  const membershipAccentClass = isSubscribed ? 'text-emerald-400' : 'text-slate-500';
-  const membershipButtonClass = isSubscribed
-    ? 'border-emerald-400/35 bg-emerald-500/12 text-emerald-300 shadow-[0_0_22px_rgba(52,211,153,0.16)]'
-    : 'border-slate-500/30 bg-slate-500/10 text-slate-400';
-  const membershipDotClass = isSubscribed ? 'bg-emerald-300' : 'bg-slate-500';
-  const membershipLabel = isBillingRetry
-    ? 'Premium paused'
-    : isGracePeriod
-      ? 'Payment issue'
-      : isExpired
-        ? 'Membership ended'
-        : isCancellationPending
-          ? 'Ending soon'
-          : isSubscribed
-            ? 'Active'
-            : 'Free plan';
-
-  const stats = [
-    { label: 'Cities Lit', value: userStats.completedCities.toString() },
-    { label: 'Routes Completed', value: userStats.completedRoutes.toString() },
-    { label: 'Distance', value: userStats.totalDistance.toFixed(1), unit: 'km' },
-    { label: 'Active Time', value: userStats.totalTimeHours.toFixed(1), unit: 'h' },
+export default function ProfileTab({ userStats, authUser, onOpenAuth, onOpenSettings, onOpenFeature, onOpenRouteCollection, onOpenWechatSupport }: ProfileTabProps) {
+  const rankInfo = getGlowRank(userStats.lifetimeLightValue ?? userStats.lightValue ?? 0);
+  const displayName = authUser?.name || 'Sign In';
+  const openProfile = () => {
+    if (authUser) {
+      onOpenFeature?.('profileEdit');
+      return;
+    }
+    onOpenAuth?.();
+  };
+  const statItems = [
+    { label: "Completed city", value: userStats.completedCities.toString() },
+    { label: "Finish the route.", value: userStats.completedRoutes.toString() },
+    { label: "Sport mileage", value: userStats.totalDistance.toFixed(1), unit: 'km' },
+    { label: "Length of exercise", value: userStats.totalTimeHours.toFixed(1), unit: 'h' }
   ];
 
   const menuItems = [
-    { icon: ClipboardList, label: 'Workout History' },
-    { icon: MonitorSmartphone, label: 'My Devices' },
-    { icon: Wallet, label: 'My Wallet', onClick: onOpenWallet },
-    { icon: HeadphonesIcon, label: 'Help & Support' },
-    { icon: FileText, label: 'Feedback' },
-    { icon: BookOpen, label: 'App Guide' },
-    { icon: Settings, label: 'Settings', onClick: onOpenSettings },
+    { icon: ClipboardList, label: "Sports records", feature: 'records' as AccountFeatureKind },
+    { icon: MonitorSmartphone, label: "My equipment.", feature: 'device' as AccountFeatureKind },
+    { icon: Wallet, label: "My wallet.", feature: 'wallet' as AccountFeatureKind },
+    { icon: MessageSquare, label: "Issue feedback", feature: 'service' as AccountFeatureKind },
+    { icon: HeadphonesIcon, label: "Add Micro", onClick: onOpenWechatSupport },
+    { icon: BookOpen, label: "Description of use", feature: 'guide' as AccountFeatureKind },
+    { icon: Settings, label: "Settings", onClick: onOpenSettings }
   ];
 
-  const membershipProviderLabel =
-    subscription.provider === 'app_store'
-      ? 'App Store'
-      : subscription.provider === 'google_play'
-        ? 'Google Play'
-        : subscription.provider === 'stripe'
-          ? 'MOVEVI Web'
-          : 'Device wallet';
-
-  const confirmCancelSubscription = () => {
-    onCancelSubscription();
-    setShowCancelConfirm(false);
-    setShowManageModal(false);
-  };
-
   return (
-    <div className="w-full h-full bg-[#05070A] overflow-y-auto pb-24 text-slate-100 font-sans hide-scrollbar relative">
-      {/* Header Profile Info */}
-      <div className="relative pt-12 pb-10 px-6 bg-gradient-to-b from-cyan-900/20 via-cyan-900/5 to-transparent">
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-cyan-500/10 to-transparent pointer-events-none blur-3xl" />
-        
-        {/* Top bar with icons */}
-        <div className="flex justify-end gap-4 mb-2 relative z-10">
+    <div className="h-full w-full overflow-y-auto bg-[#05070A] pb-24 text-slate-100 hide-scrollbar">
+      <div className="relative overflow-hidden px-5 pb-8 pt-12">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(34,211,238,0.22),transparent_36%),radial-gradient(circle_at_86%_6%,rgba(251,191,36,0.12),transparent_34%),linear-gradient(180deg,rgba(8,47,73,0.48),transparent_78%)]" />
+        <div className="relative flex justify-end gap-4">
           <button
             type="button"
-            onClick={onOpenSubscription}
-            title={membershipLabel}
-            aria-label={`Membership status: ${membershipLabel}. Open membership page.`}
-            className={`relative flex h-9 w-9 items-center justify-center rounded-xl border backdrop-blur-xl transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 ${membershipButtonClass}`}
+            onClick={() => onOpenFeature?.('messages')}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-slate-200 backdrop-blur-md active:scale-95"
+            aria-label="Message"
           >
-            <Crown size={18} className={`${membershipAccentClass} fill-current`} />
-            <span className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full border border-[#05070A] ${membershipDotClass}`} />
+            <Mail size={20} />
           </button>
           <button
             type="button"
-            onClick={onOpenEditProfile}
-            className="text-slate-300 hover:text-cyan-400 transition-colors"
-            aria-label="Edit profile"
+            onClick={openProfile}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-slate-200 backdrop-blur-md active:scale-95"
+            aria-label={authUser ? "Edit Information" : "Login or registration"}
           >
-            <SquarePen size={22} />
+            <SquarePen size={20} />
           </button>
         </div>
 
-        <div className="flex flex-col items-start gap-4 relative z-10 border-b border-white/5 pb-5">
-          <div className="flex items-center gap-4 w-full">
-            <div className="w-20 h-20 rounded-full border-2 border-cyan-400/50 p-1 relative shadow-[0_0_20px_rgba(34,211,238,0.2)] bg-[#05070A] shrink-0">
-              <img
-                src={user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200'}
-                alt="Avatar"
-                className="w-full h-full rounded-full object-cover"
-              />
-            </div>
-            
-            <div className="flex-1 flex flex-col justify-center">
-              <h1 className="text-xl font-bold text-slate-100 tracking-wide mb-1">{user?.name || 'MOVEVI Runner'}</h1>
-              <p className="max-w-[210px] truncate text-xs font-semibold text-slate-500">{user?.email || 'Signed in'}</p>
+        <section className="relative mt-4 rounded-[32px] border border-cyan-200/15 bg-[#081019]/82 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.36)] backdrop-blur-xl">
+          <div className="absolute inset-0 rounded-[32px] bg-[linear-gradient(135deg,rgba(255,255,255,0.07),transparent_44%),radial-gradient(circle_at_92%_0%,rgba(251,191,36,0.14),transparent_42%)]" />
+          <div className="relative flex items-center gap-4">
+            <button
+              type="button"
+              onClick={openProfile}
+              className={`h-[78px] w-[78px] shrink-0 rounded-full bg-gradient-to-br ${rankInfo.current.color} p-[2px] shadow-[0_0_34px_rgba(103,232,249,0.18)] active:scale-95`}
+              aria-label={authUser ? "View or edit information" : "Login or registration"}
+            >
+              <div className="h-full w-full rounded-full bg-slate-950 p-1">
+                <img
+                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200"
+                  alt="Heads."
+                  className="h-full w-full rounded-full object-cover"
+                />
+              </div>
+            </button>
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-2xl font-black tracking-tight text-white">{displayName}</h1>
+              <div className="mt-2 flex items-center gap-2">
+                <span className={`rounded-full bg-gradient-to-r ${rankInfo.current.color} px-2.5 py-1 text-[11px] font-black text-slate-950 shadow-[0_0_16px_rgba(251,191,36,0.24)]`}>
+                  LV.{rankInfo.current.level}
+                </span>
+                <span className="text-sm font-black text-amber-300">{rankInfo.current.name}</span>
+              </div>
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="w-full flex items-center justify-between mt-4">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="flex flex-col items-center">
-                <div className="text-2xl font-bold text-slate-100 font-mono tracking-wider relative">
-                  {stat.value}
-                  {stat.unit && <span className="text-sm text-slate-400 ml-0.5 relative -top-1">{stat.unit}</span>}
-                </div>
-                <div className="text-[11px] text-slate-400 mt-1">{stat.label}</div>
+          <div className="relative mt-6 grid grid-cols-4 gap-2">
+            {statItems.map(item => (
+              <div key={item.label} className="rounded-2xl border border-white/[0.08] bg-white/[0.045] px-2 py-3 text-center">
+                <p className="font-mono text-lg font-black tracking-[-0.03em] text-white">
+                  {item.value}
+                  {item.unit && <span className="ml-0.5 text-[10px] text-slate-500">{item.unit}</span>}
+                </p>
+                <p className="mt-1 text-[10px] font-bold text-slate-500">{item.label}</p>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="px-5 space-y-4 -mt-6 relative z-20">
-        {/* Action Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <motion.div 
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-4 relative overflow-hidden backdrop-blur-xl shadow-lg cursor-pointer"
+      <div className="relative z-10 -mt-3 space-y-5 px-5">
+        <div className="grid grid-cols-2 gap-3">
+          <motion.button
+            type="button"
+            onClick={onOpenRouteCollection}
+            whileTap={{ scale: 0.97 }}
+            className="relative col-span-2 overflow-hidden rounded-[26px] border border-cyan-200/20 bg-[#08121b] p-4 text-left shadow-xl"
           >
-            <div className="absolute right-[-10px] top-[-10px] opacity-20 pointer-events-none">
-              <Medal size={80} className="text-amber-500" />
+            <div className="absolute -right-7 -top-10 text-cyan-200/[0.07]">
+              <MapIcon size={132} />
             </div>
-            <div className="text-amber-400 mb-1">
-              <Medal size={28} className="drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[9px] font-black tracking-[0.2em] text-cyan-200/60">CITY COLLECTION</p>
+                <h3 className="mt-1 text-lg font-black text-white">{"City Collection"}</h3>
+                <p className="mt-1 text-[11px] font-bold text-slate-500">{"The Dictionary Order of the City Card of the Scenic Embrace."}</p>
+              </div>
+              <div className="flex shrink-0 items-center -space-x-1.5" aria-hidden="true">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-amber-200/40 bg-[#16130b] text-amber-100 shadow-lg">
+                  <Medal size={20} />
+                </span>
+                <span className="relative z-[1] flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-cyan-200/35 bg-[#0b1c29] text-cyan-100 shadow-lg">
+                  <MapIcon size={21} />
+                </span>
+                <span className="relative z-[2] flex h-11 w-11 items-center justify-center rounded-full border-2 border-emerald-200/35 bg-[#0b1d19] text-emerald-100 shadow-lg">
+                  <Sparkles size={19} />
+                </span>
+              </div>
             </div>
-            <h3 className="text-slate-100 font-bold mb-1 mt-3">My Badges</h3>
-            <p className="text-[10px] text-amber-200/60 break-words whitespace-pre-wrap">Your route honors and achievements</p>
-          </motion.div>
-
-          <motion.div 
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/20 rounded-2xl p-4 relative overflow-hidden backdrop-blur-xl shadow-lg cursor-pointer"
-          >
-            <div className="absolute right-[-10px] top-[-10px] opacity-20 pointer-events-none">
-              <MapIcon size={80} className="text-cyan-500" />
-            </div>
-            <div className="text-cyan-400 mb-1">
-              <MapIcon size={28} className="drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-            </div>
-            <h3 className="text-slate-100 font-bold mb-1 mt-3">City Cards</h3>
-            <p className="text-[10px] text-cyan-200/60 break-words whitespace-pre-wrap">Stories from the cities you unlock</p>
-          </motion.div>
+          </motion.button>
         </div>
 
-        {/* Menu Items */}
-        <div className="bg-white/5 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-xl">
-          {menuItems.map((item, idx) => {
+        <section className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.045] shadow-2xl backdrop-blur-xl">
+          {menuItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <motion.button
-                key={idx}
-                onClick={item.onClick}
-                whileTap={{ backgroundColor: "rgba(255,255,255,0.1)" }}
-                className={`w-full flex items-center justify-between p-5 transition-colors ${idx !== menuItems.length - 1 ? 'border-b border-white/5' : ''}`}
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  if ('feature' in item && item.feature) {
+                    onOpenFeature?.(item.feature);
+                    return;
+                  }
+                  item.onClick?.();
+                }}
+                whileTap={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                className={`flex w-full items-center justify-between px-5 py-4 text-left ${index !== menuItems.length - 1 ? 'border-b border-white/[0.06]' : ''}`}
               >
-                <div className="flex items-center gap-4">
-                  <Icon size={20} className="text-slate-400" />
-                  <span className="text-slate-200 font-medium tracking-wide text-sm">{item.label}</span>
-                </div>
+                <span className="flex items-center gap-4">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900/80 text-slate-300">
+                    <Icon size={19} />
+                  </span>
+                  <span className="text-sm font-black text-slate-100">{item.label}</span>
+                </span>
                 <ChevronRight size={18} className="text-slate-600" />
               </motion.button>
             );
           })}
-        </div>
-
+        </section>
       </div>
-
-      <AnimatePresence>
-        {showManageModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[220] max-w-md mx-auto bg-black/75 backdrop-blur-sm flex items-end sm:rounded-[40px] sm:overflow-hidden"
-          >
-            <motion.div
-              initial={{ y: 40 }}
-              animate={{ y: 0 }}
-              exit={{ y: 40 }}
-              className="w-full bg-[#090D14] border-t border-white/10 rounded-t-[28px] p-6 shadow-2xl max-h-[88vh] overflow-y-auto hide-scrollbar"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="text-[10px] uppercase tracking-widest text-cyan-400 font-black font-mono">Membership & Billing</span>
-                  <h3 className="text-lg font-black text-slate-100 mt-1">Manage MOVEVI Premium</h3>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowCancelConfirm(false);
-                    setShowManageModal(false);
-                  }}
-                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center border border-white/10"
-                >
-                  <X size={16} className="text-slate-400" />
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-4 text-xs text-slate-300">
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Current plan</span>
-                      <h4 className="text-base font-black text-slate-100 mt-1">{getPlanName(subscription.plan)}</h4>
-                      <p className="text-slate-400 mt-1">{getPlanPrice(subscription.plan)} · All global routes</p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                      isCancellationPending
-                        ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
-                        : hasBillingIssue
-                          ? 'bg-red-500/10 text-red-300 border border-red-500/20'
-                          : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
-                    }`}>
-                      {isCancellationPending ? 'Ending' : hasBillingIssue ? 'Payment issue' : 'Active'}
-                    </span>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="bg-black/20 border border-white/5 rounded-xl p-3">
-                      <span className="block text-slate-500">Billing date</span>
-                      <strong className="block text-slate-100 mt-1">{billingDate}</strong>
-                    </div>
-                    <div className="bg-black/20 border border-white/5 rounded-xl p-3">
-                      <span className="block text-slate-500">Managed by</span>
-                      <strong className="block text-slate-100 mt-1">
-                        {membershipProviderLabel}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Payment method</span>
-                      <p className="text-slate-100 font-bold mt-1">{subscription.paymentMethodLabel || 'Apple / Google Pay'}</p>
-                    </div>
-                    <button
-                      onClick={onUpdatePaymentMethod}
-                      className="px-3 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-300 text-[11px] font-black transition-colors"
-                    >
-                      Update
-                    </button>
-                  </div>
-                  {hasBillingIssue && (
-                    <p className="mt-3 text-red-300 leading-relaxed">
-                      {subscription.billingIssueMessage || 'We could not renew your membership. Update payment to keep Premium active.'}
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Billing history</span>
-                    <span className="text-slate-500">Latest</span>
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {(subscription.billingHistory.length > 0
-                      ? subscription.billingHistory.slice(0, 3)
-                      : [{ id: 'upcoming', date: subscription.currentPeriodEnd || new Date().toISOString(), description: getPlanName(subscription.plan), amount: getPlanPrice(subscription.plan), status: 'upcoming' as const }]
-                    ).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-3 border-t border-white/5 pt-2 first:border-t-0 first:pt-0">
-                        <div>
-                          <p className="text-slate-200 font-semibold">{item.description}</p>
-                          <p className="text-slate-500 text-[10px]">{formatBillingDate(item.date)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-slate-100 font-bold">{item.amount}</p>
-                          <p className={`text-[10px] uppercase font-black ${
-                            item.status === 'failed'
-                              ? 'text-red-300'
-                              : item.status === 'upcoming'
-                                ? 'text-cyan-300'
-                                : 'text-emerald-300'
-                          }`}>
-                            {item.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4">
-                  <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black">Cancellation policy</span>
-                  <p className="mt-2 leading-relaxed text-slate-400">
-                    Canceling stops your next renewal. Premium remains available until {billingDate}.
-                  </p>
-                </div>
-              </div>
-
-              {showCancelConfirm && (
-                <div className="mt-5 bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
-                  <h4 className="text-sm font-black text-red-100">Cancel membership?</h4>
-                  <p className="text-xs text-red-200/80 mt-2 leading-relaxed">
-                    Your Premium routes stay unlocked until {billingDate}. After that, your account returns to the free plan unless you restart membership.
-                  </p>
-                  <div className="mt-4 flex gap-3">
-                    <button
-                      onClick={() => setShowCancelConfirm(false)}
-                      className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-bold rounded-xl transition-all"
-                    >
-                      Keep Premium
-                    </button>
-                    <button
-                      onClick={confirmCancelSubscription}
-                      className="flex-1 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-100 text-xs font-black rounded-xl transition-all"
-                    >
-                      Confirm cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6 flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowCancelConfirm(false);
-                    setShowManageModal(false);
-                  }}
-                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 text-xs font-bold rounded-xl transition-all"
-                >
-                  Done
-                </button>
-                <button
-                  onClick={onUpdatePaymentMethod}
-                  className="flex-1 py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-300 text-xs font-bold rounded-xl transition-all"
-                >
-                  Update payment
-                </button>
-                <button
-                  onClick={() => setShowCancelConfirm(true)}
-                  disabled={isCancellationPending}
-                  className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 disabled:bg-white/5 disabled:text-slate-600 border border-red-500/20 disabled:border-white/5 text-red-300 text-xs font-bold rounded-xl transition-all"
-                >
-                  {isCancellationPending ? 'Canceled' : 'Cancel'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
