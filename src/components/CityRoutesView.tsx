@@ -10,7 +10,7 @@ import CityRouteOverviewView from './CityRouteOverviewView';
 import styles from './CityRoutesView.module.css';
 import { getRouteCover } from '../data/routeCovers';
 import { getRouteCategory, type RouteCategory } from '../data/routeCategories';
-import { findVisibleRouteGroup, groupCityRoutes } from '../journey/routeList';
+import { findVisibleRouteGroup, groupCityRoutes, isSequentialRouteUnlocked } from '../journey/routeList';
 
 type RouteFilter = RouteCategory;
 const routeListPositions = new Map<string, { top: number; category: RouteFilter | null }>();
@@ -57,9 +57,11 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
     const routeId = i + 1;
     const data = routeItems?.[i] ?? getRouteData(city.id, routeId);
     const isCompleted = routeItems?.[i]?.isCompleted ?? completedIndices.includes(routeId);
-    const isUnlocked = routeItems?.[i]?.isUnlocked ?? (
-      isCompleted || (Array.from({ length: i }, (_, index) => index + 1).every(index => completedIndices.includes(index))
-        && (openRouteCount === undefined || routeId <= openRouteCount))
+    const isUnlocked = isSequentialRouteUnlocked(
+      routeId,
+      completedIndices,
+      routeItems?.[i]?.isUnlocked,
+      openRouteCount
     );
     const category = routeItems?.[i]?.category ?? getRouteCategory(city.name, routeId);
     return { routeId, data, isCompleted, isUnlocked, category };
@@ -198,7 +200,12 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
               className={`${styles.routeCard} ${isCompleted ? styles.completedRoute : isUnlocked ? styles.nextRoute : styles.lockedRoute}`}
               data-route-index={routeId}
               aria-label={`Route${routeId}：${data.title}，${statusLabel}, see details`}
-              onClick={() => {rememberPosition();onRouteClick(routeId);}}
+              disabled={!isCompleted && !isUnlocked}
+              onClick={() => {
+                if (!isCompleted && !isUnlocked) return;
+                rememberPosition();
+                onRouteClick(routeId);
+              }}
             >
               <span className={styles.thumbnail}>
                 <CityImage src={routeItems?.[routeId - 1]?.coverImage || getRouteCover(city.name, routeId)?.src} alt="" fallbackLabel={data.spots.split(/—|→/)[0].trim()} className={styles.routeImage} loading={routeId<=3?'eager':'lazy'} />
@@ -207,6 +214,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
                 </span>
               </span>
               <span className={styles.routeContent}>
+                <span className={styles.routeOrder}>Route {routeId} of {routes.length}</span>
                 <strong className={styles.routeTitle}>{data.title}</strong>
                 <span className={styles.landmarks}>{data.spots.replace(/—/g, ' → ')}</span>
                 <span className={styles.routeMetrics}><b>{data.distance}<small> km</small></b><span><Clock3 size={12} />{durationLabel}</span><span><MapPin size={12} />{numSpots} landmarks</span></span>

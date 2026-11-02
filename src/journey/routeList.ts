@@ -7,6 +7,19 @@ export function groupCityRoutes<T extends {category:RouteCategory}>(routes:reado
     .filter(group=>group.routes.length>0);
 }
 
+export function isSequentialRouteUnlocked(
+  routeIndex: number,
+  completedRouteIndices: readonly number[],
+  sourceUnlocked?: boolean,
+  openRouteCount?: number
+) {
+  if (completedRouteIndices.includes(routeIndex)) return true;
+  if (sourceUnlocked === false) return false;
+  if (openRouteCount !== undefined && routeIndex > openRouteCount) return false;
+  return Array.from({ length: Math.max(0, routeIndex - 1) }, (_, index) => index + 1)
+    .every(index => completedRouteIndices.includes(index));
+}
+
 export function findVisibleRouteGroup<T extends string>(groups:readonly {category:T;top:number}[],readingLine:number,atBottom=false):T|null {
   if(!groups.length)return null;
   if(atBottom)return groups[groups.length-1].category;

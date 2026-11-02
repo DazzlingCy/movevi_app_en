@@ -1615,9 +1615,13 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
     const route = cityForRoutes.routes[routeIndex - 1];
     if (!route) return;
     const status = getRouteStatus(state, cityForRoutes.id, route.id);
+    if (status === 'locked') {
+      setNotice(`Finish Route ${Math.max(1, route.order - 1)} to unlock Route ${route.order}.`);
+      return;
+    }
     if (status === 'discoverable') {
       dispatch({ type: 'REVEAL_ROUTE', cityId: cityForRoutes.id, routeId: route.id });
-      setNotice(`${route.name}I've found out.`);
+      setNotice(`${route.name} is now available.`);
     }
     setSelectedRouteId(route.id);
   };

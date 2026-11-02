@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { findVisibleRouteGroup, groupCityRoutes } from './routeList';
+import { findVisibleRouteGroup, groupCityRoutes, isSequentialRouteUnlocked } from './routeList';
 import type { RouteCategory } from '../data/routeCategories';
 
 test('category groups show every route once and preserve original route order and identity',()=>{
@@ -17,6 +17,17 @@ test('empty categories do not create tabs or empty route sections',()=>{
   assert.deepEqual(groupCityRoutes([]),[]);
   const route={category:"Culture" as const,routeId:9};
   assert.deepEqual(groupCityRoutes([route]),[{category:"Culture",routes:[route]}]);
+});
+
+test('route cards unlock only after every earlier route is complete',()=>{
+  assert.equal(isSequentialRouteUnlocked(1, []), true);
+  assert.equal(isSequentialRouteUnlocked(2, []), false);
+  assert.equal(isSequentialRouteUnlocked(2, [1]), true);
+  assert.equal(isSequentialRouteUnlocked(4, [1, 3], true), false);
+  assert.equal(isSequentialRouteUnlocked(4, [1, 2, 3], true), true);
+  assert.equal(isSequentialRouteUnlocked(4, [1, 2, 3], false), false);
+  assert.equal(isSequentialRouteUnlocked(4, [1, 2, 3, 4], false), true);
+  assert.equal(isSequentialRouteUnlocked(5, [1, 2, 3, 4], true, 4), false);
 });
 
 test('scroll highlight tracks the section below navigation and reaches the last short group',()=>{
