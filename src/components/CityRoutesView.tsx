@@ -9,7 +9,7 @@ import RouteRunners from './RouteRunners';
 import CityRouteOverviewView from './CityRouteOverviewView';
 import styles from './CityRoutesView.module.css';
 import { getRouteCover } from '../data/routeCovers';
-import { getRouteCategory, type RouteCategory } from '../data/routeCategories';
+import type { RouteCategory } from '../data/routeCategories';
 import { isSequentialRouteUnlocked } from '../journey/routeList';
 
 const routeListPositions = new Map<string, number>();
@@ -59,8 +59,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
       routeItems?.[i]?.isUnlocked,
       openRouteCount
     );
-    const category = routeItems?.[i]?.category ?? getRouteCategory(city.name, routeId);
-    return { routeId, data, isCompleted, isUnlocked, category };
+    return { routeId, data, isCompleted, isUnlocked };
   });
   const totalDistance = routes.reduce((sum, route) => sum + (Number.parseFloat(route.data.distance) || 0), 0);
   const rememberPosition = () => {
@@ -137,7 +136,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
       <section className={styles.routeList} aria-label={`${city.name} routes in unlock order`}>
         {routes.length > 0 && <div className={styles.listHeading}><h2>Routes</h2><p>{browseOnly ? `Browse all ${routes.length}` : `Unlock in order · ${routes.length} total`}</p></div>}
         <div className={styles.routeRows}>
-        {routes.map(({ routeId, data, isCompleted, isUnlocked, category }) => {
+        {routes.map(({ routeId, data, isCompleted, isUnlocked }) => {
           const numSpots = data.spots.split(/—|→/).filter(spot => spot.trim()).length;
           const statusLabel = browseOnly ? 'Preview' : isCompleted ? 'Completed' : isUnlocked ? 'Available' : 'Locked';
           const durationParts = data.duration.split(':').map(Number);
@@ -165,7 +164,7 @@ export default function CityRoutesView({ city, onBack, onRouteClick, onExploreNe
                 </span>
               </span>
               <span className={styles.routeContent}>
-                <span className={styles.routeOrder}>Route {routeId} of {routes.length}<b>{category}</b></span>
+                <span className={styles.routeOrder}>Route {routeId} of {routes.length}</span>
                 <strong className={styles.routeTitle}>{data.title}</strong>
                 <span className={styles.landmarks}>{data.spots.replace(/—/g, ' → ')}</span>
                 <span className={styles.routeMetrics}><b>{data.distance}<small> km</small></b><span><Clock3 size={12} />{durationLabel}</span><span><MapPin size={12} />{numSpots} landmarks</span></span>
