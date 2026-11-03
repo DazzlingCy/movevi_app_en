@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Award, ChevronLeft, Clock3, Flame, MapPin, Pause, Play, Route, Square, Wifi, Zap } from 'lucide-react';
 import { CITIES, getRouteData } from '../data/cities';
@@ -60,6 +60,7 @@ export default function RunPlaybackView({ cityId, routeIndex, image, cityName: c
   const [distance, setDistance] = useState(0);
   const [time, setTime] = useState(0);
   const [showSummary, setShowSummary] = useState(false);
+  const completionSubmittedRef = useRef(false);
   const reduceMotion = useReducedMotion();
 
   const city = CITIES.find(item => String(item.id) === String(cityId));
@@ -104,6 +105,12 @@ export default function RunPlaybackView({ cityId, routeIndex, image, cityName: c
   const finishRun = () => {
     setIsPlaying(false);
     setShowSummary(true);
+  };
+
+  const submitCompletion = () => {
+    if (!routeFinished || completionSubmittedRef.current) return;
+    completionSubmittedRef.current = true;
+    onComplete(result);
   };
 
   return (
@@ -262,10 +269,10 @@ export default function RunPlaybackView({ cityId, routeIndex, image, cityName: c
             </motion.section>
 
             <div className="flex w-full max-w-sm items-center gap-4 px-1">
-              <button onClick={() => routeFinished ? onComplete(result) : onExit()} className="flex-1 rounded-2xl bg-[#cb2027] px-6 py-3.5 text-base font-extrabold tracking-wide text-white shadow-[0_4px_15px_rgba(203,32,39,0.3)] transition-all active:scale-95">
+              <button onClick={() => routeFinished ? submitCompletion() : onExit()} aria-label={routeFinished ? 'Done. Mark this route complete.' : 'Back to route details'} className="flex-1 rounded-2xl bg-[#cb2027] px-6 py-3.5 text-base font-extrabold tracking-wide text-white shadow-[0_4px_15px_rgba(203,32,39,0.3)] transition-all active:scale-95">
                 {routeFinished ? 'Done' : 'Back to Details'}
               </button>
-              <button onClick={() => { if (routeFinished) onComplete(result); else { setShowSummary(false); setIsPlaying(true); } }} className="flex-1 rounded-2xl bg-[#26b180] px-6 py-3.5 text-base font-extrabold tracking-wide text-white shadow-[0_4px_15px_rgba(38,177,128,0.3)] transition-all active:scale-95">
+              <button onClick={() => { if (routeFinished) submitCompletion(); else { setShowSummary(false); setIsPlaying(true); } }} className="flex-1 rounded-2xl bg-[#26b180] px-6 py-3.5 text-base font-extrabold tracking-wide text-white shadow-[0_4px_15px_rgba(38,177,128,0.3)] transition-all active:scale-95">
                 {routeFinished ? 'Next Route' : 'Keep Running'}
               </button>
             </div>

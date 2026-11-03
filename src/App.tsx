@@ -9,12 +9,14 @@ import {
 } from './lib/auth';
 
 export default function App() {
+  const [guestMode, setGuestMode] = useState(true);
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     clearAuthSession();
     return null;
   });
 
   const handleAuthenticated = (user: AuthUser) => {
+    setGuestMode(false);
     setAuthUser(user);
     saveAuthSession(user);
   };
@@ -26,20 +28,24 @@ export default function App() {
 
   const handleSignOut = () => {
     clearAuthSession();
+    setGuestMode(true);
     setAuthUser(null);
   };
 
-  if (!authUser) {
+  if (!authUser && !guestMode) {
     return (
       <div className="app-stage">
         <div className="phone-shell">
-          <AuthScreen onAuthenticated={handleAuthenticated} />
+          <AuthScreen
+            onAuthenticated={handleAuthenticated}
+            onContinueAsGuest={() => setGuestMode(true)}
+          />
         </div>
       </div>
     );
   }
 
-  if (!authUser.profileCompleted) {
+  if (authUser && !authUser.profileCompleted) {
     return (
       <div className="app-stage">
         <div className="phone-shell">
@@ -49,5 +55,11 @@ export default function App() {
     );
   }
 
-  return <JourneyApp user={authUser} onSignOut={handleSignOut} />;
+  return (
+    <JourneyApp
+      user={authUser}
+      onRequireAuth={() => setGuestMode(false)}
+      onSignOut={handleSignOut}
+    />
+  );
 }

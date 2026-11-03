@@ -3,7 +3,7 @@ import { Fragment, lazy, Suspense, useCallback, useEffect, useReducer, useRef, u
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   ArrowRight, BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, CircleHelp, ClipboardList,
-  Clock3, Compass, Flame, Footprints, GalleryHorizontalEnd, Globe2, Headphones, HeadphonesIcon, LockKeyhole, Mail, Map, MapPin,
+  Clock3, Compass, Flame, Footprints, GalleryHorizontalEnd, Globe2, Headphones, LockKeyhole, Mail, Map, MapPin,
   LogOut, Medal, MessageSquare, MonitorSmartphone, Navigation, Pause, Play, RotateCcw, Route,
   Settings, Sparkles, SquarePen, Target, Trophy, UserRound, UsersRound, Wallet, Wifi, WifiOff, X
 } from 'lucide-react';
@@ -11,7 +11,7 @@ import { CITIES, type CityData } from '../../data/cities';
 import { getRouteCover } from '../../data/routeCovers';
 import { getCityRouteReleaseDate, getJourneyCity, getJourneyRoute, hasPublishedCityRoutes, JOURNEY_SEQUENCE } from '../../journey/data';
 import {
-  createDemoJourneyState, getCandidateCityIds, getCityPlanTotals, getCityStatus,
+  createDemoJourneyState, createGuestJourneyState, getCandidateCityIds, getCityPlanTotals, getCityStatus,
   getCompletedRouteIds, getCountryLevelProgress, getHomeJourneyCityIds, getJourneyTotals, getOpenRouteCount, getRouteStatus, journeyReducer
 } from '../../journey/state';
 import type { JourneyCity, JourneyRoute, JourneyState, RunResult } from '../../journey/types';
@@ -211,6 +211,7 @@ interface HomePageProps {
   onDevice: () => void;
   onLegacyFeature: (feature: LegacyFeature) => void;
   onCarouselEnd: () => void;
+  isGuest: boolean;
 }
 
 type LegacyFeature = 'onlineSupport' | 'weightLossPlan' | 'leaderboard' | 'level' | 'medalLottery' | 'weekendMedley' | 'teamRelay';
@@ -235,7 +236,7 @@ type ActivityRouteTarget = {
   taskId: string;
 };
 
-function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSelectNextCity, focusNextStation, onNextStationFocused, onDevice, onLegacyFeature, onCarouselEnd }: HomePageProps) {
+function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSelectNextCity, focusNextStation, onNextStationFocused, onDevice, onLegacyFeature, onCarouselEnd, isGuest }: HomePageProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const cityVideoRef = useRef<HTMLVideoElement>(null);
   const hasAlignedCarouselRef = useRef(false);
@@ -279,8 +280,9 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
     { length: Math.min(3, nextStationCandidatePool.length) },
     (_, offset) => nextStationCandidatePool[(candidateBatchIndex * 3 + offset) % nextStationCandidatePool.length]
   ).filter(Boolean);
-  const currentCityCompleted = getCompletedRouteIds(state, state.currentCityId).length >= 10 || state.completedCityIds.includes(state.currentCityId);
+  const currentCityCompleted = !isGuest && (getCompletedRouteIds(state, state.currentCityId).length >= 10 || state.completedCityIds.includes(state.currentCityId));
   const getProgressCopy = (item: JourneyCity) => {
+    if (isGuest) return '';
     const itemStatus = getCityStatus(state, item.id);
     return itemStatus === 'completed' || itemStatus === 'current'
       ? ''
@@ -653,9 +655,6 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
           </button>
         </div>
         <nav className="home-quick-actions" aria-label="Home shortcuts">
-          <button className="home-quick-action home-quick-action--support" type="button" onClick={() => onLegacyFeature('onlineSupport')} aria-label="Open support" title="Support">
-            <HeadphonesIcon />
-          </button>
           <button className="home-reward-chip" type="button" onClick={() => onLegacyFeature('weightLossPlan')} aria-label="Open daily check-in">
             <Flame />
             <span>Daily Check-In</span>
@@ -713,7 +712,7 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
           }}
         >
           {homeJourneyCities.map((item) => {
-            const itemStatus = getCityStatus(state, item.id);
+            const itemStatus = isGuest ? 'candidate' : getCityStatus(state, item.id);
             const releaseDate = getCityRouteReleaseDate(item.id);
             if (!hasPublishedCityRoutes(item.id) && releaseDate) {
               return (
@@ -746,8 +745,8 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
               summary.calories += route.calories;
               return summary;
             }, { distance: 0, duration: 0, calories: 0 });
-            const itemHasJourneyProgress = itemStatus === 'current' || itemStatus === 'completed';
-            const itemLabel = itemStatus === 'completed' ? 'City Completed' : itemStatus === 'current' ? 'Current City' : 'Global Destination';
+            const itemHasJourneyProgress = !isGuest && (itemStatus === 'current' || itemStatus === 'completed');
+            const itemLabel = isGuest ? 'Explore City' : itemStatus === 'completed' ? 'City Completed' : itemStatus === 'current' ? 'Current City' : 'Global Destination';
             return (
               <Fragment key={item.id}>
                 <section className={`destination-journey-card${item.id === city.id ? ' is-active' : ' is-side'}`} data-city-id={item.id} key={item.id} style={cityStyle(item)} aria-label={`${item.name}，${itemLabel}`} onClick={() => handleCityCardClick(item.id)}>
@@ -816,7 +815,7 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
                     </div>
                   </div>
                   <section className="journey-progress" aria-label={`${item.name}Progress of the journey`}>
-                    <div className="journey-progress__topline">
+                    {isGuest ? <div className="guest-route-summary"><span><Route />{item.routes.length} routes</span><span><MapPin />{item.routes.flatMap(route => route.landmarks).length} landmarks</span></div> : <><div className="journey-progress__topline">
                       <div><span>City Progress</span><strong>{itemCompleted}<small>/10</small></strong></div>
                       {getProgressCopy(item) && <p>{getProgressCopy(item)}</p>}
                     </div>
@@ -827,13 +826,13 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
                         <div><span><Clock3 />Time</span><strong>{(itemExerciseTotals.duration / 60).toFixed(1)}<small>h</small></strong></div>
                         <div><span><Flame />Calories</span><strong>{Math.round(itemExerciseTotals.calories).toLocaleString('en-US')}<small>kcal</small></strong></div>
                       </div>
-                    )}
-                    <button className={`${itemHasJourneyProgress ? 'primary-button ' : ''}journey-cta journey-cta--${itemStatus}`} type="button" onPointerDown={handleCtaPointerDown} onClick={(event) => { event.stopPropagation(); handleRoutesClick(item.id); }}>
-                      {itemStatus === 'completed' ? `View ${item.name}` : itemStatus === 'current' ? `Continue ${item.name}` : `${item.name} · Locked`} {itemHasJourneyProgress ? <ArrowRight /> : <LockKeyhole />}
+                    )}</>}
+                    <button className={`${itemHasJourneyProgress ? 'primary-button ' : ''}journey-cta journey-cta--${isGuest ? 'guest' : itemStatus}`} type="button" onPointerDown={handleCtaPointerDown} onClick={(event) => { event.stopPropagation(); handleRoutesClick(item.id); }}>
+                      {isGuest ? `Explore ${item.name}` : itemStatus === 'completed' ? `View ${item.name}` : itemStatus === 'current' ? `Continue ${item.name}` : `${item.name} · Locked`} {isGuest || itemHasJourneyProgress ? <ArrowRight /> : <LockKeyhole />}
                     </button>
                   </section>
                 </section>
-                {item.id === state.currentCityId && (
+                {!isGuest && item.id === state.currentCityId && (
                   <section className={`destination-journey-card destination-next-card${currentCityCompleted ? ' is-ready' : ' is-locked'}`} data-next-station="true" key={`${item.id}-next-station`} aria-label="Choose your next city">
                     <div className="next-station-card__hero">
                       <div className="next-station-card__topline">
@@ -894,7 +893,7 @@ function HomePage({ state, city, deviceConnected, onRoutes, onBrowseCity, onSele
   );
 }
 
-function CityListSheet({ state, selectedCityId, onSelect, onClose }: { state: JourneyState; selectedCityId: string; onSelect: (cityId: string) => void; onClose: () => void }) {
+function CityListSheet({ state, selectedCityId, onSelect, onClose, isGuest }: { state: JourneyState; selectedCityId: string; onSelect: (cityId: string) => void; onClose: () => void; isGuest: boolean }) {
   const [activeContinent, setActiveContinent] = useState<CityContinentFilter>("All");
   const statusText = { current: 'Exploring', locked: 'Locked', upcoming: 'Coming Soon' } as const;
   const filteredCities = JOURNEY_CITY_SEQUENCE
@@ -931,24 +930,25 @@ function CityListSheet({ state, selectedCityId, onSelect, onClose }: { state: Jo
         {visibleCities.map(({ item, index }) => {
           const journeyStatus = getCityStatus(state, item.id);
           const releaseDate = getCityRouteReleaseDate(item.id);
-          const status = !hasPublishedCityRoutes(item.id)
+          const status: 'completed' | 'current' | 'locked' | 'upcoming' | 'browse' = !hasPublishedCityRoutes(item.id)
             ? 'upcoming'
+            : isGuest ? 'browse'
             : journeyStatus === 'completed' || journeyStatus === 'current' ? journeyStatus : 'locked';
           const completed = getCompletedRouteIds(state, item.id).length;
-          const StatusIcon = status === 'current' ? MapPin : status === 'locked' ? LockKeyhole : status === 'upcoming' ? Clock3 : null;
-          const statusLabel = status === 'completed' ? "Completed" : statusText[status];
+          const StatusIcon = status === 'browse' || status === 'current' ? MapPin : status === 'locked' ? LockKeyhole : status === 'upcoming' ? Clock3 : null;
+          const statusLabel = status === 'browse' ? 'Browse' : status === 'completed' ? "Completed" : statusText[status];
           const isSelected = status !== 'locked' && status !== 'upcoming' && selectedCityId === item.id;
           return (
             <button className={`city-list-card city-list-card--${status}${isSelected ? ' is-selected' : ''}`} type="button" key={item.id} onClick={() => { onSelect(item.id); onClose(); }} aria-label={`${String(index + 1).padStart(2, '0')} ${item.name}. ${statusLabel}.${releaseDate ? ` Launching ${releaseDate}.` : ' View city routes.'}`} aria-pressed={isSelected} disabled={status === 'upcoming'} style={cityStyle(item)}>
               <img className="city-list-card__photo" src={cityImageFor(item)} alt="" aria-hidden="true" />
               <span className="city-list-card__veil" aria-hidden="true" />
               <span className="city-list-card__number">{String(index + 1).padStart(2, '0')}</span>
-              {StatusIcon && <span className="city-list-card__status"><StatusIcon />{statusText[status]}</span>}
+              {StatusIcon && <span className="city-list-card__status"><StatusIcon />{statusLabel}</span>}
               {status === 'completed' && <span className="city-list-card__stamp" aria-hidden="true"><b>{"Completed"}</b><small>COMPLETED</small></span>}
               {status === 'locked' && <span className="city-list-card__fog-lock" aria-hidden="true"><LockKeyhole /></span>}
               <strong>{item.name}</strong><small>{item.englishName}</small>
               {status === 'upcoming' && releaseDate && <span className="city-list-card__release"><CalendarDays />Launching {releaseDate}</span>}
-              {status !== 'upcoming' && <i><span style={{ width: `${completed * 10}%` }} /></i>}
+              {!isGuest && status !== 'upcoming' && <i><span style={{ width: `${completed * 10}%` }} /></i>}
             </button>
           );
         })}
@@ -964,7 +964,7 @@ function CityListSheet({ state, selectedCityId, onSelect, onClose }: { state: Jo
   );
 }
 
-function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountryLevel }: { state: JourneyState; totals: ReturnType<typeof getJourneyTotals>; onOpenCity: (cityId: string) => void; onCities: () => void; onLeaderboard: () => void; onCountryLevel: () => void }) {
+function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountryLevel, isGuest }: { state: JourneyState; totals: ReturnType<typeof getJourneyTotals>; onOpenCity: (cityId: string) => void; onCities: () => void; onLeaderboard: () => void; onCountryLevel: () => void; isGuest: boolean }) {
   const reduceMotion = useReducedMotion();
   const cityGoal = 20;
   const routeGoal = 300;
@@ -987,13 +987,13 @@ function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountry
     <main className="page page--map page--world" id="main-content">
       <section className="world-hero" aria-labelledby="world-page-title">
         <header className="world-header">
-          <h1 className="world-header__eyebrow" id="world-page-title"><Sparkles aria-hidden="true" />Your World</h1>
+          <h1 className="world-header__eyebrow" id="world-page-title"><Sparkles aria-hidden="true" />{isGuest ? 'Explore the World' : 'Your World'}</h1>
         </header>
         <div className="world-globe-panel">
           <Suspense fallback={<div className="globe-loading" role="status"><Globe2 /><span>{"Loading your world."}</span></div>}>
             <JourneyGlobe state={state} onOpenCity={onOpenCity} />
           </Suspense>
-          <div className="world-globe-actions">
+          {!isGuest && <div className="world-globe-actions">
             <button className="world-globe-action world-level-entry" type="button" onClick={onCountryLevel} aria-label={`View world level. Current level ${countryLevel.level} of ${countryLevel.maxLevel}.`}>
               <i aria-hidden="true"><Medal /></i>
               <span><small>World Level</small><strong>LV.{countryLevel.level} <b>/{countryLevel.maxLevel}</b></strong></span>
@@ -1001,14 +1001,14 @@ function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountry
             </button>
             <button className="world-globe-action world-leaderboard-entry" type="button" onClick={onLeaderboard} aria-label="View the global leaderboard. Your current rank is 142.">
               <i aria-hidden="true"><Trophy /></i>
-              <span><small>Global Rank</small><strong>142<b>Updated today</b></strong></span>
+              <span><small>Global Rank</small><strong>142</strong></span>
             </button>
-          </div>
+          </div>}
         </div>
       </section>
 
       <div className="world-journey-content">
-        <motion.section
+        {!isGuest && <motion.section
           className="world-goal-card"
           aria-labelledby="world-progress-title"
           initial={revealInitial}
@@ -1044,7 +1044,8 @@ function MapPage({ state, totals, onOpenCity, onCities, onLeaderboard, onCountry
               <span><small>Calories Burned</small><strong>{Math.round(exerciseTotals.calories).toLocaleString('en-US')}<b>kcal</b></strong></span>
             </div>
           </div>
-        </motion.section>
+        </motion.section>}
+        {isGuest && <section className="world-guest-card"><Globe2 aria-hidden="true" /><div><strong>Browse every destination</strong><span>Explore cities, landmarks, and route previews. Sign in when you are ready to run.</span></div></section>}
         <button className="world-cities-button" type="button" onClick={onCities} aria-label="Open world city guide">
           <span><BookOpen aria-hidden="true" /><b>World City Guide</b></span>
           <ChevronRight aria-hidden="true" />
@@ -1206,21 +1207,24 @@ function ProfilePage({
   onDevice,
   onLevel,
   onSettings,
-  onFeature
+  onFeature,
+  onSignIn
 }: {
-  user: AuthUser;
+  user: AuthUser | null;
   totals: ReturnType<typeof getJourneyTotals>;
   countryLevel: ReturnType<typeof getCountryLevelProgress>;
   onDevice: () => void;
   onLevel: () => void;
   onSettings: () => void;
   onFeature: (label: string) => void;
+  onSignIn: () => void;
 }) {
+  const isGuest = !user;
   const profileStats = [
-    { label: 'Cities Completed', value: totals.completedCities },
-    { label: 'Routes Completed', value: totals.completedRoutes },
-    { label: 'Distance', value: '62.0', unit: 'km' },
-    { label: 'Active Time', value: '12.0', unit: 'h' }
+    { label: 'Cities Completed', value: isGuest ? '--' : totals.completedCities },
+    { label: 'Routes Completed', value: isGuest ? '--' : totals.completedRoutes },
+    { label: 'Distance', value: isGuest ? '--' : '62.0', unit: 'km' },
+    { label: 'Active Time', value: isGuest ? '--' : '12.0', unit: 'h' }
   ];
   const menuItems = [
     { icon: ClipboardList, label: 'Workout History', action: () => onFeature('Workout History') },
@@ -1233,22 +1237,26 @@ function ProfilePage({
   ];
   return (
     <main className="page profile-page profile-page--legacy" id="main-content">
-      <header className="legacy-profile-actions">
+      {!isGuest && <header className="legacy-profile-actions">
         <div>
           <button type="button" onClick={() => onFeature('Messages')} aria-label="Messages"><Mail /></button>
           <button type="button" onClick={() => onFeature('Edit Profile')} aria-label="Edit profile"><SquarePen /></button>
         </div>
-      </header>
-      <section className="legacy-profile-card">
-        <div className="legacy-profile-card__identity">
-          <button type="button" className="legacy-avatar" onClick={() => onFeature('Edit Profile')} aria-label="View or edit profile">
-            <img src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200'} alt={`${user.name}'s profile photo`} />
+      </header>}
+      <section className={`legacy-profile-card${isGuest ? ' legacy-profile-card--guest' : ''}`}>
+        <div className={`legacy-profile-card__identity${isGuest ? ' is-guest' : ''}`}>
+          <button type="button" className="legacy-avatar" onClick={() => isGuest ? onSignIn() : onFeature('Edit Profile')} aria-label={isGuest ? 'Sign in' : 'View or edit profile'}>
+            {user ? <img src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200&h=200'} alt={`${user.name}'s profile photo`} /> : <UserRound aria-hidden="true" />}
           </button>
-          <div><h1>{user.name}</h1><button className="legacy-profile-level" type="button" onClick={onLevel} aria-label={`View world level. Current level ${countryLevel.level} of ${countryLevel.maxLevel}.`}><span>LV.{countryLevel.level}</span><strong>/ {countryLevel.maxLevel}</strong><ChevronRight /></button></div>
+          <div className={isGuest ? 'legacy-guest-copy' : undefined}>
+            <h1>{user?.name ?? 'Guest mode'}</h1>
+            {user ? <button className="legacy-profile-level" type="button" onClick={onLevel} aria-label={`View world level. Current level ${countryLevel.level} of ${countryLevel.maxLevel}.`}><span>LV.{countryLevel.level}</span><strong>/ {countryLevel.maxLevel}</strong><ChevronRight /></button> : <p>Progress is not saved.</p>}
+          </div>
+          {isGuest && <button className="legacy-guest-signin" type="button" onClick={onSignIn}>Sign in <ArrowRight /></button>}
         </div>
-        <div className="legacy-profile-stats">
+        {!isGuest && <div className="legacy-profile-stats">
           {profileStats.map(item => <div key={item.label}><strong>{item.value}{item.unit && <small>{item.unit}</small>}</strong><span>{item.label}</span></div>)}
-        </div>
+        </div>}
       </section>
       <section className="legacy-collection-actions" aria-label="City collection">
         <button className="legacy-collection-action legacy-collection-action--cards" type="button" onClick={() => onFeature('City Cards')}>
@@ -1514,11 +1522,12 @@ function UtilityPanel({ mode, user, deviceConnected, manualReducedMotion, onTogg
   );
 }
 
-export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSignOut: () => void }) {
+export default function JourneyApp({ user, onSignOut, onRequireAuth }: { user: AuthUser | null; onSignOut: () => void; onRequireAuth: () => void }) {
   const {enabled:puzzleDemo,openOnLoad:puzzleDeepLink}=getPuzzlePreviewMode(window.location.search);
-  const [state, dispatch] = useReducer(journeyReducer, undefined, createDemoJourneyState);
+  const [state, dispatch] = useReducer(journeyReducer, undefined, user ? createDemoJourneyState : createGuestJourneyState);
+  const previousUserRef = useRef(user);
   const nextStationFocusTimerRef = useRef<number | null>(null);
-  const [isFirstUse, setIsFirstUse] = useState(!puzzleDeepLink);
+  const [isFirstUse, setIsFirstUse] = useState(!puzzleDeepLink && Boolean(user));
   const [firstCityChoiceId, setFirstCityChoiceId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PrimaryTab>('home');
   const [homeCityId, setHomeCityId] = useState(state.currentCityId);
@@ -1534,6 +1543,7 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [focusNextStation, setFocusNextStation] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [guestGate, setGuestGate] = useState<string | null>(null);
   const [legacyFeature, setLegacyFeature] = useState<LegacyFeature | null>(puzzleDeepLink?'teamRelay':null);
   const [medalLotteryTickets, setMedalLotteryTickets] = useState(0);
   const [activityRoute, setActivityRoute] = useState<ActivityRouteTarget | null>(null);
@@ -1573,15 +1583,21 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
   const effectiveCandidateId = selectedCandidateId ?? candidateCities[0]?.id ?? '';
 
   useEffect(() => {
+    if (!previousUserRef.current && user) dispatch({ type: 'RESET_DEMO' });
+    previousUserRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
     // Prototype-only auto-connect. Replace this simulated success with the hardware
     // adapter's successful connection callback before enabling real device support.
     // Cleanup also prevents duplicate callbacks during React StrictMode mounting.
+    if (!user) return;
     const timer = window.setTimeout(() => {
       setDeviceConnected(true);
       setStartupConnectionSucceeded(true);
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (state.currentPage !== 'travel' || !state.pendingNextCityId) return;
@@ -1614,6 +1630,10 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
     if (!cityForRoutes) return;
     const route = cityForRoutes.routes[routeIndex - 1];
     if (!route) return;
+    if (!user) {
+      setSelectedRouteId(route.id);
+      return;
+    }
     const status = getRouteStatus(state, cityForRoutes.id, route.id);
     if (status === 'locked') {
       setNotice(`Finish Route ${Math.max(1, route.order - 1)} to unlock Route ${route.order}.`);
@@ -1625,12 +1645,22 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
     }
     setSelectedRouteId(route.id);
   };
+  const requireAccount = (feature: string) => {
+    if (user) return true;
+    setGuestGate(feature);
+    return false;
+  };
+  const openDevice = () => {
+    if (!requireAccount('Connect a treadmill and sync your workouts')) return;
+    setUtilityMode('device');
+  };
   const handleRouteSelect = (route: JourneyRoute) => {
     const status = getRouteStatus(state, route.cityId, route.id);
     if (status === 'discoverable') { dispatch({ type: 'REVEAL_ROUTE', cityId: route.cityId, routeId: route.id }); setNotice(`${route.name}I've found out.`); return; }
     if (status === 'revealed' || status === 'completed') setSelectedRouteId(route.id);
   };
   const startRun = (route: JourneyRoute) => {
+    if (!requireAccount('Start this route and save your progress')) return;
     if (getRouteStatus(state, route.cityId, route.id) === 'locked') return;
     if (!deviceConnected) setDeviceConnected(true);
     setRunningRoute({ cityId: route.cityId, routeId: route.id });
@@ -1691,6 +1721,10 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
     dispatch({ type: 'NAVIGATE', page: tab === 'world' ? 'map' : 'home' });
   };
   const openLegacyFeature = (feature: LegacyFeature) => {
+    if (!user && feature !== 'leaderboard' && feature !== 'level') {
+      setGuestGate('Sign in to use activities and rewards');
+      return;
+    }
     if(feature==='teamRelay'&&puzzleDemo)puzzle.restartPreview();
     setLegacyFeature(feature);
     setRouteCityId(null);
@@ -1811,15 +1845,16 @@ export default function JourneyApp({ user, onSignOut }: { user: AuthUser; onSign
         : state.currentPage === 'cityComplete' ? <motion.div className="screen-layer" key="city-complete" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><CityCompletePage city={currentCity} candidates={candidateCities} selectedId={effectiveCandidateId} onSelect={setSelectedCandidateId} onContinue={() => effectiveCandidateId && dispatch({ type: 'SELECT_NEXT_CITY', cityId: effectiveCandidateId })} /></motion.div>
         : state.currentPage === 'travel' && pendingCity ? <motion.div className="screen-layer" key="travel" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><TravelPage from={currentCity} to={pendingCity} reduceMotion={reduceMotion} /></motion.div>
         : routeSheetCity && selectedRouteData ? <motion.div className="screen-layer" key="legacy-route-detail" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><RouteDetailView cityId={routeSheetCity.id} routeIndex={selectedRouteData.order} image={cityImageFor(routeSheetCity)} routeOverride={toLegacyRouteItem(selectedRouteData, state)} onBack={() => setSelectedRouteId(null)} onStart={startSelectedRoute} /></motion.div>
-        : routeSheetCity ? <motion.div className="screen-layer" key="legacy-route-list" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><CityRoutesView city={toLegacyCity(routeSheetCity, state)} routeItems={routeSheetCity.routes.map(route => toLegacyRouteItem(route, state))} completedRouteIndices={routeSheetCity.routes.filter(route => getCompletedRouteIds(state, routeSheetCity.id).includes(route.id)).map(route => route.order)} openRouteCount={getRouteListOpenCount(state, routeSheetCity.id)} onBack={() => { setRouteCityId(null); setSelectedRouteId(null); }} onRouteClick={openLegacyRoute} /></motion.div>
-        : activeTab === 'profile' ? <motion.div className="screen-layer" key="profile" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><ProfilePage user={user} totals={totals} countryLevel={countryLevel} onDevice={() => setUtilityMode('device')} onLevel={() => openLegacyFeature('level')} onSettings={() => setUtilityMode('profile')} onFeature={label => setNotice(`${label} · Preview`)} /></motion.div>
+        : routeSheetCity ? <motion.div className="screen-layer" key="legacy-route-list" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><CityRoutesView city={toLegacyCity(routeSheetCity, state)} routeItems={routeSheetCity.routes.map(route => toLegacyRouteItem(route, state))} completedRouteIndices={routeSheetCity.routes.filter(route => getCompletedRouteIds(state, routeSheetCity.id).includes(route.id)).map(route => route.order)} openRouteCount={getRouteListOpenCount(state, routeSheetCity.id)} browseOnly={!user} onBack={() => { setRouteCityId(null); setSelectedRouteId(null); }} onRouteClick={openLegacyRoute} /></motion.div>
+        : activeTab === 'profile' ? <motion.div className="screen-layer" key="profile" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><ProfilePage user={user} totals={totals} countryLevel={countryLevel} onDevice={openDevice} onLevel={() => openLegacyFeature('level')} onSettings={() => { if (requireAccount('Manage your account and app settings')) setUtilityMode('profile'); }} onFeature={label => { if (requireAccount(`Open ${label}`)) setNotice(`${label} · Preview`); }} onSignIn={() => setGuestGate('Save your routes, progress, and rewards')} /></motion.div>
         : activeTab === 'activity' ? <motion.div className="screen-layer" key="activity" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><EventsTab onSelectMedalLottery={() => openLegacyFeature('medalLottery')} onSelectMedley={() => openLegacyFeature('weekendMedley')} onSelectWeightLossPlan={() => openLegacyFeature('weightLossPlan')} onSelectTeamRelay={() => {openLegacyFeature('teamRelay');}} onSelectHundredCities={() => setNotice("The 100-person city plan is in preparation")} /></motion.div>
-        : activeTab === 'world' ? <motion.div className="screen-layer" key="world" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><MapPage state={state} totals={totals} onOpenCity={openCity} onCities={() => setCityListOpen(true)} onLeaderboard={() => openLegacyFeature('leaderboard')} onCountryLevel={() => openLegacyFeature('level')} /></motion.div>
-        : <motion.div className="screen-layer" key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><HomePage state={state} city={homeCity} deviceConnected={deviceConnected} onRoutes={openCity} onBrowseCity={setHomeCityId} onSelectNextCity={(cityId) => { setSelectedCandidateId(cityId); dispatch({ type: 'SELECT_NEXT_CITY', cityId }); }} focusNextStation={focusNextStation} onNextStationFocused={clearNextStationFocus} onDevice={() => setUtilityMode('device')} onLegacyFeature={openLegacyFeature} onCarouselEnd={() => setNotice("More cities, please look forward.")} /></motion.div>}
+        : activeTab === 'world' ? <motion.div className="screen-layer" key="world" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}><MapPage state={state} totals={totals} onOpenCity={openCity} onCities={() => setCityListOpen(true)} onLeaderboard={() => openLegacyFeature('leaderboard')} onCountryLevel={() => openLegacyFeature('level')} isGuest={!user} /></motion.div>
+        : <motion.div className="screen-layer" key="home" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><HomePage state={state} city={homeCity} deviceConnected={deviceConnected} onRoutes={openCity} onBrowseCity={setHomeCityId} onSelectNextCity={(cityId) => { if (!requireAccount('Choose your next city and save your journey')) return; setSelectedCandidateId(cityId); dispatch({ type: 'SELECT_NEXT_CITY', cityId }); }} focusNextStation={focusNextStation} onNextStationFocused={clearNextStationFocus} onDevice={openDevice} onLegacyFeature={openLegacyFeature} onCarouselEnd={() => setNotice("More cities, please look forward.")} isGuest={!user} /></motion.div>}
       </AnimatePresence>
       <AnimatePresence>
-        {cityListOpen && !runningRoute && <motion.div className="overlay-layer" key="city-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><CityListSheet state={state} selectedCityId={homeCity.id} onSelect={openCityRoutesFromList} onClose={() => setCityListOpen(false)} /></motion.div>}
-        {utilityMode && <motion.div className="overlay-layer" key="utility" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{utilityMode === 'device' ? <MyDevicesView connected={deviceConnected} onBack={() => setUtilityMode(null)} onAdd={() => setNotice('Device setup is available in the mobile app.')} onScan={() => setNotice('QR pairing is available in the mobile app.')} /> : <UtilityPanel mode={utilityMode} user={user} deviceConnected={deviceConnected} manualReducedMotion={manualReducedMotion} onToggleDevice={() => setDeviceConnected(value => !value)} onToggleMotion={() => setManualReducedMotion(value => !value)} onReset={resetDemo} onSignOut={onSignOut} onClose={() => setUtilityMode(null)} />}</motion.div>}
+        {cityListOpen && !runningRoute && <motion.div className="overlay-layer" key="city-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><CityListSheet state={state} selectedCityId={homeCity.id} onSelect={openCityRoutesFromList} onClose={() => setCityListOpen(false)} isGuest={!user} /></motion.div>}
+        {utilityMode && user && <motion.div className="overlay-layer" key="utility" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{utilityMode === 'device' ? <MyDevicesView connected={deviceConnected} onBack={() => setUtilityMode(null)} onAdd={() => setNotice('Device setup is available in the mobile app.')} onScan={() => setNotice('QR pairing is available in the mobile app.')} /> : <UtilityPanel mode={utilityMode} user={user} deviceConnected={deviceConnected} manualReducedMotion={manualReducedMotion} onToggleDevice={() => setDeviceConnected(value => !value)} onToggleMotion={() => setManualReducedMotion(value => !value)} onReset={resetDemo} onSignOut={onSignOut} onClose={() => setUtilityMode(null)} />}</motion.div>}
+        {guestGate && <motion.div className="overlay-layer" key="guest-gate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><div className="absolute inset-0 flex items-end bg-black/70 p-4 backdrop-blur-sm"><motion.section role="dialog" aria-modal="true" aria-labelledby="guest-gate-title" className="w-full rounded-[28px] border border-white/10 bg-[#111319] px-6 pb-6 pt-5 text-white shadow-2xl" initial={{ y: 40 }} animate={{ y: 0 }} exit={{ y: 40 }}><div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-300/10 text-cyan-300"><LockKeyhole size={24} /></div><h2 id="guest-gate-title" className="text-2xl font-black">Sign in to continue</h2><p className="mt-3 text-sm font-semibold leading-6 text-slate-400">{guestGate}. Your guest browsing will remain available.</p><button type="button" className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-cyan-300 text-base font-black text-[#061217]" onClick={() => { setGuestGate(null); onRequireAuth(); }}>Sign in or create account <ArrowRight size={19} /></button><button type="button" className="mt-2 h-12 w-full text-sm font-bold text-slate-400" onClick={() => setGuestGate(null)}>Not now</button></motion.section></div></motion.div>}
         {showDeviceConnectedPrompt && <motion.div className="overlay-layer" key="device-connected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduceMotion ? 0 : 0.18 }}><DeviceConnectedPrompt onDismiss={() => setDeviceConnectionAcknowledged(true)} onViewDevice={() => { setDeviceConnectionAcknowledged(true); setUtilityMode('device'); }} /></motion.div>}
       </AnimatePresence>
       {!isFirstUse && utilityMode !== 'device' && !runningRoute && !runningActivityRoute && !activityRoute && !runningWeightRoute && !weightRoute && !legacyFeature && !routeSheetCity && (state.currentPage === 'home' || state.currentPage === 'map') && <BottomNavigation active={activeTab} onChange={selectPrimaryTab} />}

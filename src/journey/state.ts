@@ -45,6 +45,17 @@ export const createDemoJourneyState = (): JourneyState => ({
   lastRun: null
 });
 
+export const createGuestJourneyState = (): JourneyState => ({
+  currentCityId: 'tokyo',
+  completedCityIds: [],
+  completedRouteIdsByCity: {},
+  revealedRouteIdsByCity: {},
+  discoveredSpotKeys: [],
+  pendingNextCityId: null,
+  currentPage: 'home',
+  lastRun: null
+});
+
 export const createPrototypeJourneyState = (cityId: string): JourneyState => {
   const currentCityId = getJourneyCity(cityId)?.id ?? JOURNEY_SEQUENCE[0];
   const completedCityIds = demoCompletedCityIds.filter(item => item !== currentCityId);

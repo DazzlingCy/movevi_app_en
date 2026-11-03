@@ -28,6 +28,7 @@ import moveviLogo from '../assets/movevi-logo.png';
 
 interface AuthScreenProps {
   onAuthenticated: (user: AuthUser) => void;
+  onContinueAsGuest?: () => void;
 }
 
 type AuthScreenStep = 'choice' | 'email' | 'code' | 'provider' | 'bindEmail' | 'bindCode';
@@ -39,7 +40,7 @@ type FieldErrors = {
 
 const emailPattern = /^\S+@\S+\.\S+$/;
 
-export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
+export default function AuthScreen({ onAuthenticated, onContinueAsGuest }: AuthScreenProps) {
   const [step, setStep] = useState<AuthScreenStep>('choice');
   const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -225,7 +226,22 @@ export default function AuthScreen({ onAuthenticated }: AuthScreenProps) {
                   disabled={isBusy}
                   onClick={openEmailFlow}
                 />
+                {onContinueAsGuest && (
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={onContinueAsGuest}
+                    className="flex h-14 w-full items-center justify-center gap-2 rounded-full border-2 border-[#11170f] bg-white text-[17px] font-black text-[#11170f] transition active:scale-[0.99] disabled:opacity-60"
+                  >
+                    Continue as guest <ArrowRight size={20} />
+                  </button>
+                )}
               </div>
+              {onContinueAsGuest && (
+                <p className="mt-4 max-w-[310px] text-center text-sm font-semibold leading-relaxed text-neutral-500">
+                  Browse cities and routes now. Sign in when you are ready to run or save progress.
+                </p>
+              )}
             </div>
 
             <p className="mx-auto mt-8 max-w-[330px] text-center text-sm font-semibold leading-relaxed text-neutral-500">

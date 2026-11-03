@@ -25,6 +25,7 @@ interface CityRouteOverviewViewProps {
   city: CityData;
   routeItems?: CityRouteListItem[];
   onBack: () => void;
+  browseOnly?: boolean;
 }
 
 type OverviewRoute = CityRouteListItem & {
@@ -60,7 +61,8 @@ const formatDurationMetric = (minutes: number) => {
 export default function CityRouteOverviewView({
   city,
   routeItems,
-  onBack
+  onBack,
+  browseOnly = false
 }: CityRouteOverviewViewProps) {
   const [showReport, setShowReport] = useState(false);
   const overview = useMemo(() => {
@@ -70,8 +72,8 @@ export default function CityRouteOverviewView({
       return {
         ...item,
         order,
-        completed: Boolean(item.isCompleted),
-        unlocked: item.isUnlocked ?? order === 1,
+        completed: browseOnly ? false : Boolean(item.isCompleted),
+        unlocked: browseOnly || item.isUnlocked || order === 1,
         spotNames: item.spots.split(/\s*[—–]\s*/).filter(Boolean),
         distanceKm: Number.parseFloat(item.distance) || 0,
         durationMinutes: durationToMinutes(item.duration)
@@ -96,7 +98,7 @@ export default function CityRouteOverviewView({
       uniqueSpotCount: uniqueSpots.size,
       totals
     };
-  }, [city, routeItems]);
+  }, [browseOnly, city, routeItems]);
   const totalDurationMetric = formatDurationMetric(overview.totals.duration);
   const cityCompleted = overview.routes.length > 0 && overview.completedCount === overview.routes.length;
 
@@ -138,7 +140,7 @@ export default function CityRouteOverviewView({
             <OverviewMetric label="mileage" value={overview.totals.distance.toFixed(1)} unit="km" />
             <OverviewMetric label="Length" value={totalDurationMetric.value} unit={totalDurationMetric.unit} />
           </div>
-          <div className="mt-4 border-t border-slate-100 pt-3" aria-label={`Currently completed${overview.completedCount} / ${overview.routes.length}Part of the route`}>
+          {!browseOnly && <div className="mt-4 border-t border-slate-100 pt-3" aria-label={`Currently completed${overview.completedCount} / ${overview.routes.length}Part of the route`}>
             <div className="flex items-center justify-between gap-3">
               <span className="text-[10px] font-semibold text-slate-500">{"Current progress"} <strong className="ml-1 text-[12px] font-black text-slate-800">{overview.completedCount}/{overview.routes.length}</strong></span>
               <span className="min-w-0 truncate text-right text-[9px] font-semibold text-orange-600">{overview.currentRoute ? `Next paragraph...${String(overview.currentRoute.order).padStart(2, '0')} ${overview.currentRoute.title}` : "The city route is complete."}</span>
@@ -149,7 +151,7 @@ export default function CityRouteOverviewView({
                 return <i key={route.order} className={`h-1.5 rounded-full ${route.completed ? 'bg-emerald-400' : current ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,.38)]' : 'bg-slate-200'}`} />;
               })}
             </div>
-          </div>
+          </div>}
         </section>
 
         <section className="rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-[0_10px_30px_rgba(15,23,42,.06)]" aria-labelledby="route-map-title">
@@ -160,20 +162,20 @@ export default function CityRouteOverviewView({
             </div>
             <span className="mt-1 shrink-0 rounded-full bg-slate-100 px-2.5 py-1.5 text-[10px] font-bold text-slate-500">{"Full"} {overview.routes.length} {"Paragraph"}</span>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2" aria-label="Course status statement">
+          {!browseOnly && <div className="mt-3 flex flex-wrap gap-2" aria-label="Course status statement">
             <RouteLegend color="bg-emerald-400" label="Completed" />
             <RouteLegend color="bg-orange-500" label="Next paragraph" />
             <RouteLegend color="bg-slate-300" label="To Unlock" />
-          </div>
+          </div>}
           <ol className="mt-4 space-y-1">
             {overview.routes.map((route, index) => {
-              const current = overview.currentRoute?.order === route.order;
+              const current = !browseOnly && overview.currentRoute?.order === route.order;
               return (
                 <li key={route.order} className="grid grid-cols-[28px_minmax(0,1fr)] gap-2.5">
                   <div className="relative flex justify-center pt-3">
-                    {index < overview.routes.length - 1 && <span className={`absolute bottom-[-8px] top-8 w-px ${route.completed ? 'bg-emerald-200' : 'bg-slate-200'}`} aria-hidden="true" />}
-                    <span className={`relative z-10 grid h-6 w-6 place-items-center rounded-full text-[9px] font-black tabular-nums ${route.completed ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : current ? 'bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,.28)]' : 'bg-white text-slate-400 ring-1 ring-slate-200'}`}>
-                      {route.completed ? <Check size={12} strokeWidth={3} /> : String(route.order).padStart(2, '0')}
+                    {index < overview.routes.length - 1 && <span className={`absolute bottom-[-8px] top-8 w-px ${!browseOnly && route.completed ? 'bg-emerald-200' : 'bg-slate-200'}`} aria-hidden="true" />}
+                    <span className={`relative z-10 grid h-6 w-6 place-items-center rounded-full text-[9px] font-black tabular-nums ${!browseOnly && route.completed ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : current ? 'bg-orange-500 text-white shadow-[0_4px_12px_rgba(249,115,22,.28)]' : 'bg-white text-slate-400 ring-1 ring-slate-200'}`}>
+                      {!browseOnly && route.completed ? <Check size={12} strokeWidth={3} /> : String(route.order).padStart(2, '0')}
                     </span>
                   </div>
                   <article className={`min-w-0 rounded-2xl border px-3 py-3 transition-colors ${current ? 'border-orange-200 bg-[linear-gradient(135deg,#fff7ed,#fffaf6)]' : route.completed ? 'border-transparent bg-white' : 'border-slate-100 bg-slate-50/70'}`}>
@@ -198,7 +200,7 @@ export default function CityRouteOverviewView({
         </section>
 
         <button type="button" onClick={cityCompleted ? () => setShowReport(true) : onBack} className={`flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black text-white transition active:scale-[.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${cityCompleted ? 'bg-[linear-gradient(135deg,#10b981,#059669)] shadow-[0_12px_28px_rgba(5,150,105,.24)] focus-visible:ring-emerald-500' : 'bg-[linear-gradient(135deg,#ff7b50,#ff5b2d)] shadow-[0_12px_28px_rgba(255,91,45,.25)] focus-visible:ring-orange-500'}`}>
-          {cityCompleted ? <><FileText size={17} /> {"View City Report"}</> : <>{"We're done. Keep moving."} <ArrowRight size={17} /></>}
+          {browseOnly ? <>Back to routes <ArrowRight size={17} /></> : cityCompleted ? <><FileText size={17} /> {"View City Report"}</> : <>{"We're done. Keep moving."} <ArrowRight size={17} /></>}
         </button>
       </div>
     </main>

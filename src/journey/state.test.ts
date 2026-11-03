@@ -3,6 +3,7 @@ import test from 'node:test';
 import { CITY_ROUTE_RELEASE_SCHEDULE, hasPublishedCityRoutes, JOURNEY_CITIES } from './data';
 import {
   createDemoJourneyState,
+  createGuestJourneyState,
   createPrototypeJourneyState,
   getCandidateCityIds,
   getCityStatus,
@@ -16,6 +17,16 @@ import {
 import type { JourneyState, RunResult } from './types';
 
 const result: RunResult = { distanceKm: 5, durationSeconds: 2_100, calories: 320 };
+
+test('guest journey starts without account progress or completed routes', () => {
+  const state = createGuestJourneyState();
+  assert.equal(state.currentPage, 'home');
+  assert.deepEqual(state.completedCityIds, []);
+  assert.deepEqual(state.completedRouteIdsByCity, {});
+  assert.deepEqual(state.revealedRouteIdsByCity, {});
+  assert.deepEqual(state.discoveredSpotKeys, []);
+  assert.equal(state.lastRun, null);
+});
 
 const blankTokyoState = (): JourneyState => {
   const demo = createDemoJourneyState();
